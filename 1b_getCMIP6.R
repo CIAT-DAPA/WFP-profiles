@@ -41,7 +41,7 @@ getDataCMIP6 <- function(i, idx, downdir, silent=FALSE, overwrite=FALSE){
 # which files to download
 ifile <- "data/cmip6_index.csv"
 
-if(!file.exists()){
+if(!file.exists(ifile)){
   library(epwshiftr)
   # set directory to store files
   options(epwshiftr.dir = tempdir())

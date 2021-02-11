@@ -2,6 +2,9 @@
 # install the most recent package
 # remotes::install_github("ideas-lab-nus/epwshiftr")
 
+# to avoid download time out?
+options(timeout=180)
+
 # downloader function
 getDataCMIP6 <- function(i, idx, downdir, silent=FALSE, overwrite=FALSE){
   d <- idx[i,]
@@ -80,7 +83,17 @@ downdir <- "\\dapadfs.cgiarad.org\workspace_cluster_13\WFP_ClimateRiskPr\\data"
 
 # download files
 dwl <- lapply(1:nrow(idx), getDataCMIP6, idx, downdir, silent=FALSE, overwrite=FALSE)
+dd <- do.call(rbind, dwl)
 
-# save download status
-dd <- do.call(dwl, rbind)
+# files that failed download
+sidx <- dd[dd$download_status == "FAIL" | dd$localfilechek == "FAIL",]
+
+# keep trying unless everything works
+while(nrow(sidx) > 0){
+  dwl <- lapply(1:nrow(sidx), getDataCMIP6, sidx, downdir, silent=FALSE, overwrite=TRUE)
+  dd <- do.call(rbind, dwl)
+  sidx <- dd[dd$download_status == "FAIL" | dd$localfilechek == "FAIL",]
+}
+
+# save final results
 write.csv(dd, paste0("data/cmip6_download_status_", Sys.Date(), "_", Sys.info()[["nodename"]],".csv"), row.names = FALSE) 

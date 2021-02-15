@@ -15,7 +15,7 @@ getGCMdailyTable <- function(iso, var, model, experiment, gcmdir, ff, sdare, eda
   dir.create(outdir, FALSE, TRUE)
   
   # country/zone boundary
-  # NOTE: replace this by WFP country directory
+  # TODO: replace this by WFP country directory
   v <- vect(raster::getData("GADM", country = iso, level = 0, path = "data/"))
   e <- ext(v)*1.25
   # crop reference raster
@@ -87,24 +87,19 @@ experiments <- c("historical", "ssp585")
 vars <- c("pr","tas","tasmax","tasmin")
 models <- c("BCC-CSM2-MR","GFDL-ESM4","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0")
 sdate <- "1981-01-01"
-# edate <- "1981-01-31"
 edate <- "2010-12-31"
 # reference raster with same geometry as CHIRPS 
 ref <- rast(crs = "epsg:4326", extent = ext(c(-180, 180, -50, 50)), resolution = 0.05, vals = 1)
 
-# test case
-# var <- vars[4]
-model <- models[3]
-experiment <- experiments[1]
-
+# TODO: add the country lists or WFP boundaries
 isol <- c("HTI", "BDI")
 
-# run all processes; can be run parallel for iso?
+# run all processes; can be run parallel for iso
 
 for (iso in isol){
-  for (var in c("tasmin", "tasmax")){
-    for (model in model){
-      for (experiment in experiment){
+  for (var in vars){
+    for (model in models){
+      for (experiment in experiments){
         t1 <- Sys.time()
         getGCMdailyTable(iso, var, model, experiment, gcmdir, ff, sdate, edate, ref)
         cat("time to create table for", iso, var, model, experiment, Sys.time() - t1, "\n")
@@ -116,20 +111,14 @@ for (iso in isol){
 
 
 for (iso in isol){
-    for (model in model){
-      for (experiment in experiment){
-        t2 <- Sys.time()
-        mergeGCMdailyTable(iso, model, experiment, gcmdir)
-        cat("time to merge table for", iso, model, experiment, Sys.time() - t2, "\n")
-      }
+  for (model in models){
+    for (experiment in experiments){
+      t2 <- Sys.time()
+      mergeGCMdailyTable(iso, model, experiment, gcmdir)
+      cat("time to merge table for", iso, model, experiment, Sys.time() - t2, "\n")
+    }
   }
 }
 
 
-
-# ISO3 = iso, country = v$NAME_0 to be saved at the final stage
-
-
-# if (varmod == "tmax"){dayNcStackRes <- dayNcStackRes - 273.15}
-# if (varmod == "tmin"){dayNcStackRes <- dayNcStackRes - 273.15}
-# if (varmod == "prec"){dayNcStackRes <- dayNcStackRes * 86400}
+# unit conversion needed

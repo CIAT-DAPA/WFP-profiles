@@ -27,10 +27,12 @@ vignettes/*.pdf
 
 # OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
 .httr-oauth
+.cdsapirc
 
 # knitr and R markdown default cache directories
 *_cache/
 /cache/
+*.log
 
 # Temporary files created by R markdown
 *.utf8.md

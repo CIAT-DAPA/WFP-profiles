@@ -1,6 +1,6 @@
 # -------------------------------------------------- #
 # Climate Risk Profiles -- Main functions
-# A. Esquivel, H. Achicanoy & J. Ramirez-Villegas
+# A. Esquivel, C. Saavedra, H. Achicanoy & J. Ramirez-Villegas
 # Alliance Bioversity-CIAT, 2021
 # -------------------------------------------------- #
 
@@ -197,7 +197,7 @@ soilcap_calc <- function(x, y, rdepth=60, minval, maxval) {
 }
 
 # potential evapotranspiration
-peest <- function(srad, tmin, tmax) {
+peest <- function(srad,tmin,tmax) {
   #constants
   albedo <- 0.2
   vpd_cte <- 0.7
@@ -239,26 +239,27 @@ peest <- function(srad, tmin, tmax) {
   return(et_max)
 }
 
-# the two functions below estimate the ea/ep
-# based on Jones (1987)
-# ea/ep: actual to potential evapotranspiration ratio
-eabyep_calc <- function(soilcp=100, cropfc=1, avail=50, prec, evap) {
+#the two functions below estimate the ea/ep
+#based on Jones (1987)
+#ea/ep: actual to potential evapotranspiration ratio
+eabyep_calc <- function(soilcp=100,soilsat=100,cropfc=1,avail=50,rain,evap) {
   avail <- min(c(avail,soilcp))
   eratio <- eabyep(soilcp,avail)
   demand <- eratio*cropfc*evap
-  result <- avail + prec - demand
-  runoff <- result - soilcp
+  result <- avail + rain - demand
+  logging <- result - soilcp
+  logging <- max(c(logging,0))
+  logging <- min(c(soilsat,logging))
+  runoff <- result - (logging+soilcp)
   avail <- min(c(soilcp,result))
   avail <- max(c(avail,0))
   runoff <- max(c(runoff,0))
-  
-  out <- data.frame(AVAIL=avail,DEMAND=demand,ERATIO=eratio,prec=prec,RUNOFF=runoff)
-  
+  out <- data.frame(AVAIL=avail,DEMAND=demand,ERATIO=eratio,RAIN=rain,LOGGING=logging,RUNOFF=runoff)
   return(out)
 }
 
-# ea/ep function
-eabyep <- function(soilcp, avail) {
+#ea/ep function
+eabyep <- function(soilcp,avail) {
   percwt <- min(c(100,avail/soilcp*100))
   percwt <- max(c(1,percwt))
   eratio <- min(c(percwt/(97-3.868*sqrt(soilcp)),1))
@@ -294,11 +295,11 @@ eabyep <- function(soilcp, avail) {
 watbal_wrapper <- function(out_all, soilcp, soilsat)  {
   out_all$ETMAX <- out_all$AVAIL <- out_all$ERATIO <- out_all$LOGGING <- out_all$RUNOFF <- out_all$DEMAND <- out_all$CUM_RAIN <- NA
   for (d in 1:nrow(out_all)) {
-    out_all$ETMAX[d] <- peest(out_all$SRAD[d],out_all$TMIN[d],out_all$TMAX[d])
+    out_all$ETMAX[d] <- peest(out_all$srad[d],out_all$tmin[d],out_all$tmax[d])
     
     if (d==1) {
-      out_all$CUM_RAIN[d] <- out_all$RAIN[d]
-      sfact <- eabyep_calc(soilcp=soilcp,soilsat=soilsat,cropfc=1,avail=0,rain=out_all$RAIN[d],evap=out_all$ETMAX[d])
+      out_all$CUM_RAIN[d] <- out_all$prec[d]
+      sfact <- eabyep_calc(soilcp=soilcp,soilsat=soilsat,cropfc=1,avail=0,rain=out_all$prec[d],evap=out_all$ETMAX[d])
       out_all$AVAIL[d] <- sfact$AVAIL
       out_all$ERATIO[d] <- sfact$ERATIO
       out_all$LOGGING[d] <- sfact$LOGGING
@@ -306,8 +307,8 @@ watbal_wrapper <- function(out_all, soilcp, soilsat)  {
       out_all$DEMAND[d] <- sfact$DEMAND
       
     } else {
-      out_all$CUM_RAIN[d] <- out_all$CUM_RAIN[d-1] + out_all$RAIN[d]
-      sfact <- eabyep_calc(soilcp=soilcp,soilsat=soilsat,cropfc=1,avail=out_all$AVAIL[d-1],rain=out_all$RAIN[d],evap=out_all$ETMAX[d])
+      out_all$CUM_RAIN[d] <- out_all$CUM_RAIN[d-1] + out_all$prec[d]
+      sfact <- eabyep_calc(soilcp=soilcp,soilsat=soilsat,cropfc=1,avail=out_all$AVAIL[d-1],rain=out_all$prec[d],evap=out_all$ETMAX[d])
       out_all$AVAIL[d] <- sfact$AVAIL
       out_all$ERATIO[d] <- sfact$ERATIO
       out_all$LOGGING[d] <- sfact$LOGGING
@@ -413,92 +414,237 @@ calc_badhar <- function(x, season_end, soilcp) {
   return(badhar)
 }
 
-calc_ndwd <- function(LOGG = df$LOGGING){
-  ndwd <- sum(LOGG > 0, na.rm = T)
-  return(ndwd)
+# NWLD: Number of days during the growing season with waterlogging in the soil
+calc_NWLD <- function(LOGG = df$LOGGING){
+  NWLD <- sum(LOGG > 0, na.rm = T)
+  return(NWLD)
 }
-calc_ndwd50 <- function(LOGG = df$LOGGING, sat = soilst){
-  ndwd50 <- sum(LOGG > (sat*0.5), na.rm = T)
+calc_NWLDMP <- compiler::cmpfun(calc_NWLD)
+
+# NWLD50: Number of days during the growing season with 50% of waterlogging in the soil
+calc_NWLD50 <- function(LOGG = df$LOGGING, sat = soilst){
+  NWLD50 <- sum(LOGG > (sat*0.5), na.rm = T)
   return(ndwd50)
 }
-calc_ndwd90 <- function(LOGG = df$LOGGING, sat = soilst){
-  ndwd90 <- sum(LOGG >= sat, na.rm = T)
-  return(ndwd90)
+calc_NWLD50MP <- compiler::cmpfun(calc_NWLD50)
+
+# NWLD90: Number of days during the growing season with 90% of waterlogging in the soil
+calc_NWLD90 <- function(LOGG = df$LOGGING, sat = soilst){
+  NWLD90 <- sum(LOGG >= sat, na.rm = T)
+  return(NWLD90)
 }
+calc_NWLD90MP <- compiler::cmpfun(calc_NWLD90)
+
+# cNWLD Maximum number of consecutive days during the growing season with waterlogging in the soil
+calc_cNWLD <- function(LOGG = df$LOGGING){
+  runs <- rle(LOGG > 0)
+  cNWLD <- max(runs$lengths[runs$values==1], na.rm = TRUE)
+  return(cNWLD)
+}
+calc_cNWLDMP <- compiler::cmpfun(calc_cNWLD)
+
+# cNWLD50 Maximum number of consecutive days during the growing season with 50% of waterlogging in the soil
+calc_cNWLD50 <- function(LOGG = df$LOGGING, sat = soilst){
+  runs <- rle(LOGG > (sat*0.5))
+  cNWLD50 <- max(runs$lengths[runs$values==1], na.rm = TRUE)
+  return(cNWLD50)
+}
+calc_cNWLD50MP <- compiler::cmpfun(calc_cNWLD50)
+
+# cNWLD90 Maximum number of consecutive days during the growing season with 90% of waterlogging in the soil
+calc_cNWLD90 <- function(LOGG = df$LOGGING, sat = soilst){
+  runs <- rle(LOGG >= sat)
+  cNWLD90 <- max(runs$lengths[runs$values==1], na.rm = TRUE)
+  return(cNWLD90)
+}
+calc_cNWLD90MP <- compiler::cmpfun(calc_cNWLD90)
 
 # Aridity index
-calc_tai <- function(clm = tbl){
+calc_tai <- function(clm = tbl, outfile = './TAI.fst'){
   
-  # Load CHIRPS template
-  tmp <- raster::raster(paste0(root,"/1.Data/ERA5/chirps-v2.0.2020.01.01.tif"))
-  
-  # Transform climate variables to the corresponding units
-  clm$srad  <- clm$srad * .5  # I did this transformation
-  clm$tmax  <- clm$tmax * 10
-  clm$tmin  <- clm$tmin * 10
-  clm$tmean <- clm$tmean * 10
-  clm$rnge  <- abs(clm$tmax - clm$tmin)
-  
-  # Calc monthly summaries per year
-  summ <- clm %>%
-    dplyr::mutate(Year  = lubridate::year(tbl$date),
-                  Month = lubridate::month(tbl$date)) %>%
-    dplyr::group_by(id, x, y, Year, Month) %>%
-    dplyr::summarise(tmean = mean(tmean, na.rm = T),
-                     srad  = mean(srad, na.rm = T),
-                     rnge  = mean(rnge, na.rm = T),
-                     prec  = sum(prec, na.rm = T))
-  
-  # Obtain yearly tables
-  yr_summ <- summ %>%
-    dplyr::group_by(Year) %>%
-    dplyr::group_split(Year)
-  
-  # Assign precipitation names in envirem environment
-  envirem::assignNames(precip = 'PREC_##')
-  
-  # Calculate Aridity index over time
-  TAI_over_time <- yr_summ %>%
-    purrr::map(.f = function(df_yr){
-      mnths <- df_yr %>%
-        dplyr::group_by(Month) %>%
-        dplyr::group_split(Month) %>%
-        purrr::map(.f = function(db){
-          vars <- c('tmean','prec','srad','rnge')
-          tst <- lapply(vars, function(v){
-            r <- raster::rasterFromXYZ(xyz = db[,c('x','y',v)],
-                                       res = raster::res(tmp),
-                                       crs = raster::crs(tmp))
-            return(r)
+  if(!file.exists(outfile)){
+    # Load packages
+    if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
+    suppressMessages(pacman::p_load(fst,envirem,gtools,tidyverse,raster))
+    
+    # Load CHIRPS template
+    tmp <- raster::raster(paste0(root,"/1.Data/ERA5/chirps-v2.0.2020.01.01.tif"))
+    
+    # Transform table to raster study area
+    r <- raster::rasterFromXYZ(xyz = clm[,c('x','y')] %>% unique %>% dplyr::mutate(vals = 1),
+                               res = raster::res(tmp),
+                               crs = raster::crs(tmp))
+    
+    # ET SRAD
+    srf <- list.dirs(paste0(root,'/1.Data/ET_SolRad'), full.names = T, recursive = F)
+    srf <- srf[-length(srf)]
+    srf <- srf %>% gtools::mixedsort()
+    srd <- srf %>% raster::stack()
+    srd <- srd %>%
+      raster::crop(., raster::extent(r)) %>%
+      raster::resample(x = ., y = r)
+    srd <- srd %>% raster::mask(., mask = r)
+    names(srd) <- c(paste0('SRAD_0',1:9),paste0('SRAD_', 10:12))
+    
+    # Transform climate variables to the corresponding units
+    clm$rnge  <- abs(clm$tmax - clm$tmin)
+    
+    # Calc monthly summaries per year
+    summ <- clm %>%
+      dplyr::mutate(Year  = lubridate::year(clm$date),
+                    Month = lubridate::month(clm$date)) %>%
+      dplyr::group_by(id, x, y, Year, Month) %>%
+      dplyr::summarise(tmean = mean(tmean, na.rm = T),
+                       rnge  = mean(rnge, na.rm = T),
+                       prec  = sum(prec, na.rm = T))
+    
+    # Obtain yearly tables
+    yr_summ <- summ %>%
+      dplyr::group_by(Year) %>%
+      dplyr::group_split(Year)
+    
+    # Assign precipitation names in envirem environment
+    envirem::assignNames(solrad='SRAD_##', tmean = 'TMEAN_##', precip = 'PREC_##')
+    
+    # Calculate Aridity index over time
+    TAI_over_time <- yr_summ %>%
+      purrr::map(.f = function(df_yr){
+        mnths <- df_yr %>%
+          dplyr::group_by(Month) %>%
+          dplyr::group_split(Month) %>%
+          purrr::map(.f = function(db){
+            vars <- c('tmean','prec','rnge')
+            tst <- lapply(vars, function(v){
+              r <- raster::rasterFromXYZ(xyz = db[,c('x','y',v)],
+                                         res = raster::res(tmp),
+                                         crs = raster::crs(tmp))
+              return(r)
+            })
+            return(tst)
           })
-          return(tst)
-        })
-      TMEAN <- mnths %>% purrr::map(1) %>% raster::stack()
-      PREC  <- mnths %>% purrr::map(2) %>% raster::stack()
-      SRAD  <- mnths %>% purrr::map(3) %>% raster::stack()
-      TRNG  <- mnths %>% purrr::map(4) %>% raster::stack()
-      
-      names(TMEAN) <- c(paste0('TMEAN_0',1:9),paste0('TMEAN_', 10:12))
-      names(PREC)  <- c(paste0('PREC_0',1:9),paste0('PREC_', 10:12))
-      names(SRAD)  <- c(paste0('SRAD_0',1:9),paste0('SRAD_', 10:12))
-      names(TRNG)  <- c(paste0('TRNG_0',1:9),paste0('TRNG_', 10:12))
-      
-      PET <- envirem::monthlyPET(TMEAN, SRAD, TRNG) %>% raster::stack()
-      names(PET)  <- c(paste0('PET_0',1:9), paste0('PET_', 10:12))
-      TAI <- envirem::aridityIndexThornthwaite(PREC, PET)
-      return(TAI)
-    })
-  
-  # Group results for all years in one stack
-  TAI <- TAI_over_time %>% raster::stack()
-  names(TAI) <- paste0('TAI_',tbl$year %>% unique %>% sort)
-  df <- TAI %>% raster::rasterToPoints() %>% as.data.frame()
-  df$id <- raster::cellFromXY(tmp, df[,c('x','y')])
-  df <- df %>% dplyr::select(id,x,y,dplyr::everything(.))
-  df <- df %>%
-    tidyr::pivot_longer(cols = TAI_1981:TAI_2020, names_to = 'Year', values_to = 'TAI') %>%
-    dplyr::mutate(Year = gsub('TAI_','',Year) %>% as.numeric)
-  
-  return(df)
-  
+        TMEAN <- mnths %>% purrr::map(1) %>% raster::stack()
+        PREC  <- mnths %>% purrr::map(2) %>% raster::stack()
+        TRNG  <- mnths %>% purrr::map(3) %>% raster::stack()
+        
+        names(TMEAN) <- c(paste0('TMEAN_0',1:9),paste0('TMEAN_', 10:12))
+        names(PREC)  <- c(paste0('PREC_0',1:9),paste0('PREC_', 10:12))
+        names(TRNG)  <- c(paste0('TRNG_0',1:9),paste0('TRNG_', 10:12))
+        
+        PET <- envirem::monthlyPET(TMEAN, srd, TRNG) %>% raster::stack()
+        names(PET)  <- c(paste0('PET_0',1:9), paste0('PET_', 10:12))
+        TAI <- envirem::aridityIndexThornthwaite(PREC, PET)
+        return(TAI)
+      })
+    
+    # Group results for all years in one stack
+    TAI <- TAI_over_time %>% raster::stack()
+    names(TAI) <- paste0('TAI_',1981:2019)
+    df <- TAI %>% raster::rasterToPoints() %>% as.data.frame()
+    df$id <- raster::cellFromXY(tmp, df[,c('x','y')])
+    df <- df %>% dplyr::select(id,x,y,dplyr::everything(.))
+    df <- df %>%
+      tidyr::pivot_longer(cols = TAI_1981:TAI_2019, names_to = 'Year', values_to = 'TAI') %>%
+      dplyr::mutate(Year = gsub('TAI_','',Year) %>% as.numeric)
+    
+    fst::write_fst(x = df, path = outfile)
+  } else {
+    cat('TAI index already calculated.\n')
+  }
+  return(cat('TAI index: calculated successfully!\n'))
 }
+calc_taiMP <- compiler::cmpfun(calc_tai)
+
+# Annual/Season total precipitation (ATR) 
+calc_atr <- function(PREC){
+  pre <- sum(PREC, na.rm = T)
+  return(pre)
+}
+calc_atrMP <- compiler::cmpfun(calc_atr)
+
+# Annual/Season mean temperature --- AMT
+calc_amt <- function(TMEAN){
+  tavg <- mean(TMEAN, na.rm = T)
+  return(tavg)
+}
+calc_amtMP <- compiler::cmpfun(calc_amt)
+
+# Standardized precipitation index - SPI
+calc_spi <- function(DP){
+  sp <- SPEI::spi(data = DP, scale = 4, na.rm=T)
+  return(sp)
+}
+calc_spiMP <- compiler::cmpfun(calc_spi)
+
+# The SHI is computed as the number of days with maximum temperatures ??? 29?C 
+# and relative humidity is greater than 50%.
+calc_SHI <- function(tmax, RH){
+  SHI <- ifelse(tmax >= 29 & RH > 50, 1, 0)
+  SHI <- sum(SHI)
+  return(SHI)
+}
+calc_SHIMP <- compiler::cmpfun(calc_SHI)
+
+# Daily pig heat stress index (HSI) 
+# dplyr::case_when(0 ~ normal, 1 ~ alert, 2 ~ danger, 3 ~ emergency)
+calc_HSI <- function(tmax, RH){
+  HSI <- tibble::tibble( HSI = case_when( tmax <= 23 ~ 0, 
+                                          tmax <= 24 & RH <= 70 ~ 0, 
+                                          tmax <= 25 & RH <= 40 ~ 0,
+                                          tmax <= 24 & RH > 70 ~ 1,
+                                          tmax <= 25 & RH > 40 ~ 1,
+                                          tmax <= 26 & RH <= 70 ~ 1,
+                                          tmax <= 27 & RH <= 40 ~ 1, #
+                                          tmax <= 26 & RH > 70 ~ 2,
+                                          tmax <= 27 & RH >= 40 & RH < 85 ~ 2, # 
+                                          tmax <= 28 & RH < 85 ~ 2,
+                                          tmax <= 29 & RH < 60 ~ 2,
+                                          tmax <= 30 & RH < 40 ~ 2,
+                                          tmax <= 27 & RH >= 85 ~ 3,
+                                          tmax <= 28 & RH >= 85 ~ 3,
+                                          tmax <= 29 & RH >= 60 ~ 3,
+                                          tmax <= 30 & RH >= 40 ~ 3,
+                                          tmax > 30 ~ 3,  
+                                          TRUE ~ NA_real_) )
+  
+  if(is.na(sum(HSI))){
+    HSI <- tibble(HSI_0 = NA_real_, HSI_1 = NA_real_, HSI_2 = NA_real_, HSI_3 = NA_real_)
+  } else {
+    HSI <- HSI %>% 
+      dplyr::count(HSI) %>%
+      dplyr::mutate(n = n / sum(n),
+                    HSI = paste0('HSI_', HSI)) %>%
+      tidyr::pivot_wider(names_from = HSI, values_from = n)
+  }
+  return(HSI)
+}
+calc_HSIMP <- compiler::cmpfun(calc_HSI)
+
+# Daily thermal humidity index (THI)
+calc_THI <- function(tmax, RH){
+  THI <- tibble::tibble(THI1 = (1.8 * tmax + 32) - ((0.55 - 0.0055 * RH) * (1.8 * tmax - 26.8))) %>% 
+    dplyr::mutate(THI = dplyr::case_when(THI1 < 72 ~ 0, # no stress.
+                                         THI1 >= 72 & THI1 < 79 ~ 1, # mild
+                                         THI1 >= 79 & THI1 < 89 ~ 2, # moderate.
+                                         THI1 >= 89 ~ 3, # severe.
+                                         TRUE ~ THI1) ) %>%
+    count(THI)
+  
+  if(nrow(THI) < 4){
+    less <- (0:3)[!(0:3 %in% THI$THI)]
+    THI <- dplyr::add_row(THI, tibble(THI = less, n = 0)) %>% arrange(THI)
+  } else {
+    THI <- THI
+  }
+  
+  THI <- THI %>% dplyr::filter(!is.na(THI)) %>%
+    dplyr::mutate(n = ifelse( n > 0, n/sum(n), 0), THI = paste0('THI_', THI)) %>% 
+    tidyr::pivot_wider(names_from = THI, values_from = n)
+  
+  if(sum(slice(THI, 1) ) == 0){
+    THI <- THI %>%
+      dplyr::mutate_all(.funs = function(x){
+        ifelse(x == 0, NA_real_, x)
+      })}
+  return(THI)
+}
+calc_THIMP <- compiler::cmpfun(calc_THI)

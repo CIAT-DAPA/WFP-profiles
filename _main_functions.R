@@ -468,7 +468,7 @@ calc_tai <- function(clm = tbl, outfile = './TAI.fst'){
     suppressMessages(pacman::p_load(fst,envirem,gtools,tidyverse,raster))
     
     # Load CHIRPS template
-    tmp <- raster::raster(paste0(root,"/1.Data/ERA5/chirps-v2.0.2020.01.01.tif"))
+    tmp <- raster::raster("//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/daily/chirps-v2.0.2020.01.01.tif")
     
     # Transform table to raster study area
     r <- raster::rasterFromXYZ(xyz = clm[,c('x','y')] %>% unique %>% dplyr::mutate(vals = 1),
@@ -476,7 +476,7 @@ calc_tai <- function(clm = tbl, outfile = './TAI.fst'){
                                crs = raster::crs(tmp))
     
     # ET SRAD
-    srf <- list.dirs(paste0(root,'/1.Data/ET_SolRad'), full.names = T, recursive = F)
+    srf <- list.dirs('//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/climate/ET_SolRad', full.names = T, recursive = F)
     srf <- srf[-length(srf)]
     srf <- srf %>% gtools::mixedsort()
     srd <- srf %>% raster::stack()

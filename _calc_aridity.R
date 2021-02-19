@@ -23,7 +23,7 @@ calc_tai <- function(clm = tbl, outfile = './TAI.fst'){
                                crs = raster::crs(tmp))
     
     # ET SRAD
-    srf <- list.dirs('//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/ET_SolRad', full.names = T, recursive = F)
+    srf <- list.dirs('//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/climate/ET_SolRad', full.names = T, recursive = F)
     srf <- srf[-length(srf)]
     srf <- srf %>% gtools::mixedsort()
     srd <- srf %>% raster::stack()

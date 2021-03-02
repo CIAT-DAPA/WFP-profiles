@@ -7,7 +7,7 @@
 # Sourcing functions
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_functions.R') # Main functions
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_soil_data.R')  # Get soil data
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_soil_data.R')  # Calculating agro-indices
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices.R')   # Calculating agro-indices
 
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
@@ -24,11 +24,11 @@ lhzs <- c('','','','')
 # If data is already processed, just load the table or path
 
 # Get soil data
-crd <- fst::read_fst(paste0(root,"/1.Data/observed_data/HTI/HTI.fst"))
+crd <- fst::read_fst(paste0(root,"/1.Data/observed_data/",iso3,"/",iso3,".fst"))
 crd <- unique(crd[,c('id','x','y')])
 get_soil(crd        = crd,
          root_depth = 60,
-         outfile    = paste0(root,"/1.Data/soil/HTI/soilcp_data.fst"))
+         outfile    = paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst"))
 
 # Get future climate data
 # Same as previous function
@@ -42,15 +42,15 @@ mnth <- 6:12 # Manually
 # mnth <- get_crop_calendar_from_rains() # Growing seasons
 
 # Calc agro-climatic indices
-infile  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/HTI/HTI.fst"
-soilfl  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/soil/HTI/soilcp_data.fst"
-outfile <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/Haiti/past/HTI_indices.fst"
-spi_out <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/Haiti/past/HTI_spi.fst"
+infile  <- paste0(root,"/1.Data/observed_data/",iso3,"/",iso3,".fst")
+soilfl  <- paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst")
+outfile <- paste0(root,"/7.Results/",country,"/past/",iso3,"_indices.fst")
+spi_out <- paste0(root,"/7.Results/",country,"/past/",iso3,"_spi.fst")
 calc_indices(climate = infile,
              soil    = soilfl,
              seasons = list(s1 = 6:12),
              subset  = F,
-             ncores  = 10,
+             ncores  = 15,
              outfile = outfile,
              spi_out = spi_out)
 # # Burundi

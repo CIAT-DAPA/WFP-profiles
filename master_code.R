@@ -1,5 +1,5 @@
 # -------------------------------------------------- #
-# Climate Risk Profiles -- Master code
+# Climate Risk Profiles -- Master code Haiti
 # A. Esquivel, C. Saavedra, H. Achicanoy & J. Ramirez-Villegas
 # Alliance Bioversity-CIAT, 2021
 # -------------------------------------------------- #
@@ -41,14 +41,30 @@ mnth <- 6:12 # Manually
 # mnth <- get_crop_calendar_from_crops() # Cesar's function
 # mnth <- get_crop_calendar_from_rains() # Growing seasons
 
-# Calc agro-climatic indices (done)
+# Calc agro-climatic indices
+infile  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/HTI/HTI.fst"
+soilfl  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/soil/HTI/soilcp_data.fst"
+outfile <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/Haiti/past/HTI_indices.fst"
+spi_out <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/Haiti/past/HTI_spi.fst"
 calc_indices(climate = infile,
              soil    = soilfl,
-             seasons = list(s1 = mnth), # list(s1 = 2:6, s2 = 10:12)
+             seasons = list(s1 = 6:12),
              subset  = F,
              ncores  = 10,
              outfile = outfile,
              spi_out = spi_out)
+# # Burundi
+# infile  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/BDI/BDI.fst"
+# soilfl  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/soil/BDI/soilcp_data.fst"
+# outfile <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/Burundi/past/BDI_indices.fst"
+# spi_out <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/Burundi/past/BDI_spi.fst"
+# calc_indices(climate = infile,
+#              soil    = soilfl,
+#              seasons = list(s1 = 2:7, s2 = c(9:12,1)),
+#              subset  = F,
+#              ncores  = 15,
+#              outfile = outfile,
+#              spi_out = spi_out)
 
 # Graphs
 # 1. Put all together: time series, maps, and climatology graphs

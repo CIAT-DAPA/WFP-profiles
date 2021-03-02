@@ -45,6 +45,13 @@ rsum.lapply <- function(x, n=3L) # Calculate rollin sum
 cumulative.r.sum <- function(results){ unlist(lapply(results, function(x){z <- x[[1]]; return(z)})) } # Extract the SUM
 is.leapyear <- function(year){ return(((year %% 4 == 0) & (year %% 100 != 0)) | (year %% 400 == 0)) } # Function to identify leap years
 
+## NDD. Average number of dry days
+calc_ndd <- function(PREC, p_thresh = 1){
+  dry_days <- sum(PREC < p_thresh, na.rm = T)
+  return(dry_days)
+}
+calc_nddCMP <- compiler::cmpfun(calc_ndd)
+
 ## CDD. Maximum number of consecutive dry days
 calc_cdd <- function(PREC, p_thresh=1){
   runs <- rle(PREC < p_thresh)

@@ -5,10 +5,22 @@
 # -------------------------------------------------- #
 
 options(warn = -1, scipen = 999)
-
 suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(SPEI,tidyverse,raster,ncdf4,sf,future,furrr,lubridate,glue,vroom,sp,fst,compiler))
 
+# Input parameters:
+#   climate: path of the historical climate file. This file must exists
+#   soil: soil file path. This file must exists
+#   seasons: list object specifying the months where a season take
+#     place. Examples:
+#       One season:  seasons = list(s1 = 2:5) # Feb-May
+#       Two seasons: seasons = list(s1 = 2:5, s2 = c(10:12,1)) # Feb-May and Oct-Jan
+#   subset: logical value. If TRUE, the indices will be calculated
+#     for a random sample of 30% of the pixels. If FALSE, all the
+#     pixels will be used
+#   ncores: number of cores to run the code in parallel per pixel
+#   outfile: output file path (all indices)
+#   spi_out: output file path (SPI index)
 calc_indices <- function(climate = infile,
                          soil    = soilfl,
                          seasons = list(s1 = mnth), # list(s1 = 2:6, s2 = 10:12)

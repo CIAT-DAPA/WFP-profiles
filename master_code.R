@@ -53,6 +53,7 @@ calc_indices(climate = infile,
              ncores  = 15,
              outfile = outfile,
              spi_out = spi_out)
+
 # # Burundi
 # infile  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/BDI/BDI.fst"
 # soilfl  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/soil/BDI/soilcp_data.fst"

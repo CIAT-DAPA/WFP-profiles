@@ -544,12 +544,12 @@ calc_tai <- function(clm = tbl){
   
   # Group results for all years in one stack
   TAI <- TAI_over_time %>% raster::stack()
-  names(TAI) <- paste0('TAI_',1981:2019)
+  names(TAI) <- paste0('TAI_',range(summ$Year)[1]:range(summ$Year)[2])
   df <- TAI %>% raster::rasterToPoints() %>% as.data.frame()
   df$id <- raster::cellFromXY(tmp, df[,c('x','y')])
   df <- df %>% dplyr::select(id,x,y,dplyr::everything(.))
   df <- df %>%
-    tidyr::pivot_longer(cols = TAI_1981:TAI_2019, names_to = 'Year', values_to = 'TAI') %>%
+    tidyr::pivot_longer(cols = paste0('TAI_',range(summ$Year)[1]):paste0('TAI_',range(summ$Year)[2]), names_to = 'Year', values_to = 'TAI') %>%
     dplyr::mutate(Year = gsub('TAI_','',Year) %>% as.numeric)
   return(df)
 }

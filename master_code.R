@@ -54,6 +54,20 @@ calc_indices(climate = infile,
              outfile = outfile,
              spi_out = spi_out)
 
+model   <- 'INM-CM5-0'
+period  <- '2021-2040'
+infile  <- paste0(root,"/1.Data/future_data/",model,"/",iso3,"/bias_corrected/",period,"/",iso3,".fst")
+soilfl  <- paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst")
+outfile <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso3,"_indices.fst")
+spi_out <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso3,"_spi.fst")
+calc_indices(climate = infile,
+             soil    = soilfl,
+             seasons = list(s1 = 6:12),
+             subset  = F,
+             ncores  = 15,
+             outfile = outfile,
+             spi_out = spi_out)
+
 # # Burundi
 # infile  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/BDI/BDI.fst"
 # soilfl  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/soil/BDI/soilcp_data.fst"

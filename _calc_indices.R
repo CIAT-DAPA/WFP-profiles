@@ -51,6 +51,10 @@ calc_indices <- function(climate = infile,
       dplyr::rename(id = 'id1') %>%
       dplyr::select(id, dplyr::everything(.))
     
+    # Match soil and climate pixels
+    px <- intersect(clim_data$id, Soil$id)
+    clim_data <- clim_data[clim_data$id %in% px,]
+    
     # Impute missing data
     impute_missings <- function(tbl = clim_data){
       Climate <- 1:nrow(tbl) %>%

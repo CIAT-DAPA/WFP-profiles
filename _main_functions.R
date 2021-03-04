@@ -431,7 +431,7 @@ calc_NWLDMP <- compiler::cmpfun(calc_NWLD)
 # NWLD50: Number of days during the growing season with 50% of waterlogging in the soil
 calc_NWLD50 <- function(LOGG = df$LOGGING, sat = soilst){
   NWLD50 <- sum(LOGG > (sat*0.5), na.rm = T)
-  return(ndwd50)
+  return(NWLD50)
 }
 calc_NWLD50MP <- compiler::cmpfun(calc_NWLD50)
 

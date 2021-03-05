@@ -15,8 +15,8 @@ suppressMessages(pacman::p_load(qmap, ncdf4, raster, tidyverse, compiler, vroom,
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
 # Quantile-mapping bias correction function for available pixels with solar radiation from NASA within a country
-iso     <- 'BDI'
-period  <- '2041-2060'
+iso     <- 'TZA'
+period  <- '2021-2040'
 model   <- 'INM-CM5-0'
 his_obs <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
 his_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/1995-2014/",iso,".fst")

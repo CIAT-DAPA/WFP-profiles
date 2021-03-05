@@ -24,7 +24,7 @@ lhzs <- c('','','','')
 # If data is already processed, just load the table or path
 
 # Get soil data
-crd <- fst::read_fst(paste0(root,"/1.Data/observed_data/",iso3,"/",iso3,".fst"))
+crd <- fst::read_fst(paste0(root,"/1.Data/observed_data/",iso3,"/",iso3,".fst")) # read just one year!!!!
 crd <- unique(crd[,c('id','x','y')])
 get_soil(crd        = crd,
          root_depth = 60,
@@ -53,6 +53,13 @@ calc_indices(climate = infile,
              ncores  = 15,
              outfile = outfile,
              spi_out = spi_out)
+# calc_indices(climate = infile,
+#              soil    = soilfl,
+#              seasons = list(s1 = 3:8, s2 = 7:11, s3 = 1:12),
+#              subset  = F,
+#              ncores  = 15,
+#              outfile = outfile,
+#              spi_out = spi_out)
 
 model   <- 'INM-CM5-0'
 period  <- '2021-2040'
@@ -80,6 +87,19 @@ calc_indices(climate = infile,
 #              ncores  = 15,
 #              outfile = outfile,
 #              spi_out = spi_out)
+model   <- 'INM-CM5-0'
+period  <- '2041-2060'
+infile  <- paste0(root,"/1.Data/future_data/",model,"/",iso3,"/bias_corrected/",period,"/",iso3,".fst")
+soilfl  <- paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst")
+outfile <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso3,"_indices.fst")
+spi_out <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso3,"_spi.fst")
+calc_indices(climate = infile,
+             soil    = soilfl,
+             seasons = list(s1 = 2:7, s2 = c(9:12,1)),
+             subset  = F,
+             ncores  = 15,
+             outfile = outfile,
+             spi_out = spi_out)
 
 # Graphs
 # 1. Put all together: time series, maps, and climatology graphs

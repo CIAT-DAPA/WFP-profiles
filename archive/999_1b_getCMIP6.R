@@ -4,6 +4,7 @@
 if("epwshiftr" %in% rownames(installed.packages()) == FALSE) {
   remotes::install_github("ideas-lab-nus/epwshiftr")}
 
+
 # to avoid download time out?
 options(timeout=3600)
 
@@ -24,7 +25,7 @@ getDataCMIP6 <- function(i, idx, downdir, silent=FALSE, overwrite=FALSE){
   # should we download?
   if (!file.exists(flocal)|overwrite){
     # try downloading
-    dattempt <- try(download.file(d$file_url, flocal, mode = "wb", quiet=silent))
+    try(download.file(d$file_url, flocal, mode = "wb", quiet=silent))
   }
   return(NULL)
 }
@@ -41,7 +42,7 @@ checkDownloadStatus <- function(i, idx, downdir){
   flocal <- file.path(downdir, basename(d$file_url))
   d$localfile <- flocal
   
-  localfilecheck <- d$file_size == file.size(flocal)
+  localfilecheck <- file.size(flocal) >= d$file_size  
   
   if(file.exists(flocal) & localfilecheck){
     d$download_status <- "PASS"
@@ -62,7 +63,7 @@ if(!file.exists(ifile)){
   
   # variables to download
   vars <- c("pr","tas","tasmax","tasmin")
-  models <- c("BCC-CSM2-MR","GFDL-ESM4","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0")
+  models <- c("BCC-CSM2-MR","CESM2","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0")
   
   # future scenario
   fidx <- init_cmip6_index(
@@ -72,6 +73,7 @@ if(!file.exists(ifile)){
     variable = vars,
     source = models
   )
+  
   # historical  
   hidx <- init_cmip6_index(
     activity = "CMIP",
@@ -91,11 +93,16 @@ if(!file.exists(ifile)){
 # change the data directory as needed
 downdir <- "~/data/input/climate/CMIP6/daily"
 
-# download files
-lapply(1:nrow(idx), getDataCMIP6, idx, downdir, silent=FALSE, overwrite=FALSE)
-# library(future.apply)
-# plan(multiprocess, workers = 12)
-# future_lapply(1:nrow(idx), getDataCMIP6, idx, downdir, silent=FALSE, overwrite=FALSE, future.seed = TRUE)
+downloadParallel <- FALSE
+
+if (downloadParallel){
+  library(future.apply)
+  plan(multiprocess, workers = 12)
+  future_lapply(1:nrow(idx), getDataCMIP6, idx, downdir, silent=FALSE, overwrite=FALSE, future.seed = TRUE)
+} else {
+  # download files
+  lapply(1:nrow(idx), getDataCMIP6, idx, downdir, silent=FALSE, overwrite=FALSE)
+}
 
 
 # files that failed download
@@ -105,15 +112,15 @@ sidx <- ds[ds$download_status == "FAIL"| ds$localfilechek == "FAIL",]
 
 # keep trying unless everything works
 while(nrow(sidx) > 0){
-  lapply(1:nrow(sidx), getDataCMIP6, idx, downdir, silent=FALSE, overwrite=TRUE)
+  lapply(1:nrow(sidx), getDataCMIP6, sidx, downdir, silent=FALSE, overwrite=TRUE)
   # library(future.apply)
   # plan(multiprocess, workers = 12)
-  # future_lapply(1:nrow(idx), getDataCMIP6, idx, downdir, silent=FALSE, overwrite=FALSE, future.seed = TRUE)
+  # future_lapply(1:nrow(sidx), getDataCMIP6, sidx, downdir, silent=FALSE, overwrite=FALSE, future.seed = TRUE)
   # check download status and prep for rerun
   dws <- lapply(1:nrow(idx), checkDownloadStatus, idx, downdir)
   ds <- data.table::rbindlist(dws, fill = TRUE)
   sidx <- ds[ds$download_status == "FAIL" | ds$localfilechek == "FAIL",]
-  # print(nrow(sidx))
+  print(nrow(sidx))
 }
 
 # save final log

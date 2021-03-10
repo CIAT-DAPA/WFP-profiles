@@ -15,21 +15,13 @@ suppressMessages(pacman::p_load(qmap, ncdf4, raster, tidyverse, compiler, vroom,
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
 # Quantile-mapping bias correction function for available pixels with solar radiation from NASA within a country
-iso     <- 'TZA'
-period  <- '2021-2040'
-model   <- 'INM-CM5-0'
-his_obs <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
-his_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/1995-2014/",iso,".fst")
-fut_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/",period,"/",iso,".fst")
-his_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/1995-2014/",iso,".fst")
-fut_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
 BC_Qmap <- function(his_obs = his_obs,
                     his_gcm = his_gcm,
                     fut_gcm = fut_gcm,
                     his_bc  = his_bc,
                     fut_bc  = fut_bc,
                     period  = period,
-                    ncores  = 10)
+                    ncores  = 1)
 {
   
   bc_qmap <<- function(df_obs, df_his_gcm, df_fut_gcm){
@@ -164,3 +156,21 @@ BC_Qmap <- function(his_obs = his_obs,
   cat('Bias correction process completed successfully\n')
   
 }
+
+# iso     <- 'TZA'
+# model   <- 'INM-CM5-0'
+# his_obs <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
+# his_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/1995-2014/",iso,".fst")
+# fut_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/",period,"/",iso,".fst")
+# his_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/1995-2014/",iso,".fst")
+# fut_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
+# c('2021-2040','2041-2060') %>%
+#   purrr::map(.f = function(period){
+#     BC_Qmap(his_obs = his_obs,
+#             his_gcm = his_gcm,
+#             fut_gcm = fut_gcm,
+#             his_bc  = his_bc,
+#             fut_bc  = fut_bc,
+#             period  = period,
+#             ncores  = 1)
+#   })

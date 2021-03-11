@@ -118,9 +118,15 @@ BC_Qmap <- function(his_obs = his_obs,
   cl <- createCluster(ncores, export = list("root","his_obs","his_gcm","fut_gcm","bc_qmap","his_gcm_bc","fut_gcm_bc"), lib = list("tidyverse","raster","qmap"))
   
   bc_data <- 1:nrow(his_obs) %>% parallel::parLapply(cl, ., function(i){
-    bc_data <<- bc_qmap(df_obs    = his_obs$Climate[[i]],
-                        df_his_gcm = his_gcm$Climate[[i]],
-                        df_fut_gcm = fut_gcm$Climate[[i]])
+    tryCatch(expr={
+      bc_data <<- bc_qmap(df_obs     = his_obs$Climate[[i]],
+                          df_his_gcm = his_gcm$Climate[[i]],
+                          df_fut_gcm = fut_gcm$Climate[[i]])
+    },
+    error = function(e){
+      cat(paste0("Quantile mapping failed for pixel: ",i,"\n"))
+      return("Done\n")
+    })
     return(bc_data)
   })
   parallel::stopCluster(cl)

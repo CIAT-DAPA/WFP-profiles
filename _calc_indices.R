@@ -30,6 +30,7 @@ calc_indices <- function(climate = infile,
                          spi_out = spi_out){
   
   if(!file.exists(outfile)){
+    dir.create(path = dirname(outfile), FALSE, TRUE)
     
     # Load soil data
     Soil <- fst::read_fst(soilfl)

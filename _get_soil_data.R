@@ -119,6 +119,7 @@ get_soil <- function(crd = crd, root_depth = 60, outfile = './soilcp_data.fst'){
       }) %>%
       dplyr::bind_rows()
     
+    dir.create(path = dirname(outfile), FALSE, TRUE)
     fst::write_fst(x = soil_data4, path = outfile)
   } else {
     cat('Soil capacity already calculated.\n')

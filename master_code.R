@@ -13,8 +13,8 @@ root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
 ## Defining country parameters
 # Country
-country <- 'Haiti'
-iso3    <- 'HTI'
+country <- 'Tanzania'
+iso3    <- 'TZA'
 
 # Livelihood zones
 lhzs <- c('','','','')
@@ -24,7 +24,7 @@ lhzs <- c('','','','')
 # If data is already processed, just load the table or path
 
 # Get soil data
-crd <- fst::read_fst(paste0(root,"/1.Data/observed_data/",iso3,"/",iso3,".fst")) # read just one year!!!!
+crd <- fst::read_fst(paste0(root,"/1.Data/observed_data/",iso3,"/year/climate_1981_mod.fst"))
 crd <- unique(crd[,c('id','x','y')])
 get_soil(crd        = crd,
          root_depth = 60,

@@ -101,6 +101,19 @@ calc_indices(climate = infile,
              outfile = outfile,
              spi_out = spi_out)
 
+# # Tanzania
+# infile  <- paste0(root,"/1.Data/observed_data/",iso3,"/",iso3,".fst")
+# soilfl  <- paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst")
+# outfile <- paste0(root,"/7.Results/",country,"/past/",iso3,"_indices.fst")
+# spi_out <- paste0(root,"/7.Results/",country,"/past/",iso3,"_spi.fst")
+# calc_indices(climate = infile,
+#              soil    = soilfl,
+#              seasons = list(s1 = 2:9, s2 = c(11:12,1:7)),
+#              subset  = F,
+#              ncores  = 15,
+#              outfile = outfile,
+#              spi_out = spi_out)
+
 # Graphs
 # 1. Put all together: time series, maps, and climatology graphs
 # 2. How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5) 
@@ -117,3 +130,6 @@ list.files('root/results/HTI', full.names = T) %>% # Graphs per country
   })%>%
   dplyr::bind_rows() %>%
   graphs(...)
+
+tidyfst::parse_fst(path = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/TZA/TZA.fst') %>%
+  tidyfst::slice_fst(ft = ., row_no = c(1,10,20:30))

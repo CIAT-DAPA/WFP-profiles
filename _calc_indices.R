@@ -306,12 +306,12 @@ calc_indices <- function(climate = infile,
       clim_data_flt <- clim_data %>% dplyr::filter(id %in% id_sample)
       
       # Run the process in parallel for the 30% of the pixels
-      plan(cluster, workers = ncores)
+      plan(cluster, workers = ncores, gc = TRUE)
       index_by_pixel <- clim_data_flt %>%
-        dplyr::pull(id) %>% 
-        furrr::future_map(.x = ., .f = run_pixel) %>% 
+        dplyr::pull(id) %>%
+        furrr::future_map(.x = ., .f = run_pixel) %>%
         dplyr::bind_rows()
-      gc()
+      future:::ClusterRegistry("stop")
       gc(reset = T)
       index_by_pixel <- index_by_pixel %>%
         dplyr::select(id,season,year,
@@ -342,7 +342,7 @@ calc_indices <- function(climate = infile,
       r.empty[] <- NA
       
       cat('>>> Obtain averages per growing season\n')
-      tbl_ref <- index_by_pixel  %>%
+      tbl_ref <- index_by_pixel %>%
         dplyr::select(id,x,y,season,year,
                       ATR,AMT,NDD,P5D,P95,NT_X,
                       NDWS,NWLD,NWLD50,NWLD90,
@@ -363,13 +363,13 @@ calc_indices <- function(climate = infile,
         dplyr::filter(!is.na(season))
       tbl <- dplyr::full_join(x = tbl_cSeasons, y = tbl_gSeasons, by = 'id')
       rm(tbl_cSeasons, tbl_gSeasons)
-      if(length(tbl$season %>% unique) == 2 & length(tbl$gSeason %>% unique) == 2){
-        d1 <- tbl %>%
-          dplyr::filter(season == 's1' & gSeason == 1)
-        d2 <- tbl %>%
-          dplyr::filter(season == 's2' & gSeason == 2)
-        tbl <- dplyr::bind_rows(d1, d2)
-      }
+      # if(length(tbl$season %>% unique) == 2 & length(tbl$gSeason %>% unique) == 2){
+      #   d1 <- tbl %>%
+      #     dplyr::filter(season == 's1' & gSeason == 1)
+      #   d2 <- tbl %>%
+      #     dplyr::filter(season == 's2' & gSeason == 2)
+      #   tbl <- dplyr::bind_rows(d1, d2)
+      # }
       
       tbl <- dplyr::left_join(x = tbl, y = tbl_ref %>% dplyr::select(id, x, y) %>% unique, by = 'id')
       tbl <- tbl %>% dplyr::select(id, x, y, dplyr::everything(.))
@@ -491,12 +491,12 @@ calc_indices <- function(climate = infile,
       index_by_pixel <- tbl %>% unique()
     } else {
       # Run the process in parallel for all the pixels
-      plan(cluster, workers = ncores)
+      plan(cluster, workers = ncores, gc = TRUE)
       index_by_pixel <- clim_data %>%
         dplyr::pull(id) %>%
         furrr::future_map(.x = ., .f = run_pixel) %>%
         dplyr::bind_rows()
-      gc()
+      future:::ClusterRegistry("stop")
       gc(reset = T)
       index_by_pixel <- index_by_pixel %>%
         dplyr::select(id,season,year,

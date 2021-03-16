@@ -8,6 +8,8 @@
 #   crd: data frame with id, x, and y columns
 #   root_depth: root depth in cm (it's assumed to be constant over all coordinates)
 #   outfile: output file path
+# Output:
+#   Data frame with soil capacity and soil saturation values per pixel
 get_soil <- function(crd = crd, root_depth = 60, outfile = './soilcp_data.fst'){
   
   if(!file.exists(outfile)){

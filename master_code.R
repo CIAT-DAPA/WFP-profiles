@@ -116,6 +116,8 @@ calc_indices(climate = infile,
 
 # Graphs
 # 1. Put all together: time series, maps, and climatology graphs
+# Time series
+time_series_plot(country = country, iso = iso)
 # 2. How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5) 
 # 3. Categorize hazard layers by absolute ranges
 # 4. Using 3. combine hazard layers

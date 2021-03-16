@@ -27,8 +27,9 @@ createSubsetRaster <- function(crp, dd, params, outdir, res){
     r2 <- stack(futfiles)
     rr <- stack(r1,r2)
     names(rr) <- c(paste0("current_", cropname), names(r2))
-    parallel::mclapply(isol, cropRas, ifile, rr, outdir, res, mc.preschedule = FALSE, mc.cores = length(isol))
-  } else {
+    # parallel::mclapply(isol, cropRas, ifile, rr, outdir, res, mc.preschedule = FALSE, mc.cores = length(isol))
+    lapply(isol, cropRas, ifile, rr, outdir, res)
+    } else {
     cat(params, " for", cropname, "not available", "\n")
   }
   
@@ -61,7 +62,7 @@ cropRas <- function(iso, ifile, rr, outdir, res){
 
 #############################################################################################################
 # country-crop combination
-eco <- readxl::read_excel("suitability/ecocrop_runs.xlsx", sheet = 2)
+eco <- readxl::read_excel("suitability/ecocrop_runs.xlsx", sheet = 3)
 
 # create a database of crop-country
 # read and process every crop raster for once, and crop all the countries that has the crops
@@ -73,12 +74,13 @@ for (i in 1:nrow(eco)){
   crops <- gsub('\"|\"', '', crops)
   
   # remove poultry, milk
-  crops <- crops[!crops %in% c("Poultry","Milk")]
+  crops <- crops[!crops %in% c("poultry", "ship/goat", "fish", "cattle", "salt")]
   iso <- ecos$ISO
   dd[[i]] <- data.frame(ISO=iso, crops = crops, stringsAsFactors = FALSE)
 }
 
 dd <- do.call(rbind, dd)
+dd <- unique(dd[,1:2])
 
 # list of unique crops
 ucrp <- unique(dd$crops)

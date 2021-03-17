@@ -35,7 +35,7 @@ flt_clm <- function(iso = 'TZA', country = 'Tanzania'){
   cat('>>> Filter coords in regions of interest\n')
   crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% unlist() %>% as.numeric()
   crd <- crd[complete.cases(crd),]
-  pft <- crd$id
+  pft <<- crd$id
   
   cat('>>> Filter climate table to filtered coords\n')
   clm <- paste0(root,'/1.Data/observed_data/',iso,'/',iso,'.fst')

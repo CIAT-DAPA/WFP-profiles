@@ -9,7 +9,7 @@ suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(SPEI,tidyverse,raster,ncdf4,sf,future,furrr,lubridate,glue,vroom,sp,fst,compiler))
 
 # Input parameters:
-#   climate: path of the historical climate file. This file must exists
+#   climate: path or data frame with the climate data. This file must exists
 #   soil: soil file path. This file must exists
 #   seasons: list object specifying the months where a season take
 #     place. Examples:
@@ -21,6 +21,9 @@ suppressMessages(pacman::p_load(SPEI,tidyverse,raster,ncdf4,sf,future,furrr,lubr
 #   ncores: number of cores to run the code in parallel per pixel
 #   outfile: output file path (all indices)
 #   spi_out: output file path (SPI index)
+# Output:
+#   Two data.frames one with all the agro-climatic indices and another
+#   with the SPI index values for all pixels
 calc_indices <- function(climate = infile,
                          soil    = soilfl,
                          seasons = list(s1 = mnth), # list(s1 = 2:6, s2 = 10:12)
@@ -45,7 +48,7 @@ calc_indices <- function(climate = infile,
     }
     
     # Load climate data
-    clim_data <- fst::read_fst(climate)
+    if(class(climate) == 'character'){ clim_data <- fst::read_fst(climate) } else { clim_data <- climate }
     clim_data$year <- NULL
     clim_data <- clim_data %>%
       dplyr::mutate(id1 = id) %>%
@@ -469,13 +472,13 @@ calc_indices <- function(climate = infile,
       g_idx <- dplyr::bind_rows(g_idx)
       
       interpolated_indices <- dplyr::left_join(x = c_idx, y = g_idx %>% dplyr::select(id, gSeason, SLGP, LGP), by = 'id')
-      if(length(interpolated_indices$season %>% unique) == 2 & length(interpolated_indices$gSeason %>% unique) == 2){
-        d1 <- interpolated_indices %>%
-          dplyr::filter(season == 's1' & gSeason == 1)
-        d2 <- interpolated_indices %>%
-          dplyr::filter(season == 's2' & gSeason == 2)
-        interpolated_indices <- dplyr::bind_rows(d1, d2)
-      }
+      # if(length(interpolated_indices$season %>% unique) == 2 & length(interpolated_indices$gSeason %>% unique) == 2){
+      #   d1 <- interpolated_indices %>%
+      #     dplyr::filter(season == 's1' & gSeason == 1)
+      #   d2 <- interpolated_indices %>%
+      #     dplyr::filter(season == 's2' & gSeason == 2)
+      #   interpolated_indices <- dplyr::bind_rows(d1, d2)
+      # }
       
       interpolated_indices$year <- 2019
       tbl <- dplyr::bind_rows(index_by_pixel,interpolated_indices)

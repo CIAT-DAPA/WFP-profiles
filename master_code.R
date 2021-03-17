@@ -5,16 +5,17 @@
 # -------------------------------------------------- #
 
 # Sourcing functions
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_functions.R') # Main functions
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_soil_data.R')  # Get soil data
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices.R')   # Calculating agro-indices
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_functions.R')      # Main functions
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_soil_data.R')       # Get soil data
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices.R')        # Calculating agro-indices
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_climate4regions.R') # Filter climate for areas of interest
 
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
 ## Defining country parameters
 # Country
-country <- 'Tanzania'
-iso3    <- 'TZA'
+country <- 'Somalia'
+iso     <- 'SOM'
 
 # Livelihood zones
 lhzs <- c('','','','')
@@ -24,11 +25,11 @@ lhzs <- c('','','','')
 # If data is already processed, just load the table or path
 
 # Get soil data
-crd <- fst::read_fst(paste0(root,"/1.Data/observed_data/",iso3,"/year/climate_1981_mod.fst"))
+crd <- fst::read_fst(paste0(root,"/1.Data/observed_data/",iso,"/year/climate_1981_mod.fst"))
 crd <- unique(crd[,c('id','x','y')])
 get_soil(crd        = crd,
          root_depth = 60,
-         outfile    = paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst"))
+         outfile    = paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst"))
 
 # Get future climate data
 # Same as previous function
@@ -42,10 +43,10 @@ mnth <- 6:12 # Manually
 # mnth <- get_crop_calendar_from_rains() # Growing seasons
 
 # Calc agro-climatic indices
-infile  <- paste0(root,"/1.Data/observed_data/",iso3,"/",iso3,".fst")
-soilfl  <- paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst")
-outfile <- paste0(root,"/7.Results/",country,"/past/",iso3,"_indices.fst")
-spi_out <- paste0(root,"/7.Results/",country,"/past/",iso3,"_spi.fst")
+infile  <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
+soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
+outfile <- paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst")
+spi_out <- paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst")
 calc_indices(climate = infile,
              soil    = soilfl,
              seasons = list(s1 = 6:12),
@@ -63,10 +64,10 @@ calc_indices(climate = infile,
 
 model   <- 'INM-CM5-0'
 period  <- '2021-2040'
-infile  <- paste0(root,"/1.Data/future_data/",model,"/",iso3,"/bias_corrected/",period,"/",iso3,".fst")
-soilfl  <- paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst")
-outfile <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso3,"_indices.fst")
-spi_out <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso3,"_spi.fst")
+infile  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
+soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
+outfile <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso,"_indices.fst")
+spi_out <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso,"_spi.fst")
 calc_indices(climate = infile,
              soil    = soilfl,
              seasons = list(s1 = 6:12),
@@ -89,10 +90,10 @@ calc_indices(climate = infile,
 #              spi_out = spi_out)
 model   <- 'INM-CM5-0'
 period  <- '2041-2060'
-infile  <- paste0(root,"/1.Data/future_data/",model,"/",iso3,"/bias_corrected/",period,"/",iso3,".fst")
-soilfl  <- paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst")
-outfile <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso3,"_indices.fst")
-spi_out <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso3,"_spi.fst")
+infile  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
+soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
+outfile <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso,"_indices.fst")
+spi_out <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso,"_spi.fst")
 calc_indices(climate = infile,
              soil    = soilfl,
              seasons = list(s1 = 2:7, s2 = c(9:12,1)),
@@ -102,17 +103,30 @@ calc_indices(climate = infile,
              spi_out = spi_out)
 
 # # Tanzania
-# infile  <- paste0(root,"/1.Data/observed_data/",iso3,"/",iso3,".fst")
-# soilfl  <- paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst")
-# outfile <- paste0(root,"/7.Results/",country,"/past/",iso3,"_indices.fst")
-# spi_out <- paste0(root,"/7.Results/",country,"/past/",iso3,"_spi.fst")
+# infile  <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
+# soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
+# outfile <- paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst")
+# spi_out <- paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst")
 # calc_indices(climate = infile,
 #              soil    = soilfl,
-#              seasons = list(s1 = 2:9, s2 = c(11:12,1:7)),
+#              seasons = list(s1 = c(11:12,1:6), s2 = 2:8, s3 = c(9:12,1:2),
 #              subset  = F,
 #              ncores  = 15,
 #              outfile = outfile,
 #              spi_out = spi_out)
+
+# Somalia
+infile  <- flt_clm(iso = iso, country = country)
+soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
+outfile <- paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst")
+spi_out <- paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst")
+calc_indices(climate = infile,
+             soil    = soilfl,
+             seasons = list(s1 = 4:8, s2 = c(9:12,1:2)),
+             subset  = T,
+             ncores  = 6,
+             outfile = outfile,
+             spi_out = spi_out)
 
 # Graphs
 # 1. Put all together: time series, maps, and climatology graphs

@@ -469,13 +469,13 @@ calc_indices <- function(climate = infile,
       g_idx <- dplyr::bind_rows(g_idx)
       
       interpolated_indices <- dplyr::left_join(x = c_idx, y = g_idx %>% dplyr::select(id, gSeason, SLGP, LGP), by = 'id')
-      if(length(interpolated_indices$season %>% unique) == 2 & length(interpolated_indices$gSeason %>% unique) == 2){
-        d1 <- interpolated_indices %>%
-          dplyr::filter(season == 's1' & gSeason == 1)
-        d2 <- interpolated_indices %>%
-          dplyr::filter(season == 's2' & gSeason == 2)
-        interpolated_indices <- dplyr::bind_rows(d1, d2)
-      }
+      # if(length(interpolated_indices$season %>% unique) == 2 & length(interpolated_indices$gSeason %>% unique) == 2){
+      #   d1 <- interpolated_indices %>%
+      #     dplyr::filter(season == 's1' & gSeason == 1)
+      #   d2 <- interpolated_indices %>%
+      #     dplyr::filter(season == 's2' & gSeason == 2)
+      #   interpolated_indices <- dplyr::bind_rows(d1, d2)
+      # }
       
       interpolated_indices$year <- 2019
       tbl <- dplyr::bind_rows(index_by_pixel,interpolated_indices)

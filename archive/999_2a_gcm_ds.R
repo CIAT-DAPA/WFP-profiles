@@ -12,50 +12,52 @@ if (packageVersion("terra") < "1.1.0"){
   warning("terra version should be at least 1.1.0, \ninstall the the most updated version remotes::install_github('rspatial/terra')")
 }
 
-# STEP 1: # rotate all the files and crop by country extents we need
-cropGCM <- function(iso, r, f, root, overwrite = FALSE){
+# STEP 1: rotate all the files and save the rotated ones 
+rotateGCM <- function(i, idx, r, f, root, overwrite = FALSE){
+  d <- idx[i,]
+  # input files
+  gcmdir <- paste0(root,"/input/climate/CMIP6/daily")
+  flocal <- file.path(gcmdir, basename(d$file_url))
+  
+  # check if the file is relevant with the date range
+  dateok <- dateCheck(d)
+  
   # Where to save results
-  outdir <- file.path(root, "interim/rotated/CMIP6", iso)
+  outdir <- file.path(root, "interim/rotated/CMIP6/daily")
   dir.create(outdir, FALSE, TRUE)
   
-  vdir <- file.path(root, "input/vector")
-  dir.create(vdir, FALSE, TRUE)
-  
-  # Country/zone boundary
-  bext <- paste0(vdir, "/buffer_ext_", iso, ".rds")
-  if(!file.exists(bext)){
-    shp <- raster::getData("GADM", country = iso, level = 0, path = vdir)
-    shpb <- buffer(shp, 0.1)
-    e <- terra::ext(shpb)
-    saveRDS(e, bext)
-  } else {
-    e <- readRDS(bext)
+  # if relevant
+  if(dateok){
+    ofile <- paste0(outdir, "/", "rotated_", flocal)
+    ofile <- gsub(".nc$", ".tif", ofile)
+    if(!file.exists(ofile)|overwrite){
+      r <- rotate(r, e, filename = ofile, wopt= list(gdal=c("COMPRESS=LZW"))
+    }
   }
-  
-  ofile <- paste0(outdir, "/", iso, "_rotated_", basename(f))
-  
-  if(!file.exists(ofile)|overwrite){
-    r <- crop(r, e, filename = ofile)
-  }
+
 }
 
-isol <- c("BDI","HTI","GIN","GNB","MMR","NPL","NER","PAK","SOM","TZA")
+dateCheck <- function(f, sdate = "1995-01-01", edate = "2060-12-31"){
+  # filter files that donot contain the date range we want
+  sdate <- as.Date(sdate)
+  edate <- as.Date(edate)
+  
+  # which files to ignore
+  drange <- c(sdate, edate)
+  fdrange <- as.Date(c(f$file_start_date, f$file_end_date))
+  dcheck <- fdrange  %overlaps% drange
+  return(dcheck)          
+}
+
 root <- "~/data"
-gcmdir <- paste0(root,"/input/climate/CMIP6/daily")
+
 ff     <- list.files(gcmdir, pattern = ".nc$", recursive = TRUE, full.names = TRUE)
 meta <- read.csv("data/cmip6_index.csv", stringsAsFactors = FALSE)
 
-# filter files that donot contain the date range we want
-sdate <- as.Date("1995-01-01")
-edate <- as.Date("2060-12-31")
 
-# which files to ignore
-drange <- c(sdate, edate)
-k <- sapply(1:nrow(meta), 
-            function(i, meta, drange){x <- meta[i,]; as.Date(c(x$datetime_start, x$datetime_end)) %overlaps% drange},
-            meta, drange)
 smeta <- meta[k,] 
 
+isol <- c("BDI","HTI","GIN","GNB","MMR","NPL","NER","PAK","SOM","TZA")
 isoGCM <- function(i, smeta, ff, iso, root){
   f <- smeta[i, ]
   fr <- ff[grep(basename(f$file_url), basename(ff))]
@@ -67,10 +69,27 @@ isoGCM <- function(i, smeta, ff, iso, root){
   r <- subset(r, k)
   # rotate
   r <- rotate(r)
-  
 }
 
 
+# vdir <- file.path(root, "input/vector")
+# dir.create(vdir, FALSE, TRUE)
+# 
+# # Country/zone boundary
+# bext <- paste0(vdir, "/buffer_ext_", iso, ".rds")
+# if(!file.exists(bext)){
+#   shp <- raster::getData("GADM", country = iso, level = 0, path = vdir)
+#   shpb <- buffer(shp, 0.1)
+#   e <- terra::ext(shpb)
+#   saveRDS(e, bext)
+# } else {
+#   e <- readRDS(bext)
+# }
+
+
+# k <- sapply(1:nrow(meta), 
+#             function(i, meta, drange){x <- meta[i,]; as.Date(c(x$datetime_start, x$datetime_end)) %overlaps% drange},
+#             meta, drange)
 
 # Function to get daily data from a single file
 getGCMdailyTable <- function(i, setup, ff, ref, root){

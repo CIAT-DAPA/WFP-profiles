@@ -15,7 +15,7 @@ root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 ## Defining country parameters
 # Country
 country <- 'Somalia'
-iso3    <- 'SOM'
+iso     <- 'SOM'
 
 # Livelihood zones
 lhzs <- c('','','','')
@@ -116,7 +116,7 @@ calc_indices(climate = infile,
 #              spi_out = spi_out)
 
 # Somalia
-infile  <- paste0(root,"/1.Data/observed_data/",iso3,"/",iso3,".fst")
+infile  <- flt_clm(iso = iso, country = country)
 soilfl  <- paste0(root,"/1.Data/soil/",iso3,"/soilcp_data.fst")
 outfile <- paste0(root,"/7.Results/",country,"/past/",iso3,"_indices.fst")
 spi_out <- paste0(root,"/7.Results/",country,"/past/",iso3,"_spi.fst")

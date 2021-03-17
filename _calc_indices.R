@@ -9,7 +9,7 @@ suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(SPEI,tidyverse,raster,ncdf4,sf,future,furrr,lubridate,glue,vroom,sp,fst,compiler))
 
 # Input parameters:
-#   climate: path of the historical climate file. This file must exists
+#   climate: path or data frame with the climate data. This file must exists
 #   soil: soil file path. This file must exists
 #   seasons: list object specifying the months where a season take
 #     place. Examples:
@@ -21,6 +21,9 @@ suppressMessages(pacman::p_load(SPEI,tidyverse,raster,ncdf4,sf,future,furrr,lubr
 #   ncores: number of cores to run the code in parallel per pixel
 #   outfile: output file path (all indices)
 #   spi_out: output file path (SPI index)
+# Output:
+#   Two data.frames one with all the agro-climatic indices and another
+#   with the SPI index values for all pixels
 calc_indices <- function(climate = infile,
                          soil    = soilfl,
                          seasons = list(s1 = mnth), # list(s1 = 2:6, s2 = 10:12)
@@ -45,7 +48,7 @@ calc_indices <- function(climate = infile,
     }
     
     # Load climate data
-    clim_data <- fst::read_fst(climate)
+    if(class(climate) == 'character'){ clim_data <- fst::read_fst(climate) }
     clim_data$year <- NULL
     clim_data <- clim_data %>%
       dplyr::mutate(id1 = id) %>%

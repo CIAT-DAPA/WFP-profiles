@@ -124,7 +124,7 @@ calc_indices(climate = infile,
              soil    = soilfl,
              seasons = list(s1 = 4:8, s2 = c(9:12,1:2)),
              subset  = T,
-             ncores  = 15,
+             ncores  = 6,
              outfile = outfile,
              spi_out = spi_out)
 

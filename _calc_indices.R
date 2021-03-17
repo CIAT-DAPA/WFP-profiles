@@ -48,7 +48,7 @@ calc_indices <- function(climate = infile,
     }
     
     # Load climate data
-    if(class(climate) == 'character'){ clim_data <- fst::read_fst(climate) }
+    if(class(climate) == 'character'){ clim_data <- fst::read_fst(climate) } else { clim_data <- climate }
     clim_data$year <- NULL
     clim_data <- clim_data %>%
       dplyr::mutate(id1 = id) %>%

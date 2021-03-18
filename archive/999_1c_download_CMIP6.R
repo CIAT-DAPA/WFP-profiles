@@ -1,3 +1,5 @@
+source("archive/999_1b_search_CMIP6_functions.R")
+
 vars <- c("pr","tas","tasmax","tasmin")
 models <- c("BCC-CSM2-MR","CESM2","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0")
 
@@ -27,8 +29,13 @@ dhc <- lapply(dh, function(x){if(inherits(x, "data.table")){return(x)}else{NULL}
 dhist <- data.table::rbindlist(dhc, fill = TRUE)
 # list of variant labels
 # table(unlist(dhist$member_id))
-# subset by most common (?) r1i1p1f1
-dhists <- dhist[dhist$member_id == "r1i1p1f1", ]
+# subset by member_id that has maximum results
+hm <- table(unlist(dhist$member_id))
+hmx <- which(hm == max(hm))
+# if there are more than 1
+hmx <- names(which(hmx == max(hmx)))
+
+dhists <- dhist[dhist$member_id == hmx, ]
 
 ####################################################################################
 # future
@@ -53,12 +60,18 @@ dfc <- lapply(df, function(x){if(inherits(x, "data.table")){return(x)}else{NULL}
 dfut <- data.table::rbindlist(dfc, fill = TRUE)
 # list of variant labels
 # table(unlist(dfut$member_id))
-# subset by most common (?) r1i1p1f1
-dfuts <- dfut[dfut$member_id == "r1i1p1f1", ]
+# subset by member_id that has maximum results
+fm <- table(unlist(dfut$member_id))
+fmx <- which(fm == max(fm))
+# if there are more than 1
+fmx <- names(which(fmx == max(fmx)))
+
+dfuts <- dfut[dfut$member_id == fmx, ]
+
 
 # combine both results
 dd <- rbind(dhists, dfuts)
-data.table::fwrite(dd, "data/cmip6_filter_index.csv", row.names = FALSE)
+data.table::fwrite(dd, paste0("data/cmip6_filter_index_", Sys.Date(), ".csv"), row.names = FALSE)
 
 ############################################################################################
 # now download
@@ -90,6 +103,8 @@ getDataCMIP6 <- function(i, idx, downdir, silent=FALSE, overwrite=FALSE){
 # change the data directory as needed
 downdir <- "~/data/input/climate/CMIP6/daily"
 
+idx <- read.csv("data/cmip6_filter_index_2021-03-18.csv", stringsAsFactors = FALSE)
+
 downloadParallel <- FALSE
 
 if (downloadParallel){
@@ -100,3 +115,17 @@ if (downloadParallel){
   # download files
   lapply(1:nrow(idx), getDataCMIP6, idx, downdir, silent=FALSE, overwrite=FALSE)
 }
+
+
+# check for file size for downloaded file 
+k <- lapply(1:nrow(dd), checkDownloadStatus, dd, gcmdir)
+k <- data.table::rbindlist(k, fill = TRUE)
+
+ff <- list.files(downdir, pattern = ".nc$", full.names = TRUE)
+f <- ff[!ff %in% path.expand(k$localfile)]
+unlink
+
+# model distribution
+m <- sapply(strsplit(dhists$id, ".historical"), "[[", 1)
+table(gsub("CMIP6.CMIP.", "", m))
+

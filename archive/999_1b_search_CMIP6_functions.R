@@ -19,6 +19,7 @@ findMetaCMIP6 <- function(...){
   
   # check validity of args supplied
   dots <- list(...)
+  
   args <- names(dots)
   # args <- c("project", "activity_id", names(dots))
   
@@ -108,7 +109,7 @@ getMetaCMIP6 <- function(...) {
               "frequency","index_node","institution_id","member_id","mip_era","file_name", "file_url",
               "nominal_resolution","file_start_date","file_end_date","number_of_aggregations",
               "number_of_files","pid","project","source_id","source_type","sub_experiment_id", 
-              "url","xlink","realm","replica","latest","geo","geo_units","grid","mod_time", "checksum","checksum_type",
+              "url","xlink","realm","replica","latest","geo","geo_units","grid","mod_time", "file_size" ,"checksum","checksum_type",
               "grid_label","data_specs_version","tracking_id","citation_url", "further_info_url", "retracted")
   sdd <- sdd[, ..tokeep]
   return(sdd)

@@ -86,18 +86,6 @@ isoGCM <- function(i, smeta, ff, iso, root){
 
 vdir <- file.path(root, "input/vector")
 dir.create(vdir, FALSE, TRUE)
-# 
-# # Country/zone boundary
-# bext <- paste0(vdir, "/buffer_ext_", iso, ".rds")
-# if(!file.exists(bext)){
-shp <- raster::getData("GADM", country = "HTI", level = 0, path = vdir)
-shpb <- buffer(shp, 0.1)
-e <- terra::ext(shpb)
-re <- crop(rot[[1]], e)
-#   saveRDS(e, bext)
-# } else {
-#   e <- readRDS(bext)
-# }
 
 
 # k <- sapply(1:nrow(meta), 

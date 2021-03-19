@@ -214,15 +214,15 @@ calc_indices <- function(climate = infile,
       })
       lgp_year_pixel <- do.call(rbind, lgp_year_pixel); rownames(lgp_year_pixel) <- 1:nrow(lgp_year_pixel)
       
-      if(length(seasons) == 1){
-        lgp_year_pixel <- lgp_year_pixel %>%
-          dplyr::filter(gSeason == 1)
-      } else {
-        if(length(seasons) == 2){
-          lgp_year_pixel <- lgp_year_pixel %>%
-            dplyr::filter(gSeason %in% 1:2)
-        }
-      }
+      # if(length(seasons) == 1){
+      #   lgp_year_pixel <- lgp_year_pixel %>%
+      #     dplyr::filter(gSeason == 1)
+      # } else {
+      #   if(length(seasons) == 2){
+      #     lgp_year_pixel <- lgp_year_pixel %>%
+      #       dplyr::filter(gSeason %in% 1:2)
+      #   }
+      # }
       
       cat(' --- Calculate agro-climatic indices for an specific season\n')
       if(!is.null(seasons)){

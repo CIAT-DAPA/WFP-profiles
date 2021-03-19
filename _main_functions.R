@@ -628,7 +628,7 @@ calc_THI <- function(tmax, RH){
                                          THI1 >= 79 & THI1 < 89 ~ 2, # moderate.
                                          THI1 >= 89 ~ 3, # severe.
                                          TRUE ~ THI1) ) %>%
-    count(THI)
+    dplyr::count(THI)
   
   if(nrow(THI) < 4){
     less <- (0:3)[!(0:3 %in% THI$THI)]

@@ -1,17 +1,40 @@
 options(warn = -1, scipen = 999)
-pacman::p_load(tidyverse, fst, raster, terra, sf)
+pacman::p_load(tidyverse, tidyft, fst, raster, terra, sf)
 
-shp <- raster::shapefile("//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/haiti/hti_gadm/Haiti_GADM3.shp")
+root    <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+country <- 'Haiti'
+iso     <- 'HTI'
 
-spi <- fst::read_fst("//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/Haiti/past/HTI_spi.fst")
+# Load municipalities/districts shapefile
+shp <- raster::shapefile(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_gadm/',country,'_GADM3.shp'))
+# Identify administrative levels
+adm <- grep('^NAME_', names(shp), value = T)
+# Correct special characters
+for(ad in adm){
+  eval(parse(text=(paste0('shp$',ad,' <- iconv(x = shp$',ad,', from = "UTF-8", to = "latin1")'))))
+}; rm(ad)
+# Create a key
+shp$key <- shp@data[,adm] %>%
+  tidyr::unite(data = ., col = 'key', sep = '-') %>%
+  dplyr::pull(key) %>%
+  tolower(.)
+
+# Read SPI time series results
+spi <- paste0(root,'/7.Results/',country,'/past/',iso,'_spi.fst') %>%
+  tidyft::parse_fst(path = .) %>%
+  tidyft::select_fst()
+spi <- fst::read_fst()
+# Remove the first 4 months
 spi <- spi %>% tidyr::drop_na()
-spi$date <- as.Date(paste0(spi$month,'-',spi$year,'-01'))
-spi %>%
-  ggplot2::ggplot(aes(x = date, y = SPI, group = id)) +
-  ggplot2::geom_line(alpha = .1) +
-  ggplot2::theme_bw() +
-  ggplot2::geom_hline(yintercept = -1.5, colour = 'red')
+# # Plot the time series
+# spi$date <- as.Date(paste0(spi$month,'-',spi$year,'-01'))
+# spi %>%
+#   ggplot2::ggplot(aes(x = date, y = SPI, group = id)) +
+#   ggplot2::geom_line(alpha = .1) +
+#   ggplot2::theme_bw() +
+#   ggplot2::geom_hline(yintercept = -1.5, colour = 'red')
 
+# Load coords
 crd <- fst::read_fst("//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/HTI/year/climate_1981_mod.fst")
 crd <- unique(crd[,c('id','x','y')])
 spi <- dplyr::left_join(x = spi, y = crd, by = 'id')
@@ -24,16 +47,18 @@ r <- spi_flt %>%
   dplyr::select(x, y, drought) %>%
   raster::rasterFromXYZ(xyz = ., res = 0.05, crs = raster::crs(shp))
 
-plot(r)
-plot(shp, add = T)
+# Remove areas without drought problems
+r[r[] == 0] <- NA
 
-shp$area_sqkm <- raster::area(shp)/1000000
+'http://epsg.io/?q=Haiti'
 
-shp$AFFECTED_AREA <- shp$key %>%
-  purrr::map(.f = function(district){
-    dst <- shp[shp$key == district,]
-    clp <- raster::intersect(dst, buffers2)
-    area_perc <- round(raster::area(clp)/10000000, 1)/round(raster::area(dst)/10000000, 1)
-    return(area_perc)
-  }) %>%
-  unlist()
+rp <- raster::rasterToPolygons(x = r, dissolve = T)
+
+int <- raster::intersect(x = rp, y = shp)
+shp$area_tot <- raster::area(shp)/1e6
+int$area <- raster::area(int)/1e6
+
+tbl <- shp@data %>%
+  dplyr::select(NAME_0, NAME_1, NAME_2, NAME_3, key, area_tot)
+tbl2 <- dplyr::left_join(x = tbl, y = int@data %>% dplyr::select(key,area), by = 'key')
+tbl2$area_perc <- tbl2$area/tbl2$area_tot

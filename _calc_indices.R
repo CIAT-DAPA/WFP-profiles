@@ -36,7 +36,10 @@ calc_indices <- function(climate = infile,
     dir.create(path = dirname(outfile), FALSE, TRUE)
     
     # Load soil data
-    Soil <- fst::read_fst(soilfl)
+    Soil <- soil %>%
+      tidyft::parse_fst(path = .) %>%
+      tidyft::select_fst(id,x,y,scp,ssat) %>%
+      base::as.data.frame()
     # Impute missing data using the nearest neighbor
     if(nrow(Soil[is.na(Soil$scp),]) > 0){
       NAs <- Soil[is.na(Soil$scp),]
@@ -48,7 +51,14 @@ calc_indices <- function(climate = infile,
     }
     
     # Load climate data
-    if(class(climate) == 'character'){ clim_data <- fst::read_fst(climate) } else { clim_data <- climate }
+    if(class(climate) == 'character'){
+      clim_data <- climate %>%
+        tidyft::parse_fst(path = .) %>%
+        tidyft::select_fst(id,x,y,year,date,prec,tmin,tmean,tmax,srad,rh) %>%
+        base::as.data.frame()
+    } else {
+      clim_data <- climate
+    }
     clim_data$year <- NULL
     clim_data <- clim_data %>%
       dplyr::mutate(id1 = id) %>%

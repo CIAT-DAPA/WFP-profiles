@@ -118,13 +118,17 @@ if (downloadParallel){
 
 
 # check for file size for downloaded file 
-k <- lapply(1:nrow(dd), checkDownloadStatus, dd, gcmdir)
+k <- lapply(1:nrow(idx), checkDownloadStatus, dd, downdir)
 k <- data.table::rbindlist(k, fill = TRUE)
+table(k$localfilecheck)
 
+# move/delete files not in the updated list 
 ff <- list.files(downdir, pattern = ".nc$", full.names = TRUE)
 f <- ff[!ff %in% path.expand(k$localfile)]
-unlink
-
+backup <- gsub("climate","backup/climate",downdir)
+dir.create(backup, recursive = T, showWarnings = F)
+file.copy(f, backup)
+unlink(f)
 # model distribution
 m <- sapply(strsplit(dhists$id, ".historical"), "[[", 1)
 table(gsub("CMIP6.CMIP.", "", m))

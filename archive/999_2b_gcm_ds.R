@@ -7,84 +7,12 @@
 options(warn = -1, scipen = 999)
 
 suppressMessages(library(pacman))
-suppressMessages(pacman::p_load(DescTools,fuzzyjoin,terra,tidyverse,raster,sf,data.table,fst))
+suppressMessages(pacman::p_load(fuzzyjoin,terra,tidyverse,raster,sf,data.table,fst))
 if (packageVersion("terra") < "1.1.0"){
   warning("terra version should be at least 1.1.0, \ninstall the the most updated version remotes::install_github('rspatial/terra')")
 }
 
-# STEP 1: rotate all the files and save the rotated ones 
-rotateGCM <- function(i, idx, root, overwrite = TRUE){
-  d <- idx[i,]
-  cat("processing", i ,"file of ",nrow(idx),"\n" )
-  # input files
-  gcmdir <- paste0(root,"/input/climate/CMIP6/daily")
-  flocal <- file.path(gcmdir, basename(d$file_url))
-  
-  # check if the file is relevant with the date range
-  dateok <- dateCheck(d)
-  
-  # Where to save results
-  outdir <- file.path(root, "interim/rotated/CMIP6/daily")
-  dir.create(outdir, FALSE, TRUE)
-  
-  # if relevant
-  if(dateok){
-    ofile <- paste0(outdir, "/", "rotated_", basename(d$file_url))
-    ofile <- gsub(".nc$", ".tif", ofile)
-    if(!file.exists(ofile)|overwrite){
-      r <- rast(flocal)
-      names(r) <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
-      rot <- try(rotate(r, filename = ofile, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite), silent = TRUE)
-    }
-  }
-}
-
-
-dateCheck <- function(f, sdate = "1995-01-01", edate = "2060-12-31"){
-  # filter files that donot contain the date range we want
-  sdate <- as.Date(sdate)
-  edate <- as.Date(edate)
-  
-  # which files to ignore
-  drange <- c(sdate, edate)
-  fdrange <- as.Date(c(f$file_start_date, f$file_end_date))
-  dcheck <- fdrange  %overlaps% drange
-  return(dcheck)          
-}
-
-root <- "~/data"
-idx <- data.table::fread("data/cmip6_filter_index.csv")
-
-lapply(1:nrow(idx), rotateGCM, idx, root, overwrite = FALSE)
-# parallel::mclapply(200:nrow(idx), rotateGCM, idx, root, overwrite = TRUE, mc.preschedule = FALSE, mc.cores = 12)
-
-
-# check file size and remove the ones with size less than 100 byte?
-outdir <- file.path(root, "interim/rotated/CMIP6/daily")
-ff <- list.files(outdir, pattern = ".tif$", full.names = TRUE)
-fsz <- file.size(ff)
-ffd <- ff[fsz < 100]
-unlink(ffd)
-parallel::mclapply(1:nrow(idx), rotateGCM, idx, root, overwrite = FALSE, mc.preschedule = FALSE, mc.cores = 5)
-
-
-
-isol <- c("BDI","HTI","GIN","GNB","MMR","NPL","NER","PAK","SOM","TZA")
-isoGCM <- function(i, smeta, ff, iso, root){
-  f <- smeta[i, ]
-  fr <- ff[grep(basename(f$file_url), basename(ff))]
-  r <- rast(fr)
-  tm <- seq.Date(as.Date(f$datetime_start), as.Date(f$datetime_end), "day") 
-  # which bands are within the wmo baseline
-  k <- which(tm >= sdate & tm <= edate)
-  # subset those bands
-  r <- subset(r, k)
-  # rotate
-  r <- rotate(r)
-}
-
-
-
+# supporting file
 readRast <- function(f, sdate, edate){
   r <- terra::rast(f)
   # manage and convert to epoch time
@@ -98,85 +26,77 @@ readRast <- function(f, sdate, edate){
   }
 }
 
-
-# k <- sapply(1:nrow(meta), 
-#             function(i, meta, drange){x <- meta[i,]; as.Date(c(x$datetime_start, x$datetime_end)) %overlaps% drange},
-#             meta, drange)
-
-selectFileDates <- function(f, sdate = "1995-01-01", edate = "2060-12-31"){
-  r <- rast(f)
-  ftime <- sapply(strsplit(f, "_"), function(x)grep(".tif", x, value = TRUE))
-  ftime <- strsplit(gsub(".tif", "", ftime), "-")
-  fstime <- as.Date(sapply(ftime, "[[", 1), "%Y%m%d")
-  fetime <- as.Date(sapply(ftime, "[[", 2), "%Y%m%d")
-  dts <- seq(fstime, fetime, by = "day")
-  names(r) <- dts
-  k <- which(dts >= sdate & dts <= edate)
-  # subset those bands
-  
-  r <- subset(r, k)
-  names(r) <- dts[k]
-}
-
 # Function to get daily data from a single file
-getGCMdailyTable <- function(i, setup, ff, ref, root){
+getGCMdailyTable <- function(shp,iso,var,model,experiment,gcmdir,ff,sdate,edate,ref){
+  
   pars <- setup[i,]
   iso <- pars$iso; var <- pars$var; model <- pars$model; experiment <- pars$exp; 
   sdate <- pars$sdate; edate <- pars$edate;
   
   cat("Processing", iso, var, model, experiment,"\n")
   
-  # search files
-  spat <- paste0("*",var,"*",model,"*", experiment, "*")
-  f <- ff[grep(glob2rx(spat), basename(ff))]
+  # Where to intermediate results
+  interimdir <- file.path(root, "interim/rotated/CMIP6/daily")
+  dir.create(interimdir, FALSE, TRUE)
   
   # Where to save results
-  outdir <- file.path(root, "interim/downscale/CMIP6", iso)
+  outdir <- file.path(root, "output/downscale/CMIP6/daily", iso)
   dir.create(outdir, FALSE, TRUE)
   
-  # data directories
+  # input boundary
   vdir <- file.path(root, "input/vector")
   dir.create(vdir, FALSE, TRUE)
   
   # Country/zone boundary
-  bext <- paste0(vdir, "/buffer_ext_", iso, ".rds")
-  if(!file.exists(bext)){
-    shp <- raster::getData("GADM", country = iso, level = 0, path = vdir)
-    shpb <- buffer(shp, 0.1)
-    e <- terra::ext(shpb)
-    saveRDS(e, bext)
-  } else {
-    e <- readRDS(bext)
-  }
+  shp <- getData("GADM", country = iso, level = 0, path = vdir)
+  shp_sf <- shp %>% sf::st_as_sf()
+  v <- sf::st_buffer(shp_sf, dist = 0.5) %>% sf::st_union(.) %>% sf::as_Spatial()
+  e <- terra::ext(v)
   
   # Crop reference raster
   riso <- terra::crop(x = ref, y = e)
   
+  # search files
+  f <- grep(paste(var,model,experiment,sep = ".*"), ff, value = TRUE)
+  
   # GCM raster prep ############################################################
   # which ranges fall within start and end year
-  r <- terra::rast(f)
-  # manage and convert to epoch time
-  tm <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
-  # which bands are within the wmo baseline
-  k <- which(tm >= sdate & tm <= edate)
-  # subset those bands
-  r <- terra::subset(r, k)
-  # rotate
-  r <- terra::rotate(r)
-  # crop to extent
+  rr <- lapply(f, readRast, sdate, edate)
+  rr[sapply(rr, is.null)] <- NULL
+  r <- do.call("c", rr)
+  
+  # save intermediate rotated files
+  rout <- basename(r@ptr$filenames)
+  # split by gn
+  rout <- unique(sapply(strsplit(rout, "_gn_"), "[", 1))
+  # date range in the data
+  dates <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
+  dtrange <- range(dates)
+  rout <- paste0(rout, "-", paste(dtrange, collapse = "_"), ".tif")
+  routf <- file.path(interimdir, rout)
+  # time(r)  <- r@ptr$time
+  
+  if(!file.exists(ofile)|overwrite){
+    rot <- try(rotate(r, filename = routf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite), silent = TRUE)
+  } else {
+    rot <- rast(routf)
+  }
+  
+  # reproject outline to same coordinate system if needed?
   rx <- terra::crop(r, e)
-  # corresponding time; for now save as unix, convert to epoch later
-  stm <- r@ptr$time
   
   # study area focus ###########################################################
   # resample to reference raster --- most time taking part
-  ofile <- file.path(outdir, paste(iso,model,experiment,var,sdate,edate, sep = "_"))
-  rx <- terra::resample(rx, riso)
-  rx <- terra::mask(rx, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
+  soutf <- file.path(outdir, paste0(iso, "_" ,basename(routf)))
+  rx <- terra::resample(rx, riso, filename = soutf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite)
   
+  # should we mask and save?
+  # rx <- terra::mask(rx, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
+  
+  foutf <- gsub(".tif", ".fst", soutf)
   # Is this memory safe? get cell values
   dd <- terra::as.data.frame(rx, xy = TRUE)
-  names(dd) <- c("x", "y", stm)
+  names(dd) <- c("x", "y", paste0(var, "_", dates))
   
   # convert from wide to long with dataframe, safer way?
   ddl <- melt(setDT(dd), id.vars = c("x","y"), value.name = var, variable = "date")
@@ -184,7 +104,7 @@ getGCMdailyTable <- function(i, setup, ff, ref, root){
   # add cellnumbers for using with join later
   xy <- as.matrix(ddl[,c("x","y")])
   ddl <- data.frame(id = cellFromXY(rx, xy), ddl, stringsAsFactors = FALSE)
-  write_fst(ddl, path = paste0(ofile, "_interim.fst"))
+  write_fst(ddl, path = foutf)
   return(NULL)
   
 }
@@ -272,6 +192,7 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
   }
 }
 
+####################################################################################################
 # Extractions setup
 iso <- c("BDI","HTI","GIN","GNB","MMR","NPL","NER","PAK","SOM","TZA")
 setup <- data.frame(expand.grid(iso = iso,
@@ -292,11 +213,8 @@ setup$exp <- gsub('_1|_2','',setup$exp)
 
 # Input parameters
 root <- "~/data"
-gcmdir <- paste0(root,"/interim/rotated/CMIP6/daily")
-ff     <- list.files(gcmdir, pattern = ".tif$", recursive = TRUE, full.names = TRUE)
-fsz <- file.size(ff)
-ff <- ff[fsz > 10000] # minimum file size to take care of the failed transformation attempt
-
+gcmdir <- paste0(root,"/climate/CMIP6/daily")
+ff     <- list.files(gcmdir, pattern = ".nc$", recursive = TRUE, full.names = TRUE)
 # CHIRPS reference raster 
 ref <- rast(crs = "epsg:4326", extent = ext(c(-180, 180, -50, 50)), resolution = 0.05, vals = 1)
 

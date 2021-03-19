@@ -30,6 +30,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
     fut <- fut %>% dplyr::group_by(id, season, year) %>% dplyr::summarise_all(median, na.rm = T)
   }
   ifelse(exists('fut'), tbl <- rbind(pst,fut), tbl <- pst)
+  tbl <- tbl %>% tidyr::drop_na()
   ss <- sort(unique(tbl$season))
   for(s in ss){
     dnm <- length(seasons[names(seasons) == s][[1]])

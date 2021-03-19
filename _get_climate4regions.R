@@ -42,6 +42,7 @@ flt_clm <- function(iso = 'TZA', country = 'Tanzania'){
   clm <- clm %>%
     tidyft::parse_fst(path = .) %>%
     tidyft::filter_fst(id %in% pft) %>%
+    tidyft::select_fst(id,x,y,year,date,prec,tmin,tmean,tmax,srad,rh) %>%
     base::as.data.frame()
   
   return(clm)

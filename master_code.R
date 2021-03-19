@@ -1,5 +1,5 @@
 # -------------------------------------------------- #
-# Climate Risk Profiles -- Master code Haiti
+# Climate Risk Profiles -- Master code
 # A. Esquivel, C. Saavedra, H. Achicanoy & J. Ramirez-Villegas
 # Alliance Bioversity-CIAT, 2021
 # -------------------------------------------------- #
@@ -9,128 +9,63 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_func
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_soil_data.R')       # Get soil data
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices.R')        # Calculating agro-indices
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_climate4regions.R') # Filter climate for areas of interest
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot.R')     # Time series graphs
 
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
 ## Defining country parameters
 # Country
-country <- 'Somalia'
-iso     <- 'SOM'
+country <- 'Somalia' # 'Tanzania'
+iso     <- 'SOM'     # 'TZA'
+seasons <- list(s1 = 4:8, s2 = c(9:12,1:2)) # list(s1 = c(11:12,1:6), s2 = c(2:8), s3 = c(9:12,1:2))
 
-# Livelihood zones
-lhzs <- c('','','','')
-
-# Get historical climate data
-# Aleja function to extract and reorganize the data in table format
-# If data is already processed, just load the table or path
+# Get historical climate data (done)
 
 # Get soil data
-crd <- fst::read_fst(paste0(root,"/1.Data/observed_data/",iso,"/year/climate_1981_mod.fst"))
+crd <- paste0(root,"/1.Data/observed_data/",iso,"/year/climate_1981_mod.fst") %>%
+  tidyft::parse_fst(path = .) %>%
+  tidyft::select_fst(id,x,y) %>%
+  base::as.data.frame()
 crd <- unique(crd[,c('id','x','y')])
 get_soil(crd        = crd,
          root_depth = 60,
          outfile    = paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst"))
 
 # Get future climate data
-# Same as previous function
 
-# Crops
-crps <- c('maize','pulses','cassava')
-
-# Crop calendar
-mnth <- 6:12 # Manually
-# mnth <- get_crop_calendar_from_crops() # Cesar's function
-# mnth <- get_crop_calendar_from_rains() # Growing seasons
-
-# Calc agro-climatic indices
-infile  <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
+# Calc agro-climatic indices (past)
+infile  <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst") # infile <- flt_clm(iso = iso, country = country)
 soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
 outfile <- paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst")
 spi_out <- paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst")
 calc_indices(climate = infile,
              soil    = soilfl,
-             seasons = list(s1 = 6:12),
-             subset  = F,
-             ncores  = 15,
-             outfile = outfile,
-             spi_out = spi_out)
-# calc_indices(climate = infile,
-#              soil    = soilfl,
-#              seasons = list(s1 = 3:8, s2 = 7:11, s3 = 1:12),
-#              subset  = F,
-#              ncores  = 15,
-#              outfile = outfile,
-#              spi_out = spi_out)
-
-model   <- 'INM-CM5-0'
-period  <- '2021-2040'
-infile  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
-soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
-outfile <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso,"_indices.fst")
-spi_out <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso,"_spi.fst")
-calc_indices(climate = infile,
-             soil    = soilfl,
-             seasons = list(s1 = 6:12),
+             seasons = seasons,
              subset  = F,
              ncores  = 15,
              outfile = outfile,
              spi_out = spi_out)
 
-# # Burundi
-# infile  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/BDI/BDI.fst"
-# soilfl  <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/soil/BDI/soilcp_data.fst"
-# outfile <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/Burundi/past/BDI_indices.fst"
-# spi_out <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/Burundi/past/BDI_spi.fst"
-# calc_indices(climate = infile,
-#              soil    = soilfl,
-#              seasons = list(s1 = 2:7, s2 = c(9:12,1)),
-#              subset  = F,
-#              ncores  = 15,
-#              outfile = outfile,
-#              spi_out = spi_out)
-model   <- 'INM-CM5-0'
-period  <- '2041-2060'
-infile  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
-soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
-outfile <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso,"_indices.fst")
-spi_out <- paste0(root,"/7.Results/",country,"/future/",model,"/",period,"/",iso,"_spi.fst")
-calc_indices(climate = infile,
-             soil    = soilfl,
-             seasons = list(s1 = 2:7, s2 = c(9:12,1)),
-             subset  = F,
-             ncores  = 15,
-             outfile = outfile,
-             spi_out = spi_out)
+# Calc agro-climatic indices (future)
+models  <- c('INM-CM5-0') # 'GFDL-ESM4','MPI-ESM1-2-HR','MRI-ESM2-0','BCC-CSM2-MR'
+periods <- c('2021-2040','2041-2060')
+for(m in models){
+  for(p in periods){
+    infile  <- paste0(root,"/1.Data/future_data/",m,"/",iso,"/bias_corrected/",p,"/",iso,".fst")
+    soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
+    outfile <- paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_indices.fst")
+    spi_out <- paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi.fst")
+    calc_indices(climate = infile,
+                 soil    = soilfl,
+                 seasons = seasons,
+                 subset  = F,
+                 ncores  = 15,
+                 outfile = outfile,
+                 spi_out = spi_out)
+  }
+}
 
-# # Tanzania
-# infile  <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
-# soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
-# outfile <- paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst")
-# spi_out <- paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst")
-# calc_indices(climate = infile,
-#              soil    = soilfl,
-#              seasons = list(s1 = c(11:12,1:6), s2 = 2:8, s3 = c(9:12,1:2),
-#              subset  = F,
-#              ncores  = 15,
-#              outfile = outfile,
-#              spi_out = spi_out)
-
-# Somalia
-infile  <- flt_clm(iso = iso, country = country)
-soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
-outfile <- paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst")
-spi_out <- paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst")
-calc_indices(climate = infile,
-             soil    = soilfl,
-             seasons = list(s1 = 4:8, s2 = c(9:12,1:2)),
-             subset  = T,
-             ncores  = 6,
-             outfile = outfile,
-             spi_out = spi_out)
-
-# Graphs
-# 1. Put all together: time series, maps, and climatology graphs
-# Time series
+# Time series plots
 time_series_plot(country = country, iso = iso)
 # 2. How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5) 
 # 3. Categorize hazard layers by absolute ranges

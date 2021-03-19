@@ -36,7 +36,10 @@ calc_indices <- function(climate = infile,
     dir.create(path = dirname(outfile), FALSE, TRUE)
     
     # Load soil data
-    Soil <- fst::read_fst(soilfl)
+    Soil <- soil %>%
+      tidyft::parse_fst(path = .) %>%
+      tidyft::select_fst(id,x,y,scp,ssat) %>%
+      base::as.data.frame()
     # Impute missing data using the nearest neighbor
     if(nrow(Soil[is.na(Soil$scp),]) > 0){
       NAs <- Soil[is.na(Soil$scp),]
@@ -48,11 +51,18 @@ calc_indices <- function(climate = infile,
     }
     
     # Load climate data
-    if(class(climate) == 'character'){ clim_data <- fst::read_fst(climate) } else { clim_data <- climate }
+    if(class(climate) == 'character'){
+      clim_data <- climate %>%
+        tidyft::parse_fst(path = .) %>%
+        tidyft::select_fst(id,x,y,year,date,prec,tmin,tmean,tmax,srad,rh) %>%
+        base::as.data.frame()
+    } else {
+      clim_data <- climate
+    }
     clim_data$year <- NULL
     clim_data <- clim_data %>%
       dplyr::mutate(id1 = id) %>%
-      tidyr::nest(Climate = c('id','date','prec','tmax','tmean','tmin','srad','wind','rh')) %>%
+      tidyr::nest(Climate = c('id','date','prec','tmax','tmean','tmin','srad','rh')) %>% # 'wind'
       dplyr::rename(id = 'id1') %>%
       dplyr::select(id, dplyr::everything(.))
     
@@ -83,9 +93,9 @@ calc_indices <- function(climate = infile,
           if(sum(is.na(df$rh)) > 0){
             df$rh[which(is.na(df$rh))] <- median(df$rh, na.rm = T)
           }
-          if(sum(is.na(df$wind)) > 0){
-            df$wind[which(is.na(df$wind))] <- median(df$wind, na.rm = T)
-          }
+          # if(sum(is.na(df$wind)) > 0){
+          #   df$wind[which(is.na(df$wind))] <- median(df$wind, na.rm = T)
+          # }
           return(df)
         })
       
@@ -214,15 +224,15 @@ calc_indices <- function(climate = infile,
       })
       lgp_year_pixel <- do.call(rbind, lgp_year_pixel); rownames(lgp_year_pixel) <- 1:nrow(lgp_year_pixel)
       
-      if(length(seasons) == 1){
-        lgp_year_pixel <- lgp_year_pixel %>%
-          dplyr::filter(gSeason == 1)
-      } else {
-        if(length(seasons) == 2){
-          lgp_year_pixel <- lgp_year_pixel %>%
-            dplyr::filter(gSeason %in% 1:2)
-        }
-      }
+      # if(length(seasons) == 1){
+      #   lgp_year_pixel <- lgp_year_pixel %>%
+      #     dplyr::filter(gSeason == 1)
+      # } else {
+      #   if(length(seasons) == 2){
+      #     lgp_year_pixel <- lgp_year_pixel %>%
+      #       dplyr::filter(gSeason %in% 1:2)
+      #   }
+      # }
       
       cat(' --- Calculate agro-climatic indices for an specific season\n')
       if(!is.null(seasons)){

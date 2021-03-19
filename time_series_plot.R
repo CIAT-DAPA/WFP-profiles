@@ -9,13 +9,15 @@
 #   country: country name first character in capital letter
 # Output:
 #   .jpeg graphs per index and season
-time_series_plot <- function(country = 'Haiti', iso = 'HTI'){
+time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
   
   # Load packages
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,fst))
   
-  root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+  root   <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+  outdir <- paste0(root,'/7.Results/',country,'/results/time_series')
+  if(!dir.exists(outdir)){ dir.create(outdir, F, T) }
   
   # Load historical time series
   pst <- fst::read_fst(paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst"))
@@ -28,12 +30,17 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI'){
     fut <- fut %>% dplyr::group_by(id, season, year) %>% dplyr::summarise_all(median, na.rm = T)
   }
   ifelse(exists('fut'), tbl <- rbind(pst,fut), tbl <- pst)
-  tbl$NDD  <- tbl$NDD/7
-  tbl$NT_X <- tbl$NT_X/7
-  tbl$NDWS <- tbl$NDWS/7
-  tbl$NWLD <- tbl$NWLD/7
-  tbl$NWLD50 <- tbl$NWLD50/7
-  tbl$NWLD90 <- tbl$NWLD90/7
+  tbl <- tbl %>% tidyr::drop_na()
+  ss <- sort(unique(tbl$season))
+  for(s in ss){
+    dnm <- length(seasons[names(seasons) == s][[1]])
+    tbl$NDD[tbl$season == s]  <- tbl$NDD[tbl$season == s]/dnm
+    tbl$NT_X[tbl$season == s] <- tbl$NT_X[tbl$season == s]/dnm
+    tbl$NDWS[tbl$season == s] <- tbl$NDWS[tbl$season == s]/dnm
+    tbl$NWLD[tbl$season == s] <- tbl$NWLD[tbl$season == s]/dnm
+    tbl$NWLD50[tbl$season == s] <- tbl$NWLD50[tbl$season == s]/dnm
+    tbl$NWLD90[tbl$season == s] <- tbl$NWLD90[tbl$season == s]/dnm
+  }; rm(ss, s)
   
   # Obtain number of seasons
   seasons <- as.character(unique(tbl$season))

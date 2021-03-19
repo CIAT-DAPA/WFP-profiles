@@ -62,7 +62,7 @@ calc_indices <- function(climate = infile,
     clim_data$year <- NULL
     clim_data <- clim_data %>%
       dplyr::mutate(id1 = id) %>%
-      tidyr::nest(Climate = c('id','date','prec','tmax','tmean','tmin','srad','wind','rh')) %>%
+      tidyr::nest(Climate = c('id','date','prec','tmax','tmean','tmin','srad','rh')) %>% # 'wind'
       dplyr::rename(id = 'id1') %>%
       dplyr::select(id, dplyr::everything(.))
     
@@ -93,9 +93,9 @@ calc_indices <- function(climate = infile,
           if(sum(is.na(df$rh)) > 0){
             df$rh[which(is.na(df$rh))] <- median(df$rh, na.rm = T)
           }
-          if(sum(is.na(df$wind)) > 0){
-            df$wind[which(is.na(df$wind))] <- median(df$wind, na.rm = T)
-          }
+          # if(sum(is.na(df$wind)) > 0){
+          #   df$wind[which(is.na(df$wind))] <- median(df$wind, na.rm = T)
+          # }
           return(df)
         })
       

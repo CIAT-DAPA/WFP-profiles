@@ -15,9 +15,9 @@ root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
 ## Defining country parameters
 # Country
-country <- 'Somalia'
-iso     <- 'SOM'
-seasons <- list(s1 = 4:8, s2 = c(9:12,1:2))
+country <- 'Somalia' # 'Tanzania'
+iso     <- 'SOM'     # 'TZA'
+seasons <- list(s1 = 4:8, s2 = c(9:12,1:2)) # list(s1 = c(11:12,1:6), s2 = c(2:8), s3 = c(9:12,1:2))
 
 # Get historical climate data (done)
 

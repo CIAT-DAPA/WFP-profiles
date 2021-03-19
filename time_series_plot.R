@@ -17,6 +17,8 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI'){
   
   root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
   
+  dir.create(path = paste0(root,'/7.Results/',country,'/results/time_series'), F, T)
+  
   # Load historical time series
   pst <- fst::read_fst(paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst"))
   pst$gSeason <- pst$SLGP <- pst$LGP <- NULL

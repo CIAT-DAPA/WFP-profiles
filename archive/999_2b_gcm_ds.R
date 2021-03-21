@@ -27,7 +27,7 @@ readRast <- function(f, sdate, edate){
 }
 
 # Function to get daily data from a single file
-getGCMdailyTable <- function(shp,iso,var,model,experiment,gcmdir,ff,sdate,edate,ref){
+getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   
   pars <- setup[i,]
   iso <- pars$iso; var <- pars$var; model <- pars$model; experiment <- pars$exp; 
@@ -48,14 +48,17 @@ getGCMdailyTable <- function(shp,iso,var,model,experiment,gcmdir,ff,sdate,edate,
   dir.create(vdir, FALSE, TRUE)
   
   # Country/zone boundary
-  shp <- getData("GADM", country = iso, level = 0, path = vdir)
-  shp_sf <- shp %>% sf::st_as_sf()
-  v <- sf::st_buffer(shp_sf, dist = 0.5) %>% sf::st_union(.) %>% sf::as_Spatial()
-  e <- terra::ext(v)
-  
-  # Crop reference raster
-  riso <- terra::crop(x = ref, y = e)
-  
+  cmask <- file.path(vdir, paste0(iso, "_mask_chirps.tif"))
+  if(!file.exists(cmask)){
+    shp <- raster::getData("GADM", country = iso, level = 0, path = vdir)
+    shpb <- buffer(shp, 0.05)
+    e <- terra::ext(shpb)
+    # Crop reference raster
+    riso <- terra::crop(x = ref, y = e, filename = cmask, wopt= list(gdal=c("COMPRESS=LZW")))
+  } else {
+    riso <- rast(cmask)
+  }
+ 
   # search files
   f <- grep(paste(var,model,experiment,sep = ".*"), ff, value = TRUE)
   
@@ -68,31 +71,41 @@ getGCMdailyTable <- function(shp,iso,var,model,experiment,gcmdir,ff,sdate,edate,
   # save intermediate rotated files
   rout <- basename(r@ptr$filenames)
   # split by gn
-  rout <- unique(sapply(strsplit(rout, "_gn_"), "[", 1))
+  rout <- unique(sapply(strsplit(rout, "_gn_|_gr1_"), "[", 1)) # check for 
   # date range in the data
   dates <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
   dtrange <- range(dates)
-  rout <- paste0(rout, "-", paste(dtrange, collapse = "_"), ".tif")
+  rout <- paste0("rotated_", rout, "-", paste(dtrange, collapse = "_"), ".tif")
   routf <- file.path(interimdir, rout)
-  # time(r)  <- r@ptr$time
   
-  if(!file.exists(ofile)|overwrite){
+  if(!file.exists(routf)|overwrite){
     rot <- try(rotate(r, filename = routf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite), silent = TRUE)
   } else {
     rot <- rast(routf)
   }
-  
-  # reproject outline to same coordinate system if needed?
-  rx <- terra::crop(r, e)
-  
-  # study area focus ###########################################################
+  # time(rot) <- r@ptr$time
+    
   # resample to reference raster --- most time taking part
   soutf <- file.path(outdir, paste0(iso, "_" ,basename(routf)))
-  rx <- terra::resample(rx, riso, filename = soutf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite)
   
-  # should we mask and save?
-  # rx <- terra::mask(rx, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
+  if(!file.exists(soutf)|overwrite){
+    # reproject outline to same coordinate system if needed?
+    rx <- terra::crop(rot, ext(riso))
+    # disaggregate first
+    rx <- terra::disaggregate(rx, fact =  round(res(rx)/res(riso)))
+    # resample 
+    rx <- terra::resample(rx, riso, filename = soutf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite)
+    
+    # implement a parallel resample
+
+    # should we mask and save?
+    # rx <- terra::mask(rx, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
+  } else {
+    rx <- rast(soutf)
+  }
   
+  #################################################################################################################
+  # finally the fst files
   foutf <- gsub(".tif", ".fst", soutf)
   # Is this memory safe? get cell values
   dd <- terra::as.data.frame(rx, xy = TRUE)
@@ -106,9 +119,72 @@ getGCMdailyTable <- function(shp,iso,var,model,experiment,gcmdir,ff,sdate,edate,
   ddl <- data.frame(id = cellFromXY(rx, xy), ddl, stringsAsFactors = FALSE)
   write_fst(ddl, path = foutf)
   return(NULL)
-  
 }
 
+##############################################################################################################
+# Extractions setup
+iso <- c("BDI","HTI","GIN","GNB","MMR","NPL","NER","PAK","SOM","TZA")
+setup <- data.frame(expand.grid(iso = iso,
+                                var = c('pr','tas','tasmax','tasmin'),
+                                model = c("BCC-CSM2-MR","CESM2","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0"),
+                                exp = c('historical','ssp585_1','ssp585_2'), stringsAsFactors = FALSE))
+
+setup$sdate <- NA
+setup$edate <- NA
+setup$sdate[setup$exp == 'historical'] <- "1995-01-01"
+setup$edate[setup$exp == 'historical'] <- "2014-12-31"
+setup$sdate[setup$exp == 'ssp585_1'] <- "2021-01-01"
+setup$edate[setup$exp == 'ssp585_1'] <- "2040-12-31"
+setup$sdate[setup$exp == 'ssp585_2'] <- "2041-01-01"
+setup$edate[setup$exp == 'ssp585_2'] <- "2060-12-31"
+setup$exp <- gsub('_1|_2','',setup$exp)
+
+
+# Input parameters
+root <- "~/data"
+gcmdir <- paste0(root,"/input/climate/CMIP6/daily")
+ff     <- list.files(gcmdir, pattern = ".nc$", full.names = TRUE)
+
+# CHIRPS reference raster 
+churl <- "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_dekad/tifs/chirps-v2.0.1981.01.1.tif.gz"
+refile <- file.path(root, "input/vector", basename(churl))
+ref <- gsub(".gz","",refile)
+if(!file.exists(ref)){
+  download.file(churl, dest = refile)
+  R.utils::gunzip(refile)
+  ref <- rast(ref)
+} else {
+  ref <- rast(ref)
+}
+
+
+
+# is this causing the crash?
+# ref <- rast(crs = "epsg:4326", extent = ext(c(-180, 180, -50, 50)), resolution = 0.05, vals = 1)
+
+# need to move to future apply
+# prioritize HTI and BDI
+
+setupx <- setup[setup$iso %in% c("BDI", "HTI"),]
+
+rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
+                         mc.preschedule = FALSE, mc.cores = 20)
+
+t1 <- Sys.time()
+rr <- lapply(100, getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE)
+Sys.time() - t1
+
+# some cleanup
+f1 <- list.files("~/data/interim/rotated/CMIP6/daily/", pattern = ".nc-",
+                full.names = TRUE)
+unlink(f1)
+
+
+f2 <- list.files("~/data/output/downscale/CMIP6/daily/", pattern = ".nc-",
+                 recursive = TRUE, full.names = TRUE)
+unlink(f2)
+
+###################################################################################################################
 # Merge output tables
 mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
   cat("Processing", iso, model, experiment, "\n")
@@ -193,30 +269,6 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
 }
 
 ####################################################################################################
-# Extractions setup
-iso <- c("BDI","HTI","GIN","GNB","MMR","NPL","NER","PAK","SOM","TZA")
-setup <- data.frame(expand.grid(iso = iso,
-                                var = c('pr','tas','tasmax','tasmin'),
-                                model = c("BCC-CSM2-MR","CESM2","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0"),
-                                exp = c('historical','ssp585_1','ssp585_2'), stringsAsFactors = FALSE))
-
-setup$sdate <- NA
-setup$edate <- NA
-setup$sdate[setup$exp == 'historical'] <- "1995-01-01"
-setup$edate[setup$exp == 'historical'] <- "2014-12-31"
-setup$sdate[setup$exp == 'ssp585_1'] <- "2021-01-01"
-setup$edate[setup$exp == 'ssp585_1'] <- "2040-12-31"
-setup$sdate[setup$exp == 'ssp585_2'] <- "2041-01-01"
-setup$edate[setup$exp == 'ssp585_2'] <- "2060-12-31"
-setup$exp <- gsub('_1|_2','',setup$exp)
-
-
-# Input parameters
-root <- "~/data"
-gcmdir <- paste0(root,"/climate/CMIP6/daily")
-ff     <- list.files(gcmdir, pattern = ".nc$", recursive = TRUE, full.names = TRUE)
-# CHIRPS reference raster 
-ref <- rast(crs = "epsg:4326", extent = ext(c(-180, 180, -50, 50)), resolution = 0.05, vals = 1)
 
 
 setup <- setup[setup$model == 'INM-CM5-0',] # INM-CM5-0
@@ -244,3 +296,22 @@ rref <- "//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/dail
 mergeGCMdailyTable(iso, model, experiment, gcmdir, outdir, rref)
 experiment <- 'ssp585'
 mergeGCMdailyTable(iso, model, experiment, gcmdir, outdir, rref)
+
+
+# parallel resample?
+# create index of bands 
+# k <- seq(1, nlyr(rx), ncores)
+# k <- c(k, nlyr(rx))
+# 
+# parResample <- function(j, k, rx, riso){
+#   sb <- k[j-1]:k[j]
+#   rxb <- terra::subset(rxb, sb)
+#   rxs <- terra::resample(rx, riso)
+#   time(rxs) <- time(rxb)
+#   return(rxs)
+# }
+# 
+# d <- list()
+# for(j in 2:length(k)){
+#   d[[j]] <- k[j-1]:k[j]
+# }

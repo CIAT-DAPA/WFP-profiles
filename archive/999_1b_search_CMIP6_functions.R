@@ -154,6 +154,28 @@ getDataCMIP6 <- function(d, downdir, silent=FALSE){
 }
 
 
+##########################################################################################
+checkDownloadStatus <- function(i, idx, downdir){
+  d <- idx[i,]
+  
+  d$download_status <- "FAIL"
+  d$localfilechek <- "FAIL"
+  
+  # localfile exists?
+  # fstr <- strsplit(d$file_url, "/CMIP6/|/cmip6/|/cmip6_data/")[[1]][2]
+  flocal <- file.path(downdir, basename(d$file_url))
+  d$localfile <- flocal
+  
+  localfilecheck <- file.size(flocal) >= d$file_size  
+  
+  if(file.exists(flocal) & localfilecheck){
+    d$download_status <- "PASS"
+    d$localfilecheck <- "PASS"
+  }
+  return(d)
+}
+
+
 
 # instead of own search, rely on others 
 # library(data.table)

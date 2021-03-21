@@ -58,9 +58,9 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   } else {
     riso <- rast(cmask)
   }
- 
+
   # search files
-  f <- grep(paste(var,model,experiment,sep = ".*"), ff, value = TRUE)
+  f <- grep(paste(var,model,experiment,sep = "_.*"), ff, value = TRUE)
   
   # GCM raster prep ############################################################
   # which ranges fall within start and end year
@@ -78,37 +78,38 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   rout <- paste0("rotated_", rout, "-", paste(dtrange, collapse = "_"), ".tif")
   routf <- file.path(interimdir, rout)
   
-  if(!file.exists(routf)|overwrite){
+  if(!file.exists(routf)){
     rot <- try(rotate(r, filename = routf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite), silent = TRUE)
   } else {
     rot <- rast(routf)
   }
+
   # time(rot) <- r@ptr$time
     
   # resample to reference raster --- most time taking part
   soutf <- file.path(outdir, paste0(iso, "_" ,basename(routf)))
   
-  if(!file.exists(soutf)|overwrite){
+  if(!file.exists(soutf)){
     # reproject outline to same coordinate system if needed?
-    rx <- terra::crop(rot, ext(riso))
+    rotsub <- terra::crop(rot, ext(riso))
     # disaggregate first
-    rx <- terra::disaggregate(rx, fact =  round(res(rx)/res(riso)))
+    rotsub <- terra::disaggregate(rotsub, fact =  round(res(rotsub)/res(riso)))
     # resample 
-    rx <- terra::resample(rx, riso, filename = soutf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite)
+    rotsub <- terra::resample(rotsub, riso, filename = soutf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite)
     
-    # implement a parallel resample
+    # ?implement a parallel resample
 
     # should we mask and save?
-    # rx <- terra::mask(rx, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
+    # rotsub <- terra::mask(rotsub, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
   } else {
-    rx <- rast(soutf)
+    rotsub <- rast(soutf)
   }
   
   #################################################################################################################
   # finally the fst files
   foutf <- gsub(".tif", ".fst", soutf)
   # Is this memory safe? get cell values
-  dd <- terra::as.data.frame(rx, xy = TRUE)
+  dd <- terra::as.data.frame(rotsub, xy = TRUE)
   names(dd) <- c("x", "y", paste0(var, "_", dates))
   
   # convert from wide to long with dataframe, safer way?
@@ -116,7 +117,7 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   
   # add cellnumbers for using with join later
   xy <- as.matrix(ddl[,c("x","y")])
-  ddl <- data.frame(id = cellFromXY(rx, xy), ddl, stringsAsFactors = FALSE)
+  ddl <- data.frame(id = cellFromXY(rotsub, xy), ddl, stringsAsFactors = FALSE)
   write_fst(ddl, path = foutf)
   return(NULL)
 }
@@ -163,12 +164,19 @@ if(!file.exists(ref)){
 # ref <- rast(crs = "epsg:4326", extent = ext(c(-180, 180, -50, 50)), resolution = 0.05, vals = 1)
 
 # need to move to future apply
+
 # prioritize HTI and BDI
 
 setupx <- setup[setup$iso %in% c("BDI", "HTI"),]
 
-rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
-                         mc.preschedule = FALSE, mc.cores = 20)
+# rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
+#                          mc.preschedule = FALSE, mc.cores = 20)
+
+library(future.apply)
+availableCores()
+plan(multiprocess, workers = 20)
+future_lapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE, future.seed = TRUE)
+
 
 t1 <- Sys.time()
 rr <- lapply(100, getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE)
@@ -183,6 +191,14 @@ unlink(f1)
 f2 <- list.files("~/data/output/downscale/CMIP6/daily/", pattern = ".nc-",
                  recursive = TRUE, full.names = TRUE)
 unlink(f2)
+
+
+
+# check status
+odir <- "~/data/output/downscale/CMIP6/daily"
+ff <- list.files(odir, pattern = ".tif$",recursive = TRUE, full.names = TRUE)
+file.size(ff)*1e-9
+
 
 ###################################################################################################################
 # Merge output tables

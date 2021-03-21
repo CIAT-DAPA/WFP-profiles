@@ -95,7 +95,7 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
     rotsub <- terra::resample(rotsub, riso, filename = soutf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite)
     
     # should we mask and save?
-    # rx <- terra::mask(rx, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
+    # rotsub <- terra::mask(rotsub, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
   } else {
     rotsub <- rast(soutf)
   }

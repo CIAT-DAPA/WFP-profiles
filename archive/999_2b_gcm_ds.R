@@ -14,17 +14,57 @@ if (packageVersion("terra") < "1.1.0"){
 
 # supporting file
 readRast <- function(f, sdate, edate){
-  r <- terra::rast(f)
+  # as of terra_1.1-7, it is having problem with correctly reading time band from the netcdf files
+  r <- raster::stack(f)
   # manage and convert to epoch time
-  tm <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
+  tm <- as.Date(gsub("X","",names(r)), "%Y.%m.%d")
   # which bands are within the wmo baseline
   k <- which(tm >= sdate & tm <= edate)
   if(sum(k)>0){
+    # read the file as SpatRaster
+    rs <- terra::rast(f)
     # subset those bands
-    r <- terra::subset(r, k)
-    return(r)
+    rs <- terra::subset(rs, k)
+    names(rs) <-  tm[k]
+    return(rs)
   }
 }
+
+
+rotateGCM <- function(f, sdate, edate, interimdir, overwrite = FALSE){
+
+  # GCM raster prep ############################################################
+  # which ranges fall within start and end year
+  rr <- lapply(f, readRast, sdate, edate)
+  j <- sapply(rr, is.null)
+  rr[j] <- NULL
+  r <- do.call("c",rr)
+  
+  rcrs <- crs(r)
+  
+  if(rcrs==""|is.na(rcrs)){
+    crs(r) <- "+proj=longlat +datum=WGS84 +no_defs"
+  }
+  
+  # save intermediate rotated files
+  rout <- basename(f)[!j]
+  # split by gn
+  rout <- unique(sapply(strsplit(rout, "_gn_|_gr1_"), "[", 1)) # check for 
+  # date range in the data
+  # dates <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
+  # dates <- as.Date(gsub("X","",names(r)), "%Y.%m.%d")
+  dates <- names(r)
+  dtrange <- range(dates)
+  rout <- paste0("rotated_", rout, "-", paste(dtrange, collapse = "_"), ".tif")
+  routf <- file.path(interimdir, rout)
+  
+  if(!file.exists(routf)){
+    rot <- try(terra::rotate(r, filename = routf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite), silent = FALSE)
+    saveRDS(dates, gsub(".tif","_dates.rds",routf))
+  }
+  return(routf)
+}  
+
 
 # Function to get daily data from a single file
 getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
@@ -63,29 +103,11 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   f <- grep(paste(var,model,experiment,sep = "_.*"), ff, value = TRUE)
   
   # GCM raster prep ############################################################
-  # which ranges fall within start and end year
-  rr <- lapply(f, readRast, sdate, edate)
-  rr[sapply(rr, is.null)] <- NULL
-  r <- do.call("c", rr)
+  # rotate
+  routf <- rotateGCM(f, sdate, edate, interimdir, overwrite = FALSE)
+  rot <- rast(routf)
+  dates <- readRDS(gsub(".tif","_dates.rds",routf))  
   
-  # save intermediate rotated files
-  rout <- basename(r@ptr$filenames)
-  # split by gn
-  rout <- unique(sapply(strsplit(rout, "_gn_|_gr1_"), "[", 1)) # check for 
-  # date range in the data
-  dates <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
-  dtrange <- range(dates)
-  rout <- paste0("rotated_", rout, "-", paste(dtrange, collapse = "_"), ".tif")
-  routf <- file.path(interimdir, rout)
-  
-  if(!file.exists(routf)){
-    rot <- try(rotate(r, filename = routf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite), silent = TRUE)
-  } else {
-    rot <- rast(routf)
-  }
-
-  # time(rot) <- r@ptr$time
-    
   # resample to reference raster --- most time taking part
   soutf <- file.path(outdir, paste0(iso, "_" ,basename(routf)))
   
@@ -110,14 +132,14 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   foutf <- gsub(".tif", ".fst", soutf)
   # Is this memory safe? get cell values
   dd <- terra::as.data.frame(rotsub, xy = TRUE)
-  names(dd) <- c("x", "y", paste0(var, "_", dates))
+  names(dd) <- c("x", "y", dates)
   
   # convert from wide to long with dataframe, safer way?
   ddl <- melt(setDT(dd), id.vars = c("x","y"), value.name = var, variable = "date")
   
   # add cellnumbers for using with join later
   xy <- as.matrix(ddl[,c("x","y")])
-  ddl <- data.frame(id = cellFromXY(rotsub, xy), ddl, stringsAsFactors = FALSE)
+  ddl <- data.frame(cell_id = cellFromXY(rotsub, xy), ddl, stringsAsFactors = FALSE)
   write_fst(ddl, path = foutf)
   return(NULL)
 }
@@ -163,14 +185,16 @@ if(!file.exists(ref)){
 # is this causing the crash?
 # ref <- rast(crs = "epsg:4326", extent = ext(c(-180, 180, -50, 50)), resolution = 0.05, vals = 1)
 
+# rotate GCMs first?
+
 # need to move to future apply
 
 # prioritize HTI and BDI
 
 setupx <- setup[setup$iso %in% c("BDI", "HTI"),]
 
-# rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
-#                          mc.preschedule = FALSE, mc.cores = 20)
+rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
+                          mc.preschedule = FALSE, mc.cores = 20)
 
 library(future.apply)
 availableCores()
@@ -179,7 +203,7 @@ future_lapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite
 
 
 t1 <- Sys.time()
-rr <- lapply(100, getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE)
+rr <- lapply(120, getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE)
 Sys.time() - t1
 
 # some cleanup

@@ -4,8 +4,10 @@ pacman::p_load(tidyverse, tidyft, fst, raster, terra, sf)
 root    <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 country <- 'Haiti'
 iso     <- 'HTI'
+seasons <- list(s1 = 3:8, s2 = 7:11, s3 = c(11:12,1:2), s4 = 1:12)
 
 # Load municipalities/districts shapefile
+# Identify the lowest admin level: to do
 shp <- raster::shapefile(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_gadm/',country,'_GADM3.shp'))
 # Identify administrative levels
 adm <- grep('^NAME_', names(shp), value = T)
@@ -41,30 +43,79 @@ crd <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst') %>
   base::as.data.frame()
 crd <- unique(crd[,c('id','x','y')])
 spi <- dplyr::left_join(x = spi, y = crd, by = 'id')
-spi_flt <- spi %>%
-  dplyr::filter(year == 9) %>%
-  dplyr::mutate(drought = ifelse(SPI < -1.5, 1, 0))
 
-spi$month %>% unique %>% sort %>%
-  purrr::map(.f = function(yr){
-    r <- spi_flt %>%
-      dplyr::filter(month == yr) %>%
-      dplyr::select(x, y, drought) %>%
-      raster::rasterFromXYZ(xyz = ., res = 0.05, crs = raster::crs(shp))
-    # Remove areas without drought problems
-    r[r[] == 0] <- NA
+1:length(seasons) %>%
+  purrr::map(.f = function(i){
     
-    rp <- raster::rasterToPolygons(x = r, dissolve = T)
+    # Filter by each season
+    season <- seasons[[i]]
+    # Select the central month in the season
+    mth    <- season[round(median(1:length(season)))]
     
-    int <- raster::intersect(x = rp, y = shp)
-    shp$area_tot <- raster::area(shp)/1e6
-    int$area <- raster::area(int)/1e6
+    spi_flt <- spi %>%
+      dplyr::filter(year == mth) %>%
+      dplyr::mutate(drought = ifelse(SPI < -1.5, 1, 0))
     
-    res <- shp@data[,c(adm,'key','area_tot')]
-    res <- dplyr::left_join(x = res, y = int@data[,c('key','area')], by = 'key')
-    res$area_perc <- res$area/res$area_tot
-    res$area_perc[is.na(res$area_perc)] <- 0
+    drgh <- sort(unique(spi$month)) %>%
+      purrr::map(.f = function(yr){
+        cat(yr,'\n')
+        r <- spi_flt %>%
+          dplyr::filter(month == yr) %>%
+          dplyr::select(x, y, drought) %>%
+          raster::rasterFromXYZ(xyz = ., res = 0.05, crs = raster::crs(shp))
+        rv <- unique(r[])
+        
+        if(1 %in% rv){
+          # Remove areas without drought problems
+          r[r[] == 0] <- NA
+          rp  <- raster::rasterToPolygons(x = r, dissolve = T)
+          int <- raster::intersect(x = rp, y = shp)
+          shp$area_tot <- raster::area(shp)/1e6
+          
+          if(!is.null(int)){
+            int$area <- raster::area(int)/1e6
+            res <- shp@data[,c(adm,'key','area_tot')]
+            res <- dplyr::left_join(x = res, y = int@data[,c('key','area')], by = 'key')
+            res$area_perc <- res$area/res$area_tot
+            res$area_perc[is.na(res$area_perc)] <- 0
+          } else {
+            res <- shp@data[,c(adm,'key','area_tot')]
+            res$area <- 0
+            res$area_perc <- res$area/res$area_tot
+          }
+          
+        } else {
+          shp$area_tot <- raster::area(shp)/1e6
+          res <- shp@data[,c(adm,'key','area_tot')]
+          res$area <- 0
+          res$area_perc <- res$area/res$area_tot
+        }
+        
+        res <- res[,c(adm,'key','area_perc')]
+        names(res)[ncol(res)] <- paste0('Y',yr)
+        return(res)
+      }) %>%
+      purrr::reduce(dplyr::left_join, by = c(adm,'key'))
+    
+    tmp <- shp
+    tmp@data <- dplyr::left_join(x = tmp@data %>% dplyr::select(adm,'key'),
+                                 y = drgh,
+                                 by = c(adm,'key'))
+    
+    drgh_px <- cbind(crd,raster::extract(x = tmp, y = crd[,c('x','y')])) %>% tidyr::drop_na()
+    drgh_px <- drgh_px %>% dplyr::select(id,x,y,Y1981:Y2019)
+    drgh_px <- drgh_px %>% tidyr::pivot_longer(cols = Y1981:Y2019, names_to = 'year', values_to = 'spi')
+    drgh_px$year <- gsub('Y','',drgh_px$year)
+    drgh_px$season <- paste0('s',i)
+    
   })
+
+
+
+
+
+
+
 
 r <- spi_flt %>%
   dplyr::filter(month == 2019) %>%

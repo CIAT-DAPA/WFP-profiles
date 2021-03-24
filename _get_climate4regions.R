@@ -40,7 +40,7 @@ flt_clm <- function(iso = 'TZA', country = 'Tanzania'){
   cat('>>> Filter climate table to filtered coords\n')
   clm <- paste0(root,'/1.Data/observed_data/',iso,'/',iso,'.fst')
   clm <- clm %>%
-    tidyft::parse_fst(path = .) %>% # tidyft
+    tidyft::parse_fst(path = .) %>%
     tidyft::filter_fst(id %in% pft) %>%
     base::as.data.frame()
   

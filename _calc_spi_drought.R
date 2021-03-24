@@ -10,7 +10,7 @@
 #   seasons: corresponding seasons for each country
 # Output:
 #   data.frame with SPI drought values per season and year
-calc_spi <- function(country = country, iso = iso, seasons = seasons){
+calc_spi_drought <- function(country = country, iso = iso, seasons = seasons){
   
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   pacman::p_load(tidyverse, tidyft, fst, raster, terra, sf)

@@ -60,7 +60,7 @@ calc_indices <- function(climate = infile,
     }
     clim_data$year <- NULL
     clim_data <- clim_data %>%
-      dplyr::select(id,date,prec,tmax,tmean,tmin,srad,rh) %>%
+      dplyr::select(id,x,y,date,prec,tmax,tmean,tmin,srad,rh) %>%
       dplyr::mutate(id1 = id) %>%
       tidyr::nest(Climate = c('id','date','prec','tmax','tmean','tmin','srad','rh')) %>% # 'wind'
       dplyr::rename(id = 'id1') %>%

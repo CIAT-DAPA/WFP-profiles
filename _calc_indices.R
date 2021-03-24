@@ -54,13 +54,13 @@ calc_indices <- function(climate = infile,
     if(class(climate) == 'character'){
       clim_data <- climate %>%
         tidyft::parse_fst(path = .) %>%
-        tidyft::select_fst(id,x,y,year,date,prec,tmin,tmean,tmax,srad,rh) %>%
         base::as.data.frame()
     } else {
       clim_data <- climate
     }
     clim_data$year <- NULL
     clim_data <- clim_data %>%
+      dplyr::select(id,date,prec,tmax,tmean,tmin,srad,rh) %>%
       dplyr::mutate(id1 = id) %>%
       tidyr::nest(Climate = c('id','date','prec','tmax','tmean','tmin','srad','rh')) %>% # 'wind'
       dplyr::rename(id = 'id1') %>%
@@ -200,7 +200,7 @@ calc_indices <- function(climate = infile,
           growingSeason <- lapply(1:length(LGP_seq), function(g){
             
             LGP_ini <- sum(runsDF$Lengths[1:(min(LGP_seq[[g]])-1)]) + 1
-            LGP <- sum(runsDF$Lengths[LGP_seq[[g]]])
+            LGP     <- sum(runsDF$Lengths[LGP_seq[[g]]])
             results <- data.frame(id=tbl$id %>% unique, year=years[k], gSeason=g, SLGP=LGP_ini, LGP=LGP)
             return(results)
             

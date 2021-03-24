@@ -28,6 +28,11 @@ createCluster <- function(noCores, logfile = "/dev/null", export = NULL, lib = N
   return(cl)
 }
 
+# Generate chunks
+chunk <- function(vect, size){
+  split(vect, ceiling(seq_along(vect)/size))
+}
+
 # Agro-climatic indices
 rsum.lapply <- function(x, n=3L) # Calculate rollin sum
 {

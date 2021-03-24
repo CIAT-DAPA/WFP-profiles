@@ -65,22 +65,31 @@ for(m in models){
   }
 }
 
-# Time series plots
-time_series_plot(country = country, iso = iso)
-# 2. How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5) 
-# 3. Categorize hazard layers by absolute ranges
-# 4. Using 3. combine hazard layers
-list.files('root/results/HTI', full.names = T) %>% # Graphs per livelihood zones
-  purrr::map(.f = function(pth){
-    df <- fst::read_fst()
-    graphs(...)
-  })
-list.files('root/results/HTI', full.names = T) %>% # Graphs per country
-  purrr::map(.f = function(pth){
-    df <- fst::read_fst()
-  })%>%
-  dplyr::bind_rows() %>%
-  graphs(...)
+## Graphs
+# 1. Time series plots
+time_series_plot(country = country, iso = iso, seasons = seasons)
+# 2. SPI: How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5) 
 
-tidyfst::parse_fst(path = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/TZA/TZA.fst') %>%
-  tidyfst::slice_fst(ft = ., row_no = c(1,10,20:30))
+# 3. Climatology
+
+# 4. Elevation map
+
+# 5. Maps
+maps(country = country, ...)
+
+# 6. PPT slides
+
+# list.files('root/results/HTI', full.names = T) %>% # Graphs per livelihood zones
+#   purrr::map(.f = function(pth){
+#     df <- fst::read_fst()
+#     graphs(...)
+#   })
+# list.files('root/results/HTI', full.names = T) %>% # Graphs per country
+#   purrr::map(.f = function(pth){
+#     df <- fst::read_fst()
+#   })%>%
+#   dplyr::bind_rows() %>%
+#   graphs(...)
+# 
+# tidyfst::parse_fst(path = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/TZA/TZA.fst') %>%
+#   tidyfst::slice_fst(ft = ., row_no = c(1,10,20:30))

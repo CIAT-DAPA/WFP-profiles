@@ -10,6 +10,7 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_soil_
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices.R')        # Calculating agro-indices
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_climate4regions.R') # Filter climate for areas of interest
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot.R')     # Time series graphs
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_spi_drought.R')    # SPI calculation
 
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 

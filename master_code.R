@@ -69,6 +69,7 @@ for(m in models){
 # 1. Time series plots
 time_series_plot(country = country, iso = iso, seasons = seasons)
 # 2. SPI: How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5) 
+calc_spi(country = country, iso = iso, seasons = seasons)
 
 # 3. Climatology
 

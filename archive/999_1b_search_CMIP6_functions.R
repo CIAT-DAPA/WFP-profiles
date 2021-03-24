@@ -6,6 +6,10 @@
 # most likely multiple download options are available ---> create a database of all relevant information
 # all files https://esgf3.dkrz.de/thredds/catalog/esgcet/catalog.html
 
+# resources
+# https://docs.google.com/document/d/1h0r8RZr_f3-8egBMMh7aqLwy3snpD6_MrDz1q8n5XUk/edit
+# https://github.com/WCRP-CMIP/CMIP6_CVs/
+
 # Functions
 # First search all results with few parameters
 # complete list of search parameters are following
@@ -25,7 +29,7 @@ findMetaCMIP6 <- function(...){
   
   # work in progress: not the final list 
   argsList <- c("offset","limit","activity_id","model_cohort","product","source_id",
-                "institution_id","source_type","nominal_resolution","experiment_id",
+                "institution_id","member_id","source_type","nominal_resolution","experiment_id",
                 "sub_experiment_id","variant_label","grid_label","table_id","frequency",
                 "realm","variable_id","cf_standard_name","data_node","project", "mip_era")
   
@@ -176,10 +180,3 @@ checkDownloadStatus <- function(i, idx, downdir){
 }
 
 
-
-# instead of own search, rely on others 
-# library(data.table)
-# url <- "https://storage.googleapis.com/cmip6/pangeo-cmip6.csv"
-# cmip6cat <- paste0("data/", basename(url))
-# download.file(url, destfile = cmip6cat, mode = "wb")
-# adf <- fread(cmip6cat)

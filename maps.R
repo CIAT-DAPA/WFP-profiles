@@ -1,34 +1,26 @@
-#  rm(list = ls()); gc(reset = TRUE)
+# -------------------------------------------------- #
+# Climate Risk Profiles -- Maps graphs
+# A. Esquivel, C. Saavedra & H. Achicanoy
+# Alliance Bioversity-CIAT, 2021
+# -------------------------------------------------- #
 
-# WFP Climate Risk Project
-# =----------------------
-# Graphs.  
-# A. Esquivel - H. Achicanoy - C.Saavedra 
-# =----------------------
-
-# R options
 options(warn = -1, scipen = 999)
-
-# Load libraries
 suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(tidyverse, terra, gtools, future, furrr, lubridate, raster, terra,tmap, fst, sf))
 
 # Paths
-OSys <- Sys.info()[1]
-root <<- switch(OSys,
-                'Linux'   = '/home/jovyan/work/cglabs',
-                'Windows' = '//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr')
+root <- '//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr'
 
-# =-------------------------------------
-# Parameters 
-iso3 <- 'HTI'
-country <- 'Haiti'
-seasons <- list(s1 =	c(3,4,5,6,7,8),
-                s2 = 	c(7,8,9,10,11),
-                s3 =	c(11,12,1,2),
-                s4 =	c(1,2,3,4,5,6,7,8,9,10,11,12)) 
-Zone  <- 'all'
-# =-------------------------------------
+# # =-------------------------------------
+# # Parameters 
+# iso3 <- 'HTI'
+# country <- 'Haiti'
+# seasons <- list(s1 =	c(3,4,5,6,7,8),
+#                 s2 = 	c(7,8,9,10,11),
+#                 s3 =	c(11,12,1,2),
+#                 s4 =	c(1,2,3,4,5,6,7,8,9,10,11,12)) 
+# Zone  <- 'all'
+# # =-------------------------------------
 
 map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
@@ -171,7 +163,7 @@ mapping_g <- function(R_zone, iso3, country, Period = seasons,data_cons = data_c
     title = filter(to_do, Regions  == R_zone)$Livehood_z   
   }
   
-  # Aqui hacer el bufer --- menor tamaño. 
+  # Aqui hacer el bufer --- menor tama?o. 
   zone_bufer <- sf::st_buffer(zone, dist = 0.05)  %>% 
     sf::st_union(.) %>% sf::as_Spatial()
   
@@ -280,7 +272,7 @@ mapping_g <- function(R_zone, iso3, country, Period = seasons,data_cons = data_c
     
     pattern <- case_when(
       var_toG[i] == "ATR" ~ 'ATR\n(mm/season)',
-      var_toG[i] == "AMT" ~ 'AMT\n(°C)' ,
+      var_toG[i] == "AMT" ~ 'AMT\n(?C)' ,
       var_toG[i] == "TAI" ~ 'TAI\nAridity',
       var_toG[i] == "SLGP" ~ 'SLGP\n(Day of\nthe year)', 
       var_toG[i] == "LGP" ~ 'LGP\n(days)', 
@@ -389,7 +381,7 @@ mapping_g <- function(R_zone, iso3, country, Period = seasons,data_cons = data_c
       
       pattern <- case_when(
         var_toG[i] == "ATR" ~ 'ATR\n(%)',
-        var_toG[i] == "AMT" ~ 'AMT\n(°C)' ,
+        var_toG[i] == "AMT" ~ 'AMT\n(?C)' ,
         var_toG[i] == "TAI" ~ 'TAI\nAridity',
         var_toG[i] == "SLGP" ~ 'SLGP\n(Day of\nthe year)', 
         var_toG[i] == "LGP" ~ 'LGP\n(days)', 
@@ -487,7 +479,7 @@ mapping_g <- function(R_zone, iso3, country, Period = seasons,data_cons = data_c
   
   pattern <- case_when(
     var_Q[i] == "ATR" ~ '(mm/season)',
-    var_Q[i] == "AMT" ~ '(°C)' ,
+    var_Q[i] == "AMT" ~ '(?C)' ,
     var_Q[i] == "TAI" ~ 'Aridity',
     var_Q[i] == "SLGP" ~ '(Day of\nthe year)', 
     var_Q[i] == "LGP" ~ '(days)', 
@@ -924,15 +916,7 @@ for(i in 1:length(seasons)){
 }
 
 }
-
-# Aqui para correr. 
-map_graphs(iso3, country, seasons)
-
-
-
-
-
-
+# map_graphs(iso3, country, seasons, Zone)
 
 # =-----------------------------------
 

@@ -47,6 +47,15 @@ calc_indices(climate = infile,
              outfile = outfile,
              spi_out = spi_out)
 
+# How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5)
+infile  <- paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst")
+outfile <- paste0(root,'/7.Results/',country,'/past/',iso,'_spi_drought.fst')
+calc_spi_drought(spi_data = infile,
+                 output   = outfile,
+                 country  = country,
+                 iso      = iso,
+                 seasons  = seasons)
+
 # Calc agro-climatic indices (future)
 models  <- c('INM-CM5-0') # 'GFDL-ESM4','MPI-ESM1-2-HR','MRI-ESM2-0','BCC-CSM2-MR'
 periods <- c('2021-2040','2041-2060')
@@ -63,35 +72,25 @@ for(m in models){
                  ncores  = 15,
                  outfile = outfile,
                  spi_out = spi_out)
+    infile  <- paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi.fst")
+    outfile <- paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi_drought.fst")
+    calc_spi_drought(spi_data = infile,
+                     output   = outfile,
+                     country  = country,
+                     iso      = iso,
+                     seasons  = seasons)
   }
 }
 
 ## Graphs
 # 1. Time series plots
 time_series_plot(country = country, iso = iso, seasons = seasons)
-# 2. SPI: How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5) 
-calc_spi(country = country, iso = iso, seasons = seasons)
 
-# 3. Climatology
+# 2. Climatology
 
-# 4. Elevation map
+# 3. Elevation map
 
-# 5. Maps
-maps(country = country, ...)
+# 4. Maps
+map_graphs(iso3 = iso, country = country, seasons = seasons, Zone = 'all')
 
 # 6. PPT slides
-
-# list.files('root/results/HTI', full.names = T) %>% # Graphs per livelihood zones
-#   purrr::map(.f = function(pth){
-#     df <- fst::read_fst()
-#     graphs(...)
-#   })
-# list.files('root/results/HTI', full.names = T) %>% # Graphs per country
-#   purrr::map(.f = function(pth){
-#     df <- fst::read_fst()
-#   })%>%
-#   dplyr::bind_rows() %>%
-#   graphs(...)
-# 
-# tidyfst::parse_fst(path = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/TZA/TZA.fst') %>%
-#   tidyfst::slice_fst(ft = ., row_no = c(1,10,20:30))

@@ -5,19 +5,21 @@
 # -------------------------------------------------- #
 
 # Input parameters:
+#   spi_data: path of spi complete time series results
+#   output: path of the spi drought indicator
 #   iso: ISO 3 code in capital letters
 #   country: country name first character in capital letter
 #   seasons: corresponding seasons for each country
 # Output:
 #   data.frame with SPI drought values per season and year
-calc_spi_drought <- function(country = country, iso = iso, seasons = seasons){
+calc_spi_drought <- function(spi_data = infile, output = outfile, country = country, iso = iso, seasons = seasons){
   
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   pacman::p_load(tidyverse, tidyft, fst, raster, terra, sf)
   
   root <<- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
   
-  if(!file.exists(paste0(root,'/7.Results/',country,'/past/',iso,'_spi_drought.fst'))){
+  if(!file.exists(outfile)){
     # Load municipalities/districts shapefile
     # Identify the lowest admin level: to do
     lvl <- list.files(path = paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_gadm'), pattern = '.shp$', full.names = F, recursive = F)
@@ -36,7 +38,7 @@ calc_spi_drought <- function(country = country, iso = iso, seasons = seasons){
       tolower(.)
     
     # Read SPI time series results
-    spi <- paste0(root,'/7.Results/',country,'/past/',iso,'_spi.fst') %>%
+    spi <- infile %>%
       tidyft::parse_fst(path = .) %>%
       tidyft::select_fst(id,month,year,SPI) %>%
       base::as.data.frame()
@@ -125,15 +127,10 @@ calc_spi_drought <- function(country = country, iso = iso, seasons = seasons){
         return(drgh_px)
       }) %>%
       dplyr::bind_rows()
-    fst::write_fst(drgh, paste0(root,'/7.Results/',country,'/past/',iso,'_spi_drought.fst'))
+    fst::write_fst(drgh, outfile)
     cat('SPI drought indicator successfully calculated\n')
   } else {
     cat('SPI drought indicator is already calculated\n')
   }
   
 }
-
-# country <- 'Somalia'
-# iso     <- 'SOM'
-# seasons <- list(s1 = c(4,5,6,7,8), s2 = c(9,10,11,12,1,2))
-# calc_spi(country = country, iso = iso, seasons = seasons)

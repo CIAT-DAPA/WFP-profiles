@@ -96,9 +96,9 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
               tbl$y <- NULL
             } else {
               tbl <- df[[i]]
-              tbl$id   <- as.numeric(tbl$id)
-              tbl$date <- as.Date(tbl$date)
             }
+            tbl$id   <- as.character(tbl$id)
+            tbl$date <- as.Date(tbl$date)
             return(tbl)
           })
         # merge list of dataframes
@@ -138,6 +138,8 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
         } else {
           tbl <- df[[i]]
         }
+        tbl$id   <- as.character(tbl$id)
+        tbl$date <- as.Date(tbl$date)
         return(tbl)
       })
     # merge list of dataframes

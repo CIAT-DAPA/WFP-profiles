@@ -120,8 +120,8 @@ calc_spi_drought <- function(spi_data = infile, output = outfile, country = coun
                                      by = c(adm,'key'))
         
         drgh_px <- cbind(crd,raster::extract(x = tmp, y = crd[,c('x','y')])) %>% tidyr::drop_na()
-        drgh_px <- drgh_px %>% dplyr::select(id,x,y,Y1981:Y2019)
-        drgh_px <- drgh_px %>% tidyr::pivot_longer(cols = Y1981:Y2019, names_to = 'year', values_to = 'spi')
+        drgh_px <- drgh_px %>% dplyr::select(id,x,y,grep(pattern = '^Y', x = names(drgh_px)))
+        drgh_px <- drgh_px %>% tidyr::pivot_longer(cols = grep(pattern = '^Y', x = names(drgh_px)), names_to = 'year', values_to = 'spi')
         drgh_px$year <- gsub('Y','',drgh_px$year)
         drgh_px$season <- paste0('s',i)
         return(drgh_px)

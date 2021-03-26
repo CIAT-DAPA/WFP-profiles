@@ -87,6 +87,7 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
         df <- lapply(d, function(x){
           tb <- data.table(read_fst(x))
           if(names(tb)[1] == 'cell_id'){names(tb)[1] <- 'id'}
+          return(tb)
         })
         df <- 1:length(df) %>%
           purrr::map(.f = function(i){
@@ -97,6 +98,8 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
             } else {
               tbl <- df[[i]]
             }
+            tbl$id   <- as.character(tbl$id)
+            tbl$date <- as.Date(tbl$date)
             return(tbl)
           })
         # merge list of dataframes
@@ -126,6 +129,7 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
     df <- lapply(d, function(x){
       tb <- data.table(read_fst(x))
       if(names(tb)[1] == 'cell_id'){names(tb)[1] <- 'id'}
+      return(tb)
     })
     df <- 1:length(df) %>%
       purrr::map(.f = function(i){
@@ -136,6 +140,8 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
         } else {
           tbl <- df[[i]]
         }
+        tbl$id   <- as.character(tbl$id)
+        tbl$date <- as.Date(tbl$date)
         return(tbl)
       })
     # merge list of dataframes

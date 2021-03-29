@@ -2,7 +2,7 @@ source("archive/999_1b_search_CMIP6_functions.R")
 
 vars <- c("pr","tas","tasmax","tasmin")
 # models <- c("BCC-CSM2-MR","CESM2","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0")
-models <- c("AWI-CM-1-1-MR","EC-Earth3-Veg","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0")
+models <- c("ACCESS-ESM1-5","EC-Earth3-Veg","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0")
 
 
 varmod <- expand.grid(vars, models)
@@ -42,6 +42,7 @@ for (i in 1:nrow(varmod)){
                                limit = 10000,
                                activity_id="ScenarioMIP",
                                experiment_id = "ssp585",
+                               member_id = "r1i1p1f1",
                                frequency = "day",
                                variable_id = var,
                                source_id = model,
@@ -101,13 +102,16 @@ if (downloadParallel){
 
 
 # check for file size for downloaded file 
-k <- lapply(1:nrow(idx), checkDownloadStatus, dd, downdir)
-k <- data.table::rbindlist(k, fill = TRUE)
-table(k$localfilecheck)
+# k <- lapply(1:nrow(idx), checkDownloadStatus, dd, downdir)
+# k <- data.table::rbindlist(k, fill = TRUE)
+# table(k$localfilecheck)
 
 # move/delete files not in the updated list 
 ff <- list.files(downdir, pattern = ".nc$", full.names = TRUE)
-f <- ff[!ff %in% path.expand(k$localfile)]
+# f <- ff[!ff %in% path.expand(k$localfile)]
+# f <- grep("r1i1p1f1", ff, invert = TRUE, value = TRUE)
+f <- unique(grep(paste(models,collapse="|"), ff, value=TRUE, invert = TRUE))
+
 backup <- gsub("climate","backup/climate",downdir)
 dir.create(backup, recursive = T, showWarnings = F)
 file.copy(f, backup)

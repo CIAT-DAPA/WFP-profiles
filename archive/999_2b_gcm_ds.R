@@ -49,7 +49,7 @@ rotateGCM <- function(f, sdate, edate, interimdir, overwrite = FALSE){
   # save intermediate rotated files
   rout <- basename(f)[!j]
   # split by gn
-  rout <- unique(sapply(strsplit(rout, "_gn_|_gr1_"), "[", 1)) # check for 
+  rout <- unique(sapply(strsplit(rout, "_gn_|_gr_|_gr1_"), "[", 1)) # check for 
   # date range in the data
   # dates <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
   # dates <- as.Date(gsub("X","",names(r)), "%Y.%m.%d")
@@ -58,13 +58,19 @@ rotateGCM <- function(f, sdate, edate, interimdir, overwrite = FALSE){
   rout <- paste0("rotated_", rout, "-", paste(dtrange, collapse = "_"), ".tif")
   routf <- file.path(interimdir, rout)
   
+  if(file.exists(routf)){
+    # might need to change the file size 
+    if(file.size(routf) == 0){
+      unlink(routf)
+    } 
+  }
+  
   if(!file.exists(routf)){
     rot <- try(terra::rotate(r, filename = routf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite), silent = FALSE)
     saveRDS(dates, gsub(".tif","_dates.rds",routf))
   }
   return(routf)
 }  
-
 
 # Function to get daily data from a single file
 getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
@@ -130,17 +136,21 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   #################################################################################################################
   # finally the fst files
   foutf <- gsub(".tif", ".fst", soutf)
-  # Is this memory safe? get cell values
-  dd <- terra::as.data.frame(rotsub, xy = TRUE)
-  names(dd) <- c("x", "y", dates)
   
-  # convert from wide to long with dataframe, safer way?
-  ddl <- melt(setDT(dd), id.vars = c("x","y"), value.name = var, variable = "date")
-  
-  # add cellnumbers for using with join later
-  xy <- as.matrix(ddl[,c("x","y")])
-  ddl <- data.frame(cell_id = cellFromXY(rotsub, xy), ddl, stringsAsFactors = FALSE)
-  write_fst(ddl, path = foutf)
+  if(!file.exists(foutf)){
+    # Is this memory safe? get cell values
+    dd <- terra::as.data.frame(rotsub, xy = TRUE)
+    # names(dd) <- c("x", "y", dates)
+    names(dd) <- c("x", "y", names(rotsub))
+    
+    # convert from wide to long with dataframe, safer way?
+    ddl <- melt(setDT(dd), id.vars = c("x","y"), value.name = var, variable = "date")
+    
+    # add cellnumbers for using with join later
+    xy <- as.matrix(ddl[,c("x","y")])
+    ddl <- data.frame(cell_id = cellFromXY(rotsub, xy), ddl, stringsAsFactors = FALSE)
+    write_fst(ddl, path = foutf)
+  }
   return(NULL)
 }
 
@@ -149,7 +159,7 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
 iso <- c("BDI","HTI","GIN","GNB","MMR","NPL","NER","PAK","SOM","TZA")
 setup <- data.frame(expand.grid(iso = iso,
                                 var = c('pr','tas','tasmax','tasmin'),
-                                model = c("BCC-CSM2-MR","CESM2","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0"),
+                                model = c("ACCESS-ESM1-5","EC-Earth3-Veg","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0"),
                                 exp = c('historical','ssp585_1','ssp585_2'), stringsAsFactors = FALSE))
 
 setup$sdate <- NA
@@ -191,10 +201,10 @@ if(!file.exists(ref)){
 
 # prioritize HTI and BDI
 
-setupx <- setup[setup$iso %in% c("BDI", "HTI"),]
+setupx <- setup[setup$iso != "BDI",]
 
 rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
-                          mc.preschedule = FALSE, mc.cores = 20)
+                          mc.preschedule = FALSE, mc.cores = 16)
 
 library(future.apply)
 availableCores()
@@ -203,8 +213,13 @@ future_lapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite
 
 
 t1 <- Sys.time()
-rr <- lapply(120, getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE)
+rr <- lapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE)
 Sys.time() - t1
+
+
+# copy files to GCP
+# gsutil cp -r /home/anighosh/data/output/downscale/CMIP6/daily/BDI gs://cmip6results/data/output/downscale/CMIP6/daily/BDI
+
 
 # some cleanup
 f1 <- list.files("~/data/interim/rotated/CMIP6/daily/", pattern = ".nc-",
@@ -223,6 +238,24 @@ odir <- "~/data/output/downscale/CMIP6/daily"
 ff <- list.files(odir, pattern = ".tif$",recursive = TRUE, full.names = TRUE)
 file.size(ff)*1e-9
 
+# file check
+odir <- "~/data/output/downscale/CMIP6/daily"
+ff <- list.files(odir, pattern = ".fst$", recursive = TRUE, full.names = TRUE)
+
+getStatus <- function(iso){
+  f <- grep(iso, ff, value = TRUE)
+  x <- strsplit(basename(f), "_")
+  var <- sapply(x, "[[", 3)
+  model <- sapply(x, "[[", 5)
+  date1 <- sapply(x,"[[", 7)
+  date1 <- gsub("r1i1p1f1-", "", date1)
+  date2 <- sapply(x,"[[", 8)
+  date2 <- gsub(".fst", "", date2)
+}
+
+fs <- gsub(".tif", ".fst", f)
+x <- fs[!file.exists(fs)]
+x <- gsub(".fst", ".tif", x)
 
 ###################################################################################################################
 # Merge output tables

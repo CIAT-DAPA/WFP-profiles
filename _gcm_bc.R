@@ -48,7 +48,8 @@ BC_Qmap <- function(his_obs = his_obs,
   
   cat(paste0(' *** Performing Quantile-mapping bias correction***\n'))
   cat(paste0('>>> Loading obs data\n'))
-  his_obs <- fst::read_fst(his_obs)
+  his_obs <- his_obs %>%
+    tidyft::parse_fst(path = .)
   his_obs$year <- NULL
   his_obs$id1 <- his_obs$id
   his_obs <- his_obs %>%
@@ -90,7 +91,8 @@ BC_Qmap <- function(his_obs = his_obs,
   his_obs$Climate <- impute_missings(tbl = his_obs)
   
   cat(paste0('>>> Loading historical GCM data\n'))
-  his_gcm <- fst::read_fst(his_gcm)
+  his_gcm <- his_gcm %>%
+    tidyft::parse_fst(path = .)
   his_gcm$id1 <- his_gcm$id
   his_gcm <- his_gcm %>%
     tidyr::nest(Climate = c('id','date','prec','tmax','tmin')) %>%
@@ -99,7 +101,8 @@ BC_Qmap <- function(his_obs = his_obs,
   his_gcm$Climate <- impute_missings(tbl = his_gcm)
   
   cat(paste0('>>> Loading future GCM data\n'))
-  fut_gcm <- fst::read_fst(fut_gcm)
+  fut_gcm <- fut_gcm %>%
+    tidyft::parse_fst(path = .)
   fut_gcm$id1 <- fut_gcm$id
   fut_gcm <- fut_gcm %>%
     tidyr::nest(Climate = c('id','date','prec','tmax','tmin')) %>%

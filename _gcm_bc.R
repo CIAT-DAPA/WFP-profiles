@@ -159,10 +159,10 @@ BC_Qmap <- function(his_obs = his_obs,
   fut_gcm_bc <- fut_gcm_bc %>% tidyr::unnest(.)
   
   if(!file.exists(his_bc)){
-    dir.create(dirname(his_bc),FALSE, TRUE)
+    dir.create(dirname(his_bc),FALSE,TRUE)
     fst::write_fst(his_gcm_bc,his_bc)
   }
-  dir.create(dirname(fut_bc),FALSE, TRUE)
+  dir.create(dirname(fut_bc),FALSE,TRUE)
   fst::write_fst(fut_gcm_bc,fut_bc)
   
   cat('Bias correction process completed successfully\n')
@@ -173,11 +173,11 @@ BC_Qmap <- function(his_obs = his_obs,
 # model   <- 'INM-CM5-0'
 # his_obs <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
 # his_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/1995-2014/",iso,".fst")
-# fut_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/",period,"/",iso,".fst")
 # his_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/1995-2014/",iso,".fst")
-# fut_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
 # c('2021-2040','2041-2060') %>%
 #   purrr::map(.f = function(period){
+#     fut_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/",period,"/",iso,".fst")
+#     fut_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
 #     BC_Qmap(his_obs = his_obs,
 #             his_gcm = his_gcm,
 #             fut_gcm = fut_gcm,

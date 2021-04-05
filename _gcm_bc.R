@@ -138,10 +138,10 @@ BC_Qmap <- function(his_obs = his_obs,
     purrr::map(.f = function(i){
       df <- fut_gcm_bc$Climate[[i]]
       his_obs_flt <- his_obs$Climate[[i]] %>%
-        dplyr::mutate(month = lubridate::month(date),
-                      day   = lubridate::day(date)) %>%
-        .[-which(.$month == 2 & .$day == 29),] %>%
-        dplyr::filter(date >= as.Date('1995-01-02') & date <= as.Date('2014-12-31'))
+        # dplyr::mutate(month = lubridate::month(date),
+        #               day   = lubridate::day(date)) %>%
+        # .[-which(.$month == 2 & .$day == 29),] %>%
+        dplyr::filter(date >= as.Date('1995-01-01') & date <= as.Date('2014-12-31')) # Initial date: YYYY-01-02
       df$tmean <- (df$tmin + df$tmax)/2
       df$srad  <- his_obs_flt$srad
       df$wind  <- his_obs_flt$wind

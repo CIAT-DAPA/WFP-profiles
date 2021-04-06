@@ -23,7 +23,7 @@ calc_spi_drought <- function(spi_data = infile, output = outfile, country = coun
     # Load municipalities/districts shapefile
     # Identify the lowest admin level: to do
     lvl <- list.files(path = paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_gadm'), pattern = '.shp$', full.names = F, recursive = F)
-    lvl <- readr::parse_number(lvl) %>% max(na.rm = T)
+    lvl <- regmatches(lvl, gregexpr("[[:digit:]]+", lvl)) %>% unlist() %>% as.numeric() %>% max(na.rm = T)
     shp <- raster::shapefile(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_gadm/',country,'_GADM',lvl,'.shp'))
     # Identify administrative levels
     adm <- grep('^NAME_', names(shp), value = T)

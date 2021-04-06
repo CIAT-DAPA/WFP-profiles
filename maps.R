@@ -42,7 +42,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   # Regions shp
   regions_all <- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_regions/",tolower(iso3),"_regions.shp"))
   regions_all <- regions_all %>%  sf::st_as_sf() %>% 
-    group_by(region) %>% summarise()
+    group_by(region) %>% summarise() %>% 
+    mutate(Short_Name = to_do$Short_Name)
   regions_all <<- regions_all
   
   
@@ -149,9 +150,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     if(R_zone == 'all'){
       zone <- regions_all # %>% sf::as_Spatial() 
-      var_s <- to_do %>% mutate( Regions = 'all', Livehood_z = 'all') %>% 
+      var_s <- to_do %>% mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
         mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
-        group_by(ISO3, Country, Regions, Livehood_z) %>% 
+        group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
         summarise_all(. , sum, na.rm = TRUE) %>% ungroup()
       
       title = 'Country'
@@ -160,7 +161,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       var_s <- to_do %>% filter(Regions == R_zone) %>%
         mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
       
-      title = filter(to_do, Regions  == R_zone)$Livehood_z   
+      title = filter(to_do, Regions  == R_zone)$Short_Name   
     }
     
     # Aqui hacer el bufer --- menor tama?o. 
@@ -810,7 +811,20 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         setNames(c('id', 'x', 'y', 'time1', 'var'))
       
       tst <- data.frame(var = sort( unique(st_hz) ))
-      tst$col <- pals::vsup.viridis(length(unique(st_hz)))
+      
+      mx_lvl <- strsplit(tst$var, '-') %>% unlist %>% as.numeric() %>% max()
+      
+      col.matrix<- colmat(nquantiles = mx_lvl +1 , upperleft="#64ACBE", upperright="#574249", bottomleft="#F5EEF8", bottomright="#C85A5A", xlab='', ylab = '') 
+      col.matrix <- col.matrix[-1, ][, -1]
+      colnames(col.matrix) = glue::glue('{0:mx_lvl}')
+      rownames(col.matrix) = glue::glue('{0:mx_lvl}')
+      
+      
+      col.matrix <- col.matrix %>% as.table() %>% as.data.frame() %>% 
+        mutate(var = glue::glue('{Var1}-{Var2}')) %>% 
+        rename(col = 'Freq')
+      
+      tst <- inner_join(tst, dplyr::select(col.matrix, var, col) )
       tbl <- dplyr::left_join(x = tbl, y = tst, by = 'var')
       
       dat <- ggplot2::ggplot() +
@@ -834,13 +848,13 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       
       # =--- 
-      oth_tst <- dplyr::select(tst, var) %>% pull()
-      tst$x <- as.factor(substr(x = oth_tst, start=1, stop=1))
-      tst$y <- as.factor(substr(x = oth_tst, start=3, stop=3))
+      oth_tst <- dplyr::select(col.matrix, var) %>% pull()
+      col.matrix$x <- as.factor(substr(x = oth_tst, start=1, stop=1))
+      col.matrix$y <- as.factor(substr(x = oth_tst, start=3, stop=3))
       
       
-      leg <-  tst %>% ggplot2::ggplot(aes(x = x, y = y)) +
-        ggplot2::geom_tile(fill = tst$col, alpha = 0.8) +
+      leg <-  col.matrix %>% ggplot2::ggplot(aes(x = x, y = y)) +
+        ggplot2::geom_tile(fill = col.matrix$col) +
         ggplot2::coord_equal() +
         ggplot2::theme_minimal() +
         # scale_x_discrete() + scale_y_discrete() +
@@ -892,18 +906,21 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     ylims <<- sf::st_bbox(shp_sf)[c(2, 4)]
     
     b <- ggplot() +
-      geom_sf(data = ctn,  fill = 'snow', color = gray(.1), alpha = 0.2) +
-      geom_sf(data = shp_sf,  fill = 'lightgray', color = gray(.1), alpha = 0.2) +
-      geom_sf(data = zone, fill = 'gray' , color = gray(.1)) +
+      geom_sf(data = ctn,  fill = '#AEB6BF', color = gray(.1)) +
+      geom_sf(data = shp_sf,  fill = '#D5DBDB', color = gray(.1)) +
+      geom_sf(data = zone, aes(fill = Short_Name), color = gray(.1)) +
       geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
       geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
       coord_sf(xlim = xlims, ylim = ylims) +
-      labs(x = NULL, y = NULL) +
+      scale_fill_brewer(palette = "Set3") +
+      labs(x = NULL, y = NULL, fill = NULL) +
       theme_bw() +
-      theme(legend.position = 'bottom', text = element_text(size=18), 
+      theme(legend.position = 'bottom', 
+            text = element_text(size=18), 
             axis.text        = element_blank(),
             legend.text = element_text(size=18),
-            legend.title=element_text(size=18))  +  guides(shape = guide_legend(ncol = 3))
+            legend.title=element_text(size=18))  +  
+      guides(fill = guide_legend(ncol = 1))
     
     ggsave(glue::glue('{path}/Location.png') , width = 8, height = 5.5, dpi = 300)
     

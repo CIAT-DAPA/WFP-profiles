@@ -20,16 +20,25 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
   if(!dir.exists(outdir)){ dir.create(outdir, F, T) }
   
   # Load historical time series
-  pst <- fst::read_fst(paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst"))
+  pst <- paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst") %>%
+    tidyft::parse_fst() %>%
+    base::as.data.frame()
   pst$gSeason <- pst$SLGP <- pst$LGP <- NULL
+  pst$model <- 'Historical'
   fut_fls <- paste0(root,'/7.Results/',country,'/future') %>%
     list.files(., pattern = paste0(iso,'_indices.fst'), full.names = T, recursive  = T)
   if(length(fut_fls) > 0){
-    fut <- fut_fls %>% purrr::map(.f = function(f){fst::read_fst(f)}) %>% dplyr::bind_rows()
+    models <- fut_fls %>% strsplit(x = ., split = '/') %>% purrr::map(9) %>% unlist()
+    fut <- 1:length(fut_fls) %>% purrr::map(.f = function(i){
+      df <- fut_fls[i] %>%
+        tidyft::parse_fst() %>%
+        base::as.data.frame()
+      df$model <- models[i]; return(df)
+    }) %>% dplyr::bind_rows()
     fut$gSeason <- fut$SLGP <- fut$LGP <- NULL
-    fut <- fut %>% dplyr::group_by(id, season, year) %>% dplyr::summarise_all(median, na.rm = T)
+    fut <- fut %>% dplyr::group_by(id, season, model, year) %>% dplyr::summarise_all(median, na.rm = T)
   }
-  ifelse(exists('fut'), tbl <- rbind(pst,fut), tbl <- pst)
+  ifelse(exists('fut'), tbl <- dplyr::bind_rows(pst,fut), tbl <- pst)
   tbl <- tbl %>% tidyr::drop_na()
   ss <- sort(unique(tbl$season))
   for(s in ss){
@@ -47,7 +56,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
   for(i in 1:length(seasons)){
     dir.create(path = paste0(outdir,'/all_s',i), F, T)
     tbl_lng <- tbl %>%
-      dplyr::select(id:THI_3) %>%
+      dplyr::select(id:model) %>%
       tidyr::pivot_longer(cols = TAI:THI_3, names_to = 'Indices', values_to = 'Value') %>%
       dplyr::group_by(Indices, add = T) %>%
       dplyr::group_split()
@@ -67,26 +76,53 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
         if(vr == 'P95'){ ylb <- 'mm/day' } # df <- df[df$Value < 50,]
         if(vr == 'SHI'){ ylb <- 'days/season' }
         
-        df %>%
-          ggplot2::ggplot(aes(x = year, y = Value, group = id)) +
-          ggplot2::geom_line(alpha = .05, colour = 'gray') +
-          ggplot2::theme_bw() +
-          ggplot2::stat_summary(fun = median, geom = "line", lwd = 1.2, colour = 'red', aes(group=1)) +
-          ggplot2::ggtitle(paste0(vr,': ',seasons[i])) +
-          ggplot2::xlab('Year') +
-          ggplot2::ylab(ylb) +
-          ggplot2::theme_bw() +
-          ggplot2::geom_vline(xintercept = 2020, size = 1, linetype = "dashed", color = "blue") +
-          ggplot2::theme(axis.text       = element_text(size = 17),
-                         axis.title      = element_text(size = 20),
-                         legend.text     = element_text(size = 17),
-                         legend.title    = element_blank(),
-                         plot.title      = element_text(size = 25),
-                         plot.subtitle   = element_text(size = 17),
-                         strip.text.x    = element_text(size = 17),
-                         plot.caption    = element_text(size = 15, hjust = 0),
-                         legend.position = "bottom") +
-          ggplot2::ggsave(paste0(outdir,'/all_s',i,'/',vr,'.jpeg'), device = 'jpeg', width = 10, height = 8, units = 'in', dpi = 350)
+        if(length(models) > 1){
+          df %>%
+            dplyr::filter(model == 'Historical') %>% 
+            ggplot2::ggplot(aes(x = year, y = Value, group = model)) +
+            # ggplot2::geom_line(alpha = .05, colour = 'gray') +
+            ggplot2::theme_bw() +
+            ggplot2::stat_summary(fun = median, geom = "line", lwd = 1.2, colour = 'black', aes(group=1)) +
+            ggplot2::stat_summary(data = df[df$model!='Historical',], fun = median, geom = "line", lwd = 1.2, colour = 'black', aes(group=1)) +
+            ggplot2::stat_summary(data = df[df$model!='Historical',] %>% dplyr::group_by(model), fun = median, geom = "line", lwd = 0.5, aes(colour = model)) +
+            ggplot2::scale_color_brewer(palette = 'Set1') +
+            ggplot2::ggtitle(paste0(vr,': ',seasons[i])) +
+            ggplot2::xlab('Year') +
+            ggplot2::ylab(ylb) +
+            ggplot2::theme_bw() +
+            ggplot2::geom_vline(xintercept = 2020, size = 1, linetype = "dashed", color = "red") +
+            ggplot2::theme(axis.text       = element_text(size = 17),
+                           axis.title      = element_text(size = 20),
+                           legend.text     = element_text(size = 15),
+                           legend.title    = element_blank(),
+                           plot.title      = element_text(size = 25),
+                           plot.subtitle   = element_text(size = 17),
+                           strip.text.x    = element_text(size = 17),
+                           plot.caption    = element_text(size = 15, hjust = 0),
+                           legend.position = "bottom") +
+            ggplot2::ggsave(paste0(outdir,'/all_s',i,'/',vr,'.jpeg'), device = 'jpeg', width = 10, height = 8, units = 'in', dpi = 350)
+        } else {
+          df %>%
+            ggplot2::ggplot(aes(x = year, y = Value, group = id)) +
+            ggplot2::geom_line(alpha = .05, colour = 'gray') +
+            ggplot2::theme_bw() +
+            ggplot2::stat_summary(fun = median, geom = "line", lwd = 1.2, colour = 'black', aes(group=1)) +
+            ggplot2::ggtitle(paste0(vr,': ',seasons[i])) +
+            ggplot2::xlab('Year') +
+            ggplot2::ylab(ylb) +
+            ggplot2::theme_bw() +
+            ggplot2::geom_vline(xintercept = 2020, size = 1, linetype = "dashed", color = "blue") +
+            ggplot2::theme(axis.text       = element_text(size = 17),
+                           axis.title      = element_text(size = 20),
+                           legend.text     = element_text(size = 17),
+                           legend.title    = element_blank(),
+                           plot.title      = element_text(size = 25),
+                           plot.subtitle   = element_text(size = 17),
+                           strip.text.x    = element_text(size = 17),
+                           plot.caption    = element_text(size = 15, hjust = 0),
+                           legend.position = "bottom") +
+            ggplot2::ggsave(paste0(outdir,'/all_s',i,'/',vr,'.jpeg'), device = 'jpeg', width = 10, height = 8, units = 'in', dpi = 350)
+        }
         
       })
   }

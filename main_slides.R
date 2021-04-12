@@ -19,7 +19,8 @@ create_slides <- function(country = 'Burundi', iso3 = iso3, season = season, reg
 
   to_do <- readxl::read_excel('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>%
     filter(ISO3 == iso3) %>%
-    rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X")
+    rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X") %>% 
+    dplyr::select(-Short_Name)
 
   to_do <- to_do %>% filter(ISO3 == iso3) %>%
       mutate(NWLD50 = NWLD, NWLD90 = NWLD, HSI_0 = HSI, HSI_1 = HSI, HSI_2 = HSI, HSI_3 = HSI,
@@ -60,7 +61,7 @@ create_slides <- function(country = 'Burundi', iso3 = iso3, season = season, reg
         # Heat
         if(sum(var_to == 'THI_2')==0){
           He_v <- filter(var_to, group == 'Heat')[1,]$var
-          l <- gsub(pattern = 'THI_2', replacement = He_v, x = l, fixed = T)}
+          l <- gsub(pattern = 'THI_23', replacement = He_v, x = l, fixed = T)}
         # Waterlogging
         if(sum(var_to == 'NWLD')==0){
           Wa_v <- filter(var_to, group == 'Waterlogging')[1,]$var

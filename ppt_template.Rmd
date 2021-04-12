@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = FALSE)
 ![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Location.png){width="10%"}
 :::
 ::: {.column width="90%"}
-<-- elevacion -->
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Elevation.png){width="10%"}
 :::
 ::::::
 
@@ -86,7 +86,7 @@ knitr::opts_chunk$set(echo = FALSE)
 <-- No tiene -->
 :::
 ::: {.column width="50%"}
-![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Fix_THI_2.png){width="10%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Fix_THI_23.png){width="10%"}
 :::
 ::::::
 

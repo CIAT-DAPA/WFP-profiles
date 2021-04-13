@@ -17,3 +17,8 @@ for(district in districts){
     raster::shapefile(shp2, out)
   }
 }
+
+reg <- readxl::read_excel("D:/OneDrive - CGIAR/Migration/data/somalia_districts_control_table.xlsx", sheet = 1)
+districts <- reg$`HAROLD DISTRICT` %>% unique %>% na.omit %>% as.character
+districts <- districts[-length(districts)]
+districts <- districts[1:30]

@@ -13,6 +13,7 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_clima
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot.R')     # Time series graphs
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_spi_drought.R')    # SPI calculation
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/maps.R')                 # Maps
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/migration/_get_climate4regions_districts.R') # Filter climate for districts of interest
 
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
@@ -22,33 +23,59 @@ country <- 'Somalia'
 iso     <- 'SOM'
 seasons <- list(s1=1,s2=2,s3=3,s4=4,s5=5,s6=6,s7=7,s8=8,s9=9,s10=10,s11=11,s12=12)
 
-# Get historical climate data (done)
-
-# Get soil data
-crd <- paste0(root,"/1.Data/observed_data/",iso,"/year/climate_1981_mod.fst") %>%
-  tidyft::parse_fst(path = .) %>%
-  tidyft::select_fst(id,x,y) %>%
-  base::as.data.frame()
-crd <- unique(crd[,c('id','x','y')])
-get_soil(crd        = crd,
-         root_depth = 60,
-         outfile    = paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst"))
-
-# Get future climate data
+# # Get historical climate data (done)
+# 
+# # Get soil data
+# crd <- paste0(root,"/1.Data/observed_data/",iso,"/year/climate_1981_mod.fst") %>%
+#   tidyft::parse_fst(path = .) %>%
+#   tidyft::select_fst(id,x,y) %>%
+#   base::as.data.frame()
+# crd <- unique(crd[,c('id','x','y')])
+# get_soil(crd        = crd,
+#          root_depth = 60,
+#          outfile    = paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst"))
+# 
+# # Get future climate data
 
 # Calc agro-climatic indices (past)
-district <- 'Lughaya'
-infile <- flt_clm_subunits(iso = iso, country = country, district = district)
-soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
-outfile <- paste0(root,"/1.Data/others/",country,"/past/",tolower(district),"_indices_monthly.fst")
-spi_out <- paste0(root,"/1.Data/others/",country,"/past/",tolower(district),"_spi.fst")
-calc_indices(climate = infile,
-             soil    = soilfl,
-             seasons = seasons,
-             subset  = F,
-             ncores  = 15,
-             outfile = outfile,
-             spi_out = spi_out)
+districts <- c("Caabudwaaq","Zeylac","Buuhoodle","Mogadisho","Boorama","Hargeysa",
+               "Kismaayo","Baydhabo","Lughaya","Beled Xaawo","Baar-Dheere","Dolow",
+               "Afmadow","Luuk","Qansax Dheere","Bu'aale","Diinsoor","Garoowe",
+               "Gabiley","Saakow","Beled Weyn","Bosaaso","Garbahaaray","Dhuusamareeb",
+               "Burao","Gaalkacayo","Xudur","Lascaanod","Ceerigaabo","Marka")
+for(i in 1:length(districts)){
+  
+  soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
+  outfile <- paste0(root,"/1.Data/others/",country,"/past/",tolower(district),"_indices_monthly.fst")
+  spi_out <- paste0(root,"/1.Data/others/",country,"/past/",tolower(district),"_spi.fst")
+  
+  if(!file.exists(outfile)){
+    
+    cat(paste0('Processing district: ',districts[i],'\n'))
+    
+    infile <- flt_clm_subunits(iso = iso, country = country, district = districts[i])
+    tryCatch(expr={
+    calc_indices(climate = infile,
+                 soil    = soilfl,
+                 seasons = seasons,
+                 subset  = F,
+                 ncores  = 15,
+                 outfile = outfile,
+                 spi_out = spi_out)
+    },
+    error=function(e){
+      cat(paste0("Modeling process failed in district: ",districts[i],"\n"))
+      return("Done\n")
+    })
+    
+    cat(paste0('District: ',districts[i],' finished successfully\n'))
+    
+  } else {
+    cat(paste0('Monthly indices are already calculated for district: ',districts[i],'\n'))
+  }
+  
+}
+
 
 # How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5)
 infile  <- paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst")

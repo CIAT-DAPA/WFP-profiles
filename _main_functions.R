@@ -28,6 +28,11 @@ createCluster <- function(noCores, logfile = "/dev/null", export = NULL, lib = N
   return(cl)
 }
 
+# Generate chunks
+chunk <- function(vect, size){
+  split(vect, ceiling(seq_along(vect)/size))
+}
+
 # Agro-climatic indices
 rsum.lapply <- function(x, n=3L) # Calculate rollin sum
 {
@@ -588,7 +593,7 @@ calc_SHIMP <- compiler::cmpfun(calc_SHI)
 # Daily pig heat stress index (HSI) 
 # dplyr::case_when(0 ~ normal, 1 ~ alert, 2 ~ danger, 3 ~ emergency)
 calc_HSI <- function(tmax, RH){
-  HSI <- tibble::tibble( HSI = case_when( tmax <= 23 ~ 0, 
+  HSI <- tibble::tibble( HSI = case_when( tmax < 24 ~ 0, 
                                           tmax <= 24 & RH <= 70 ~ 0, 
                                           tmax <= 25 & RH <= 40 ~ 0,
                                           tmax <= 24 & RH > 70 ~ 1,

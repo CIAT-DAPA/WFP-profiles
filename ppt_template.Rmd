@@ -1,0 +1,145 @@
+---
+title: "COUNTRY --- period"
+subtitle: "Zone"
+output: powerpoint_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+#### Zone region
+:::::: {.columns}
+::: {.column width="10%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Location.png){width="10%"}
+:::
+::: {.column width="90%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Elevation.png){width="10%"}
+:::
+::::::
+
+
+#### Climatology 
+
+<-- climatologia -->
+
+
+#### Cop calendar 
+  ![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/crop_calendar.png){width=20%}
+
+
+#### Precipitation 
+  ![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/C_ATR.png){width=10%}
+
+<-- anomalias -->
+
+
+#### Temperature 
+  ![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/C_AMT.png){width=10%}
+
+<-- anomalias -->
+
+
+#### Drought
+
+:::::: {.columns}
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/C_NDWS.png){width="10%"}
+:::
+::: {.column width="50%"}
+<-- anomalias -->
+:::
+::::::
+
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/time_series/Zone_period/NDWS.jpeg){width="10%"}
+
+:::::: {.columns}
+::: {.column width="50%"}
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Q_NDWS.png){width="10%"}
+:::
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Fix_NDWS.png){width="10%"}
+:::
+::::::
+
+
+
+#### Heat stress
+
+:::::: {.columns}
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/C_THI_2.png){width="10%"}
+:::
+::: {.column width="50%"}
+<-- anomalias -->
+:::
+::::::
+
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/time_series/Zone_period/THI_2.jpeg){width="10%"}
+
+:::::: {.columns}
+::: {.column width="50%"}
+
+<-- No tiene -->
+:::
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Fix_THI_23.png){width="10%"}
+:::
+::::::
+
+
+
+#### Waterlogging & flooding
+
+:::::: {.columns}
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/C_NWLD.png){width="10%"}
+:::
+::: {.column width="50%"}
+<-- anomalias -->
+:::
+::::::
+
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/time_series/Zone_period/NWLD.jpeg){width="10%"}
+
+:::::: {.columns}
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Q_NWLD.png){width="10%"} 
+:::
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Fix_NDWS.png){width="10%"}
+:::
+::::::
+
+
+
+
+
+#### Univariate Drought
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Uni_Drought.png){width="10%"}
+
+
+#### Univariate Heat stress
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Uni_Heat.png){width="10%"}
+
+
+#### Waterlogging & flooding
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Uni_Waterlogging.png){width="10%"}
+
+
+
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Bi_Dr_Ha.png){width="10%"}
+
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Bi_Dr_Wa.png){width="10%"}
+
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Bi_Ha_Wa.png){width="10%"}

@@ -77,14 +77,18 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
   cat("Processing", iso, model, experiment, "\n")
   dir.create(outdir, FALSE, TRUE)
   # search files
-  dd <- list.files(file.path(gcmdir, "downscale", iso), pattern = "_interim.fst", recursive = TRUE, full.names = TRUE)
+  dd <- list.files(file.path(gcmdir, "downscale", iso), pattern = "*.fst", recursive = TRUE, full.names = TRUE)
   if(experiment == 'ssp585'){
     d  <- grep(paste(model,experiment,sep = ".*"), dd, value = TRUE)
     c('2021','2041') %>%
       purrr::map(.f = function(yr){
         d <- grep(pattern = yr, x = d, value = TRUE)
-        d <- d[-grep(pattern = '_tas_', x = d, fixed = T)]
-        df <- lapply(d, function(x) data.table(read_fst(x)))
+        if(length(grep(pattern = '_tas_', x = d, fixed = T)) > 0){d <- d[-grep(pattern = '_tas_', x = d, fixed = T)]}
+        df <- lapply(d, function(x){
+          tb <- data.table(read_fst(x))
+          if(names(tb)[1] == 'cell_id'){names(tb)[1] <- 'id'}
+          return(tb)
+        })
         df <- 1:length(df) %>%
           purrr::map(.f = function(i){
             if(i != 1){
@@ -94,12 +98,14 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
             } else {
               tbl <- df[[i]]
             }
+            tbl$id   <- as.character(tbl$id)
+            tbl$date <- as.Date(tbl$date)
             return(tbl)
           })
         # merge list of dataframes
         df <- Reduce(function(...) dplyr::inner_join(..., by = c("id","date")), df)
         # convert to epoch time
-        df$date <- as.POSIXct(as.numeric(as.character(df$date)), origin="1970-01-01")
+        # df$date <- as.POSIXct(as.numeric(as.character(df$date)), origin="1970-01-01")
         df$date <- as.Date(df$date)
         names(df)[which(names(df) == 'pr')] <- 'prec'
         names(df)[which(names(df) == 'tasmax')] <- 'tmax'
@@ -119,8 +125,12 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
       })
   } else {
     d  <- grep(paste(model,experiment,sep = ".*"), dd, value = TRUE)
-    d <- d[-grep(pattern = '_tas_', x = d, fixed = T)]
-    df <- lapply(d, function(x) data.table(read_fst(x)))
+    if(length(grep(pattern = '_tas_', x = d, fixed = T)) > 0){d <- d[-grep(pattern = '_tas_', x = d, fixed = T)]}
+    df <- lapply(d, function(x){
+      tb <- data.table(read_fst(x))
+      if(names(tb)[1] == 'cell_id'){names(tb)[1] <- 'id'}
+      return(tb)
+    })
     df <- 1:length(df) %>%
       purrr::map(.f = function(i){
         if(i != 1){
@@ -130,12 +140,14 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
         } else {
           tbl <- df[[i]]
         }
+        tbl$id   <- as.character(tbl$id)
+        tbl$date <- as.Date(tbl$date)
         return(tbl)
       })
     # merge list of dataframes
     df <- Reduce(function(...) dplyr::inner_join(..., by = c("id","date")), df)
     # convert to epoch time
-    df$date <- as.POSIXct(as.numeric(as.character(df$date)), origin="1970-01-01")
+    # df$date <- as.POSIXct(as.numeric(as.character(df$date)), origin="1970-01-01")
     df$date <- as.Date(df$date)
     names(df)[which(names(df) == 'pr')] <- 'prec'
     names(df)[which(names(df) == 'tasmax')] <- 'tmax'

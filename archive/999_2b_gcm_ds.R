@@ -14,17 +14,63 @@ if (packageVersion("terra") < "1.1.0"){
 
 # supporting file
 readRast <- function(f, sdate, edate){
-  r <- terra::rast(f)
+  # as of terra_1.1-7, it is having problem with correctly reading time band from the netcdf files
+  r <- raster::stack(f)
   # manage and convert to epoch time
-  tm <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
+  tm <- as.Date(gsub("X","",names(r)), "%Y.%m.%d")
   # which bands are within the wmo baseline
   k <- which(tm >= sdate & tm <= edate)
   if(sum(k)>0){
+    # read the file as SpatRaster
+    rs <- terra::rast(f)
     # subset those bands
-    r <- terra::subset(r, k)
-    return(r)
+    rs <- terra::subset(rs, k)
+    names(rs) <-  tm[k]
+    return(rs)
   }
 }
+
+
+rotateGCM <- function(f, sdate, edate, interimdir, overwrite = FALSE){
+
+  # GCM raster prep ############################################################
+  # which ranges fall within start and end year
+  rr <- lapply(f, readRast, sdate, edate)
+  j <- sapply(rr, is.null)
+  rr[j] <- NULL
+  r <- do.call("c",rr)
+  
+  rcrs <- crs(r)
+  
+  if(rcrs==""|is.na(rcrs)){
+    crs(r) <- "+proj=longlat +datum=WGS84 +no_defs"
+  }
+  
+  # save intermediate rotated files
+  rout <- basename(f)[!j]
+  # split by gn
+  rout <- unique(sapply(strsplit(rout, "_gn_|_gr_|_gr1_"), "[", 1)) # check for 
+  # date range in the data
+  # dates <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
+  # dates <- as.Date(gsub("X","",names(r)), "%Y.%m.%d")
+  dates <- names(r)
+  dtrange <- range(dates)
+  rout <- paste0("rotated_", rout, "-", paste(dtrange, collapse = "_"), ".tif")
+  routf <- file.path(interimdir, rout)
+  
+  if(file.exists(routf)){
+    # might need to change the file size 
+    if(file.size(routf) == 0){
+      unlink(routf)
+    } 
+  }
+  
+  if(!file.exists(routf)){
+    rot <- try(terra::rotate(r, filename = routf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite), silent = FALSE)
+    saveRDS(dates, gsub(".tif","_dates.rds",routf))
+  }
+  return(routf)
+}  
 
 # Function to get daily data from a single file
 getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
@@ -58,42 +104,29 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   } else {
     riso <- rast(cmask)
   }
-  
+
   # search files
-  f <- grep(paste(var,model,experiment,sep = ".*"), ff, value = TRUE)
+  f <- grep(paste(var,model,experiment,sep = "_.*"), ff, value = TRUE)
   
   # GCM raster prep ############################################################
-  # which ranges fall within start and end year
-  rr <- lapply(f, readRast, sdate, edate)
-  rr[sapply(rr, is.null)] <- NULL
-  r <- do.call("c", rr)
-  
-  # save intermediate rotated files
-  rout <- basename(r@ptr$filenames)
-  # split by gn
-  rout <- unique(sapply(strsplit(rout, "_gn_"), "[", 1))
-  # date range in the data
-  dates <- as.POSIXct(r@ptr$time, origin = "1970-01-01")
-  dtrange <- range(dates)
-  rout <- paste0("rotated_", rout, "-", paste(dtrange, collapse = "_"), ".tif")
-  routf <- file.path(interimdir, rout)
-  # time(r)  <- r@ptr$time
-  
-  if(!file.exists(routf)|overwrite){
-    rot <- try(rotate(r, filename = routf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite), silent = TRUE)
-  } else {
-    rot <- rast(routf)
-  }
+  # rotate
+  routf <- rotateGCM(f, sdate, edate, interimdir, overwrite = FALSE)
+  rot <- rast(routf)
+  dates <- readRDS(gsub(".tif","_dates.rds",routf))  
   
   # resample to reference raster --- most time taking part
   soutf <- file.path(outdir, paste0(iso, "_" ,basename(routf)))
   
-  if(!file.exists(soutf)|overwrite){
+  if(!file.exists(soutf)){
     # reproject outline to same coordinate system if needed?
     rotsub <- terra::crop(rot, ext(riso))
-    # resample
+    # disaggregate first
+    rotsub <- terra::disaggregate(rotsub, fact =  round(res(rotsub)/res(riso)))
+    # resample 
     rotsub <- terra::resample(rotsub, riso, filename = soutf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite)
     
+    # ?implement a parallel resample
+
     # should we mask and save?
     # rotsub <- terra::mask(rotsub, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
   } else {
@@ -103,17 +136,21 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   #################################################################################################################
   # finally the fst files
   foutf <- gsub(".tif", ".fst", soutf)
-  # Is this memory safe? get cell values
-  dd <- terra::as.data.frame(rotsub, xy = TRUE)
-  names(dd) <- c("x", "y", paste0(var, "_", dates))
   
-  # convert from wide to long with dataframe, safer way?
-  ddl <- melt(setDT(dd), id.vars = c("x","y"), value.name = var, variable = "date")
-  
-  # add cellnumbers for using with join later
-  xy <- as.matrix(ddl[,c("x","y")])
-  ddl <- data.frame(id = cellFromXY(rotsub, xy), ddl, stringsAsFactors = FALSE)
-  write_fst(ddl, path = foutf)
+  if(!file.exists(foutf)){
+    # Is this memory safe? get cell values
+    dd <- terra::as.data.frame(rotsub, xy = TRUE)
+    # names(dd) <- c("x", "y", dates)
+    names(dd) <- c("x", "y", names(rotsub))
+    
+    # convert from wide to long with dataframe, safer way?
+    ddl <- melt(setDT(dd), id.vars = c("x","y"), value.name = var, variable = "date")
+    
+    # add cellnumbers for using with join later
+    xy <- as.matrix(ddl[,c("x","y")])
+    ddl <- data.frame(cell_id = cellFromXY(rotsub, xy), ddl, stringsAsFactors = FALSE)
+    write_fst(ddl, path = foutf)
+  }
   return(NULL)
 }
 
@@ -122,7 +159,7 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
 iso <- c("BDI","HTI","GIN","GNB","MMR","NPL","NER","PAK","SOM","TZA")
 setup <- data.frame(expand.grid(iso = iso,
                                 var = c('pr','tas','tasmax','tasmin'),
-                                model = c("BCC-CSM2-MR","CESM2","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0"),
+                                model = c("ACCESS-ESM1-5","EC-Earth3-Veg","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0"),
                                 exp = c('historical','ssp585_1','ssp585_2'), stringsAsFactors = FALSE))
 
 setup$sdate <- NA
@@ -158,19 +195,67 @@ if(!file.exists(ref)){
 # is this causing the crash?
 # ref <- rast(crs = "epsg:4326", extent = ext(c(-180, 180, -50, 50)), resolution = 0.05, vals = 1)
 
+# rotate GCMs first?
+
 # need to move to future apply
-rr <- parallel::mclapply(1:nrow(setup), getGCMdailyTable, setup, root, ref, ff, overwrite = FALSE,
-                         mc.preschedule = FALSE, mc.cores = 16)
+
+# prioritize HTI and BDI
+
+setupx <- setup[setup$iso != "BDI",]
+
+rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
+                          mc.preschedule = FALSE, mc.cores = 16)
+
+library(future.apply)
+availableCores()
+plan(multiprocess, workers = 20)
+future_lapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE, future.seed = TRUE)
+
 
 t1 <- Sys.time()
-rr <- lapply(3, getGCMdailyTable, setup, root, ref, ff, overwrite = FALSE)
+rr <- lapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE)
 Sys.time() - t1
+
+
+# copy files to GCP
+# gsutil cp -r /home/anighosh/data/output/downscale/CMIP6/daily/BDI gs://cmip6results/data/output/downscale/CMIP6/daily/BDI
+
+
+# some cleanup
+f1 <- list.files("~/data/interim/rotated/CMIP6/daily/", pattern = ".nc-",
+                full.names = TRUE)
+unlink(f1)
+
+
+f2 <- list.files("~/data/output/downscale/CMIP6/daily/", pattern = ".nc-",
+                 recursive = TRUE, full.names = TRUE)
+unlink(f2)
+
 
 
 # check status
 odir <- "~/data/output/downscale/CMIP6/daily"
 ff <- list.files(odir, pattern = ".tif$",recursive = TRUE, full.names = TRUE)
 file.size(ff)*1e-9
+
+# file check
+odir <- "~/data/output/downscale/CMIP6/daily"
+ff <- list.files(odir, pattern = ".fst$", recursive = TRUE, full.names = TRUE)
+
+getStatus <- function(iso){
+  f <- grep(iso, ff, value = TRUE)
+  x <- strsplit(basename(f), "_")
+  var <- sapply(x, "[[", 3)
+  model <- sapply(x, "[[", 5)
+  date1 <- sapply(x,"[[", 7)
+  date1 <- gsub("r1i1p1f1-", "", date1)
+  date2 <- sapply(x,"[[", 8)
+  date2 <- gsub(".fst", "", date2)
+}
+
+fs <- gsub(".tif", ".fst", f)
+x <- fs[!file.exists(fs)]
+x <- gsub(".fst", ".tif", x)
 
 ###################################################################################################################
 # Merge output tables
@@ -284,3 +369,22 @@ rref <- "//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/dail
 mergeGCMdailyTable(iso, model, experiment, gcmdir, outdir, rref)
 experiment <- 'ssp585'
 mergeGCMdailyTable(iso, model, experiment, gcmdir, outdir, rref)
+
+
+# parallel resample?
+# create index of bands 
+# k <- seq(1, nlyr(rx), ncores)
+# k <- c(k, nlyr(rx))
+# 
+# parResample <- function(j, k, rx, riso){
+#   sb <- k[j-1]:k[j]
+#   rxb <- terra::subset(rxb, sb)
+#   rxs <- terra::resample(rx, riso)
+#   time(rxs) <- time(rxb)
+#   return(rxs)
+# }
+# 
+# d <- list()
+# for(j in 2:length(k)){
+#   d[[j]] <- k[j-1]:k[j]
+# }

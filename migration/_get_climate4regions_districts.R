@@ -9,7 +9,7 @@
 #   country: country name first character in capital letter
 # Output:
 #   Data frame with climate filtered for the areas of interest
-flt_clm <- function(iso = 'TZA', country = 'Tanzania'){
+flt_clm_subunits <- function(iso = 'SOM', country = 'Somalia', district = 'Caabudwaaq'){
   
   # Load packages
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
@@ -25,9 +25,9 @@ flt_clm <- function(iso = 'TZA', country = 'Tanzania'){
     tidyfst::distinct_dt() %>%
     base::as.data.frame()
   
-  cat('>>> Regions shape and add a buffer of 50 km\n')
-  shp <- sf::read_sf(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp'))
-  shp <- sf::st_buffer(shp, dist = 0.3) %>% sf::st_union(.) %>% sf::as_Spatial() %>% terra::vect()
+  cat('>>> Regions shape and add a buffer of 5 km\n')
+  shp <- sf::read_sf(paste0(root,'/1.Data/others/shps/',tolower(country),'/',tolower(district),'.shp'))
+  shp <- sf::st_buffer(shp, dist = 0.05) %>% sf::st_union(.) %>% sf::as_Spatial() %>% terra::vect()
   ref <- terra::rast(paste0(root,'/1.Data/chirps-v2.0.2020.01.01.tif'))
   ref <- terra::crop(ref, terra::ext(shp))
   rst <- terra::rasterize(x = shp, y = ref)

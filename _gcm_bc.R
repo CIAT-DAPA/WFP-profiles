@@ -48,7 +48,9 @@ BC_Qmap <- function(his_obs = his_obs,
   
   cat(paste0(' *** Performing Quantile-mapping bias correction***\n'))
   cat(paste0('>>> Loading obs data\n'))
-  his_obs <- fst::read_fst(his_obs)
+  his_obs <- his_obs %>%
+    tidyft::parse_fst(path = .) %>%
+    base::as.data.frame()
   his_obs$year <- NULL
   his_obs$id1 <- his_obs$id
   his_obs <- his_obs %>%
@@ -90,7 +92,9 @@ BC_Qmap <- function(his_obs = his_obs,
   his_obs$Climate <- impute_missings(tbl = his_obs)
   
   cat(paste0('>>> Loading historical GCM data\n'))
-  his_gcm <- fst::read_fst(his_gcm)
+  his_gcm <- his_gcm %>%
+    tidyft::parse_fst(path = .) %>%
+    base::as.data.frame()
   his_gcm$id1 <- his_gcm$id
   his_gcm <- his_gcm %>%
     tidyr::nest(Climate = c('id','date','prec','tmax','tmin')) %>%
@@ -99,7 +103,9 @@ BC_Qmap <- function(his_obs = his_obs,
   his_gcm$Climate <- impute_missings(tbl = his_gcm)
   
   cat(paste0('>>> Loading future GCM data\n'))
-  fut_gcm <- fst::read_fst(fut_gcm)
+  fut_gcm <- fut_gcm %>%
+    tidyft::parse_fst(path = .) %>%
+    base::as.data.frame()
   fut_gcm$id1 <- fut_gcm$id
   fut_gcm <- fut_gcm %>%
     tidyr::nest(Climate = c('id','date','prec','tmax','tmin')) %>%
@@ -138,10 +144,10 @@ BC_Qmap <- function(his_obs = his_obs,
     purrr::map(.f = function(i){
       df <- fut_gcm_bc$Climate[[i]]
       his_obs_flt <- his_obs$Climate[[i]] %>%
-        dplyr::mutate(month = lubridate::month(date),
-                      day   = lubridate::day(date)) %>%
-        .[-which(.$month == 2 & .$day == 29),] %>%
-        dplyr::filter(date >= as.Date('1995-01-02') & date <= as.Date('2014-12-31'))
+        # dplyr::mutate(month = lubridate::month(date),
+        #               day   = lubridate::day(date)) %>%
+        # .[-which(.$month == 2 & .$day == 29),] %>%
+        dplyr::filter(date >= as.Date('1995-01-01') & date <= as.Date('2014-12-31')) # Initial date: YYYY-01-02
       df$tmean <- (df$tmin + df$tmax)/2
       df$srad  <- his_obs_flt$srad
       df$wind  <- his_obs_flt$wind
@@ -153,10 +159,10 @@ BC_Qmap <- function(his_obs = his_obs,
   fut_gcm_bc <- fut_gcm_bc %>% tidyr::unnest(.)
   
   if(!file.exists(his_bc)){
-    dir.create(dirname(his_bc),FALSE, TRUE)
+    dir.create(dirname(his_bc),FALSE,TRUE)
     fst::write_fst(his_gcm_bc,his_bc)
   }
-  dir.create(dirname(fut_bc),FALSE, TRUE)
+  dir.create(dirname(fut_bc),FALSE,TRUE)
   fst::write_fst(fut_gcm_bc,fut_bc)
   
   cat('Bias correction process completed successfully\n')
@@ -167,11 +173,11 @@ BC_Qmap <- function(his_obs = his_obs,
 # model   <- 'INM-CM5-0'
 # his_obs <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
 # his_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/1995-2014/",iso,".fst")
-# fut_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/",period,"/",iso,".fst")
 # his_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/1995-2014/",iso,".fst")
-# fut_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
 # c('2021-2040','2041-2060') %>%
 #   purrr::map(.f = function(period){
+#     fut_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/",period,"/",iso,".fst")
+#     fut_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
 #     BC_Qmap(his_obs = his_obs,
 #             his_gcm = his_gcm,
 #             fut_gcm = fut_gcm,

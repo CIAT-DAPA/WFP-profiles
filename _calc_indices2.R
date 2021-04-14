@@ -6,7 +6,7 @@
 
 options(warn = -1, scipen = 999)
 suppressMessages(library(pacman))
-suppressMessages(pacman::p_load(SPEI,tidyverse,raster,ncdf4,sf,future,furrr,lubridate,glue,vroom,sp,fst,compiler))
+suppressMessages(pacman::p_load(tidyft,SPEI,tidyverse,raster,ncdf4,sf,future,furrr,lubridate,glue,vroom,sp,fst,compiler))
 
 # Input parameters:
 #   climate: path or data frame with the climate data. This file must exists
@@ -24,13 +24,12 @@ suppressMessages(pacman::p_load(SPEI,tidyverse,raster,ncdf4,sf,future,furrr,lubr
 # Output:
 #   Two data.frames one with all the agro-climatic indices and another
 #   with the SPI index values for all pixels
-calc_indices <- function(climate = infile,
-                         soil    = soilfl,
-                         seasons = list(s1 = mnth), # list(s1 = 2:6, s2 = 10:12)
-                         subset  = F,
-                         ncores  = 10,
-                         outfile = outfile,
-                         spi_out = spi_out){
+calc_indices2 <- function(climate = infile,
+                          soil    = soilfl,
+                          seasons = list(s1 = mnth), # list(s1 = 2:6, s2 = 10:12)
+                          ncores  = 10,
+                          outfile = outfile,
+                          spi_out = spi_out){
   
   if(!file.exists(outfile)){
     dir.create(path = dirname(outfile), FALSE, TRUE)
@@ -307,240 +306,54 @@ calc_indices <- function(climate = infile,
       
     }
     
-    # Sampling 30% of the pixels to calculate the indices over them
-    # Interpolate the 70%
-    if(subset){
-      # Fix a random seed
-      set.seed(1235)
-      # Select a random sample of 30% of the pixels
-      sample_n  <- nrow(clim_data)*0.3
-      id_sample <- sample(unique(clim_data$id), sample_n)
-      # Filter the climate data table to the sample
-      clim_data_flt <- clim_data %>% dplyr::filter(id %in% id_sample)
-      
-      # Run the process in parallel for the 30% of the pixels
-      plan(cluster, workers = ncores, gc = TRUE)
-      index_by_pixel <- clim_data_flt %>%
-        dplyr::pull(id) %>%
-        furrr::future_map(.x = ., .f = run_pixel) %>%
-        dplyr::bind_rows()
-      future:::ClusterRegistry("stop")
-      gc(reset = T)
-      index_by_pixel <- index_by_pixel %>%
-        dplyr::select(id,season,year,
-                      ATR,AMT,NDD,P5D,P95,NT_X,
-                      NDWS,NWLD,NWLD50,NWLD90,
-                      IRR,SHI,
-                      HSI_0,HSI_1,HSI_2,HSI_3,
-                      THI_0,THI_1,THI_2,THI_3,
-                      gSeason,SLGP,LGP)
-      index_by_pixel <- dplyr::left_join(x = clim_data_flt[,c('id','x','y')], y = index_by_pixel, by = 'id')
-      index_by_pixel$NWLD[index_by_pixel$NWLD == -Inf] <- 0
-      index_by_pixel$NWLD50[index_by_pixel$NWLD50 == -Inf] <- 0
-      index_by_pixel$NWLD90[index_by_pixel$NWLD90 == -Inf] <- 0
-      index_by_pixel$HSI_0[is.na(index_by_pixel$HSI_0)] <- 0
-      index_by_pixel$HSI_1[is.na(index_by_pixel$HSI_1)] <- 0
-      index_by_pixel$HSI_2[is.na(index_by_pixel$HSI_2)] <- 0
-      index_by_pixel$HSI_3[is.na(index_by_pixel$HSI_3)] <- 0
-      index_by_pixel$THI_0[is.na(index_by_pixel$THI_0)] <- 0
-      index_by_pixel$THI_1[is.na(index_by_pixel$THI_1)] <- 0
-      index_by_pixel$THI_2[is.na(index_by_pixel$THI_2)] <- 0
-      index_by_pixel$THI_3[is.na(index_by_pixel$THI_3)] <- 0
-      
-      # Interpolate the 70% of the pixels
-      cat('>>> Obtain raster for all coordinates of big county\n')
-      r <- raster::rasterFromXYZ(xyz = clim_data %>% dplyr::select(x, y, id))
-      raster::crs(r) <- "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
-      r.empty <- r
-      r.empty[] <- NA
-      
-      cat('>>> Obtain averages per growing season\n')
-      tbl_ref <- index_by_pixel %>%
-        dplyr::select(id,x,y,season,year,
-                      ATR,AMT,NDD,P5D,P95,NT_X,
-                      NDWS,NWLD,NWLD50,NWLD90,
-                      IRR,SHI,
-                      HSI_0,HSI_1,HSI_2,HSI_3,
-                      THI_0,THI_1,THI_2,THI_3,
-                      gSeason,SLGP,LGP)
-      tbl_gSeasons <- tbl_ref %>%
-        dplyr::group_by(id, gSeason) %>%
-        dplyr::summarise(SLGP = mean(SLGP, na.rm = T),
-                         LGP  = mean(LGP, na.rm = T))
-      tbl_cSeasons <- tbl_ref %>%
-        dplyr::mutate(season = factor(season)) %>%
-        dplyr::select(id,season,ATR:THI_3) %>%
-        dplyr::group_by(id, season) %>%
-        dplyr::summarise_all(mean, na.rm = T)
-      tbl_cSeasons <- tbl_cSeasons %>%
-        dplyr::filter(!is.na(season))
-      tbl <- dplyr::full_join(x = tbl_cSeasons, y = tbl_gSeasons, by = 'id')
-      rm(tbl_cSeasons, tbl_gSeasons)
-      # if(length(tbl$season %>% unique) == 2 & length(tbl$gSeason %>% unique) == 2){
-      #   d1 <- tbl %>%
-      #     dplyr::filter(season == 's1' & gSeason == 1)
-      #   d2 <- tbl %>%
-      #     dplyr::filter(season == 's2' & gSeason == 2)
-      #   tbl <- dplyr::bind_rows(d1, d2)
-      # }
-      
-      tbl <- dplyr::left_join(x = tbl, y = tbl_ref %>% dplyr::select(id, x, y) %>% unique, by = 'id')
-      tbl <- tbl %>% dplyr::select(id, x, y, dplyr::everything(.))
-      if(sum(tbl$id %>% duplicated & tbl$gSeason %>% is.na) > 0){
-        tbl <- tbl[-which(tbl$id %>% duplicated & tbl$gSeason %>% is.na),]
-      }
-      
-      cSeasons_idcs <- c('ATR','AMT','NDD','P5D','P95','NT_X','NDWS','NWLD','NWLD50','NWLD90','IRR','SHI',paste0('HSI_',0:3),paste0('THI_',0:3))
-      gSeasons_idcs <- c('gSeason','SLGP','LGP')
-      
-      cat('>>> Interpolate 70% of pixels ...\n')
-      
-      cseasons <- tbl$season %>% unique
-      gseasons <- tbl$gSeason %>% unique
-      if(length(gseasons) >= 3){
-        gseasons <- gseasons[1:2]
-      }
-      
-      cat('>>> Calculating interpolated surfaces for agro-climatic indices for climatology season indices\n')
-      c_idx <- cseasons %>%
-        purrr::map(.f = function(i){
-          
-          cat(paste0(' --- Filter indices per growing season: ',i,'\n'))
-          tbl2 <<- tbl[which(tbl$season == i),] %>%
-            tidyr::drop_na()
-          
-          cat(paste0(' --- Create SpatialDataFrame object\n'))
-          spdf <<- sp::SpatialPointsDataFrame(coords      = tbl2[,c('x','y')] %>% data.frame,
-                                              data        = tbl2 %>% data.frame,
-                                              proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-          
-          surfaces <- 1:length(cSeasons_idcs) %>%
-            purrr::map(.f = function(j){
-              
-              cat(paste0(' --- Fit inverse distance weighted interpolation for: ',cSeasons_idcs[j],'\n'))
-              glue::glue('idw_fit <- gstat::gstat(formula = {cSeasons_idcs[j]} ~ 1, locations = spdf)') %>%
-                as.character %>%
-                parse(text = .) %>%
-                eval(expr = ., envir = .GlobalEnv)
-              idw_int <- raster::interpolate(r.empty, idw_fit)
-              idw_msk <- raster::mask(idw_int, r)
-              return(idw_msk)
-              
-            })
-          surfaces <- raster::stack(surfaces)
-          names(surfaces) <- cSeasons_idcs; rm(spdf)
-          
-          idx_df          <- clim_data %>% dplyr::select(x, y, id)
-          idx_df          <- idx_df[idx_df$id %in% base::setdiff(clim_data$id, index_by_pixel$id),]
-          idx_df          <- cbind(idx_df, raster::extract(surfaces, idx_df %>% dplyr::select(x, y) %>% data.frame))
-          idx_df$season   <- i
-          return(idx_df)
-          cat('\n')
-          cat('\n')
-          
-        })
-      c_idx <- dplyr::bind_rows(c_idx)
-      
-      cat('>>> Calculating interpolated surfaces for agro-climatic indices for growing season indices\n')
-      g_idx <- gseasons %>%
-        purrr::map(.f = function(i){
-          
-          cat(paste0(' --- Filter indices per growing season: ',i,'\n'))
-          tbl2 <<- tbl[which(tbl$gSeason == i),] %>%
-            tidyr::drop_na()
-          
-          cat(paste0(' --- Create SpatialDataFrame object\n'))
-          spdf <<- sp::SpatialPointsDataFrame(coords      = tbl2[,c('x','y')] %>% data.frame,
-                                              data        = tbl2 %>% data.frame,
-                                              proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-          
-          surfaces <- 1:length(gSeasons_idcs) %>%
-            purrr::map(.f = function(j){
-              
-              cat(paste0(' --- Fit inverse distance weighted interpolation for: ',gSeasons_idcs[j],'\n'))
-              glue::glue('idw_fit <- gstat::gstat(formula = {gSeasons_idcs[j]} ~ 1, locations = spdf)') %>%
-                as.character %>%
-                parse(text = .) %>%
-                eval(expr = ., envir = .GlobalEnv)
-              idw_int <- raster::interpolate(r.empty, idw_fit)
-              idw_msk <- raster::mask(idw_int, r)
-              return(idw_msk)
-              
-            })
-          surfaces <- raster::stack(surfaces)
-          names(surfaces) <- gSeasons_idcs; rm(spdf)
-          
-          idx_df          <- clim_data %>% dplyr::select(x, y, id)
-          idx_df          <- idx_df[idx_df$id %in% base::setdiff(clim_data$id, index_by_pixel$id),]
-          idx_df          <- cbind(idx_df, raster::extract(surfaces, idx_df %>% dplyr::select(x, y) %>% data.frame))
-          idx_df$gSeason  <- i
-          return(idx_df)
-          cat('\n')
-          cat('\n')
-          
-        })
-      g_idx <- dplyr::bind_rows(g_idx)
-      
-      interpolated_indices <- dplyr::left_join(x = c_idx, y = g_idx %>% dplyr::select(id, gSeason, SLGP, LGP), by = 'id')
-      # if(length(interpolated_indices$season %>% unique) == 2 & length(interpolated_indices$gSeason %>% unique) == 2){
-      #   d1 <- interpolated_indices %>%
-      #     dplyr::filter(season == 's1' & gSeason == 1)
-      #   d2 <- interpolated_indices %>%
-      #     dplyr::filter(season == 's2' & gSeason == 2)
-      #   interpolated_indices <- dplyr::bind_rows(d1, d2)
-      # }
-      
-      interpolated_indices$year <- 2019
-      tbl <- dplyr::bind_rows(index_by_pixel,interpolated_indices)
-      tbl$NDD  <- round(tbl$NDD)
-      tbl$NT_X <- round(tbl$NT_X)
-      tbl$NDWS <- round(tbl$NDWS)
-      tbl$NWLD <- round(tbl$NWLD)
-      tbl$NWLD50 <- round(tbl$NWLD50)
-      tbl$NWLD90 <- round(tbl$NWLD90)
-      tbl$SHI <- round(tbl$SHI)
-      tbl$SLGP <- round(tbl$SLGP)
-      tbl$LGP  <- round(tbl$LGP)
-      index_by_pixel <- tbl %>% unique()
-    } else {
-      # Run the process in parallel for all the pixels
-      plan(cluster, workers = ncores, gc = TRUE)
-      index_by_pixel <- clim_data %>%
-        dplyr::pull(id) %>%
-        furrr::future_map(.x = ., .f = run_pixel) %>%
-        dplyr::bind_rows()
-      future:::ClusterRegistry("stop")
-      gc(reset = T)
-      index_by_pixel <- index_by_pixel %>%
-        dplyr::select(id,season,year,
-                      ATR,AMT,NDD,P5D,P95,NT_X,
-                      NDWS,NWLD,NWLD50,NWLD90,
-                      IRR,SHI,
-                      HSI_0,HSI_1,HSI_2,HSI_3,
-                      THI_0,THI_1,THI_2,THI_3,
-                      gSeason,SLGP,LGP)
-      index_by_pixel <- dplyr::left_join(x = clim_data[,c('id','x','y')], y = index_by_pixel, by = 'id')
-      index_by_pixel$NWLD[index_by_pixel$NWLD == -Inf] <- 0
-      index_by_pixel$NWLD50[index_by_pixel$NWLD50 == -Inf] <- 0
-      index_by_pixel$NWLD90[index_by_pixel$NWLD90 == -Inf] <- 0
-      index_by_pixel$HSI_0[is.na(index_by_pixel$HSI_0)] <- 0
-      index_by_pixel$HSI_1[is.na(index_by_pixel$HSI_1)] <- 0
-      index_by_pixel$HSI_2[is.na(index_by_pixel$HSI_2)] <- 0
-      index_by_pixel$HSI_3[is.na(index_by_pixel$HSI_3)] <- 0
-      index_by_pixel$THI_0[is.na(index_by_pixel$THI_0)] <- 0
-      index_by_pixel$THI_1[is.na(index_by_pixel$THI_1)] <- 0
-      index_by_pixel$THI_2[is.na(index_by_pixel$THI_2)] <- 0
-      index_by_pixel$THI_3[is.na(index_by_pixel$THI_3)] <- 0
-      index_by_pixel$NDD  <- round(index_by_pixel$NDD)
-      index_by_pixel$NT_X <- round(index_by_pixel$NT_X)
-      index_by_pixel$NDWS <- round(index_by_pixel$NDWS)
-      index_by_pixel$NWLD <- round(index_by_pixel$NWLD)
-      index_by_pixel$NWLD50 <- round(index_by_pixel$NWLD50)
-      index_by_pixel$NWLD90 <- round(index_by_pixel$NWLD90)
-      index_by_pixel$SHI <- round(index_by_pixel$SHI)
-      index_by_pixel$SLGP <- round(index_by_pixel$SLGP)
-      index_by_pixel$LGP  <- round(index_by_pixel$LGP)
-    }
+    sq <- 1:nrow(clim_data)
+    chunks <- chunk(vect = sq, size = 150)
+    
+    tictoc::tic()
+    index_by_pixel <- chunks %>%
+      purrr::map(.f = function(chk){
+        # Run the process in parallel for all the pixels
+        plan(cluster, workers = ncores, gc = TRUE)
+        index_by_pixel <- clim_data[chk,] %>%
+          dplyr::pull(id) %>%
+          furrr::future_map(.x = ., .f = run_pixel) %>%
+          dplyr::bind_rows()
+        future:::ClusterRegistry("stop")
+        gc(reset = T)
+        return(index_by_pixel)
+      }) %>%
+      dplyr::bind_rows()
+    tictoc::toc()
+    
+    index_by_pixel <- index_by_pixel %>%
+      dplyr::select(id,season,year,
+                    ATR,AMT,NDD,P5D,P95,NT_X,
+                    NDWS,NWLD,NWLD50,NWLD90,
+                    IRR,SHI,
+                    HSI_0,HSI_1,HSI_2,HSI_3,
+                    THI_0,THI_1,THI_2,THI_3,
+                    gSeason,SLGP,LGP)
+    index_by_pixel <- dplyr::left_join(x = clim_data[,c('id','x','y')], y = index_by_pixel, by = 'id')
+    index_by_pixel$NWLD[index_by_pixel$NWLD == -Inf] <- 0
+    index_by_pixel$NWLD50[index_by_pixel$NWLD50 == -Inf] <- 0
+    index_by_pixel$NWLD90[index_by_pixel$NWLD90 == -Inf] <- 0
+    index_by_pixel$HSI_0[is.na(index_by_pixel$HSI_0)] <- 0
+    index_by_pixel$HSI_1[is.na(index_by_pixel$HSI_1)] <- 0
+    index_by_pixel$HSI_2[is.na(index_by_pixel$HSI_2)] <- 0
+    index_by_pixel$HSI_3[is.na(index_by_pixel$HSI_3)] <- 0
+    index_by_pixel$THI_0[is.na(index_by_pixel$THI_0)] <- 0
+    index_by_pixel$THI_1[is.na(index_by_pixel$THI_1)] <- 0
+    index_by_pixel$THI_2[is.na(index_by_pixel$THI_2)] <- 0
+    index_by_pixel$THI_3[is.na(index_by_pixel$THI_3)] <- 0
+    index_by_pixel$NDD  <- round(index_by_pixel$NDD)
+    index_by_pixel$NT_X <- round(index_by_pixel$NT_X)
+    index_by_pixel$NDWS <- round(index_by_pixel$NDWS)
+    index_by_pixel$NWLD <- round(index_by_pixel$NWLD)
+    index_by_pixel$NWLD50 <- round(index_by_pixel$NWLD50)
+    index_by_pixel$NWLD90 <- round(index_by_pixel$NWLD90)
+    index_by_pixel$SHI <- round(index_by_pixel$SHI)
+    index_by_pixel$SLGP <- round(index_by_pixel$SLGP)
+    index_by_pixel$LGP  <- round(index_by_pixel$LGP)
     
     index_by_pixel <- dplyr::full_join(x = tai %>%
                                          dplyr::rename(year = 'Year') %>%

@@ -593,7 +593,7 @@ calc_SHIMP <- compiler::cmpfun(calc_SHI)
 # Daily pig heat stress index (HSI) 
 # dplyr::case_when(0 ~ normal, 1 ~ alert, 2 ~ danger, 3 ~ emergency)
 calc_HSI <- function(tmax, RH){
-  HSI <- tibble::tibble( HSI = case_when( tmax <= 24 ~ 0, 
+  HSI <- tibble::tibble( HSI = case_when( tmax < 24 ~ 0, 
                                           tmax <= 24 & RH <= 70 ~ 0, 
                                           tmax <= 25 & RH <= 40 ~ 0,
                                           tmax <= 24 & RH > 70 ~ 1,

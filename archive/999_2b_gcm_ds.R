@@ -201,10 +201,10 @@ if(!file.exists(ref)){
 
 # prioritize HTI and BDI
 
-setupx <- setup[setup$iso != "BDI",]
+setupx <- setup[setup$iso == "GNB",]
 
 rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
-                          mc.preschedule = FALSE, mc.cores = 16)
+                          mc.preschedule = FALSE, mc.cores = 6)
 
 library(future.apply)
 availableCores()
@@ -219,6 +219,8 @@ Sys.time() - t1
 
 # copy files to GCP
 # gsutil cp -r /home/anighosh/data/output/downscale/CMIP6/daily/BDI gs://cmip6results/data/output/downscale/CMIP6/daily/BDI
+# gsutil -m cp -r /home/anighosh/data/interim/rotated/CMIP6/daily gs://cmip6results/data/output/downscale/CMIP6/daily/rotated
+
 
 
 # some cleanup
@@ -247,11 +249,15 @@ getStatus <- function(iso){
   x <- strsplit(basename(f), "_")
   var <- sapply(x, "[[", 3)
   model <- sapply(x, "[[", 5)
-  date1 <- sapply(x,"[[", 7)
-  date1 <- gsub("r1i1p1f1-", "", date1)
-  date2 <- sapply(x,"[[", 8)
-  date2 <- gsub(".fst", "", date2)
+  # date1 <- sapply(x,"[[", 7)
+  # date1 <- gsub("r1i1p1f1-", "", date1)
+  # date2 <- sapply(x,"[[", 8)
+  # date2 <- gsub(".fst", "", date2)
+  table(var, model)
 }
+
+#country status
+table(basename(dirname(ff)))
 
 fs <- gsub(".tif", ".fst", f)
 x <- fs[!file.exists(fs)]

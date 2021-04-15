@@ -67,14 +67,14 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   # =--- water sources. 
   glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_1.shp' ) 
   crs(glwd1) <- crs(shp)
-  ext.sp <- raster::crop(glwd1, raster::extent(shp))
+  ext.sp <- raster::crop(glwd1, raster::extent(ctn))
   glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
     sf::st_as_sf()
   glwd1 <<-  glwd1
   
   glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_2.shp' ) 
   crs(glwd2) <- crs(shp)
-  ext.sp2 <- raster::crop(glwd2, raster::extent(shp))
+  ext.sp2 <- raster::crop(glwd2, raster::extent(ctn))
   glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
     sf::st_as_sf()
   glwd2 <<- glwd2
@@ -92,23 +92,27 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   gcm <- c('INM-CM5-0', 'ACCESS-ESM1-5', 'EC-Earth3-Veg', 'MPI-ESM1-2-HR', 'MRI-ESM2-0')
   
+  ncores <- 5
+  plan(cluster, workers = ncores, gc = TRUE)
+  
   future <- tibble( file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices') ) %>%
     dplyr::filter(!grepl('_monthly', file) & !grepl('_old', file)) %>% 
     mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
-    mutate(data = purrr::map(.x = file, .f = function(x){x <- fst::fst(x) %>% tibble::as_tibble()})) %>%
+    mutate(data = furrr::future_map(.x = file, .f = function(x){x <- fst::fst(x) %>% tibble::as_tibble()})) %>%
     mutate(str_split(shot_file, '/') %>% 
              purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
              bind_rows()) %>% 
     dplyr::select(gcm, time, data) %>% 
     unnest()
   
+  future:::ClusterRegistry("stop")
+  gc(reset = T)
+  
   future  <- future %>% dplyr::select(-gcm) %>% 
     group_by(time,id,x,y,season,year) %>%
     summarise_all(~mean(. , na.rm =  TRUE)) %>%
     mutate_at(.vars = c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP'), 
               .funs = ~round(. , 0))
-  
-  
   
   data_cons <- bind_rows(past, future)  %>% 
     mutate(time1 = dplyr::case_when(time == 'Historic' ~ 1, 
@@ -208,10 +212,12 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     if(sum(vars == 'NWLD') == 1){vars <- c(vars, "NWLD50", "NWLD90")}
     
     if(sum(vars == 'THI') == 1){
-      vars <- c(vars[vars != 'THI'], glue::glue('THI_{0:3}'))}
+      vars <- c(vars[vars != 'THI'], glue::glue('THI_{0:3}'))
+      vars <- c(vars, 'THI_23')}
     
     if(sum(vars == 'HSI') == 1){
-      vars <- c(vars[vars != 'HSI'], glue::glue('HSI_{0:3}'))}
+      vars <- c(vars[vars != 'HSI'], glue::glue('HSI_{0:3}'))
+      vars <- c(vars, 'HSI_23')}
     
     
     # Temporal
@@ -234,7 +240,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # =----------------------------------------------------
     # Basic vars. 
     to_graph <- data_cons %>% filter(id %in% id_f) %>%
-      dplyr::select(time, time1, id, basic_vars) %>% 
+      mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) %>%
+      dplyr::select(time, time1, id, basic_vars) %>%
       group_by(time, time1, id) %>% 
       summarise_all(~mean(. , na.rm =  TRUE)) %>%
       mutate_at(.vars = basic_vars[basic_vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')], 
@@ -304,7 +311,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       my_breaks <- round(seq(my_limits[1], my_limits[2],  length.out= 4), 0)
       my_limits <- c(ifelse(my_limits[1] > my_breaks[1], my_breaks[1], my_limits[1]) ,ifelse(my_limits[2] < my_breaks[4], my_breaks[4], my_limits[2]))
       
-      if(var_toG[i] %in% c('SHI', glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'))){
+      if(var_toG[i] %in% c('SHI', glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'THI_23', 'HSI_23')){
         my_limits <- c(0, 1)
         my_breaks <- c(0, 0.3, 0.6, 1)
       }
@@ -334,10 +341,12 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         var_toG[i] == 'HSI_1' ~ 'HSI_1\n(prob)',
         var_toG[i] == 'HSI_2' ~ 'HSI_2\n(prob)', 
         var_toG[i] == 'HSI_3' ~ 'HSI_3\n(prob)',
+        var_toG[i] == 'HSI_23' ~ 'HSI_23\n(prob)',
         var_toG[i] == 'THI_0' ~ 'THI_0\n(prob)', 
         var_toG[i] == 'THI_1' ~ 'THI_1\n(prob)',
         var_toG[i] == 'THI_2' ~ 'THI_2\n(prob)', 
         var_toG[i] == 'THI_3' ~ 'THI_3\n(prob)',
+        var_toG[i] == 'THI_23' ~ 'THI_23\n(prob)',
         var_toG[i] == 'SPI' ~ 'SPI\n(% area)',
         TRUE ~ var_toG[i])
       
@@ -441,11 +450,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         my_limits <- dplyr::select(limits, glue::glue('{var_toG[i]}{j}' )) %>% setNames(c('min', 'max')) %>% as.numeric()
         my_breaks <- round(seq(my_limits[1], my_limits[2],  length.out= 4), 0)
         
-        if(var_toG[i] %in% c('SHI', glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'))){
-          my_breaks <- round(seq(my_limits[1], my_limits[2],  length.out= 4), 2)
-          my_limits <- c(ifelse(my_limits[1] > my_breaks[1], my_breaks[1], my_limits[1]) ,ifelse(my_limits[2] < my_breaks[4], my_breaks[4], my_limits[2]))
-        }else{
-          my_limits <- c(ifelse(my_limits[1] > my_breaks[1], my_breaks[1], my_limits[1]) ,ifelse(my_limits[2] < my_breaks[4], my_breaks[4], my_limits[2]))
+        if(var_toG[i] %in% c('SHI', glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'THI_23', 'HSI_23')){
+          my_limits <- c(0, 1)
+          my_breaks <- c(0, 0.3, 0.6, 1)
         }
         
         pattern <- case_when(
@@ -468,10 +475,12 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
           var_toG[i] == 'HSI_1' ~ 'HSI_1\n(prob)',
           var_toG[i] == 'HSI_2' ~ 'HSI_2\n(prob)', 
           var_toG[i] == 'HSI_3' ~ 'HSI_3\n(prob)',
+          var_toG[i] == 'HSI_23' ~ 'HSI_23\n(prob)',
           var_toG[i] == 'THI_0' ~ 'THI_0\n(prob)', 
           var_toG[i] == 'THI_1' ~ 'THI_1\n(prob)',
           var_toG[i] == 'THI_2' ~ 'THI_2\n(prob)', 
           var_toG[i] == 'THI_3' ~ 'THI_3\n(prob)',
+          var_toG[i] == 'THI_23' ~ 'THI_23\n(prob)',
           var_toG[i] == 'SPI' ~ 'SPI\n(% area)',
           TRUE ~ var_toG[i])
         
@@ -485,6 +494,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         
         if(var_toG[i] == 'AMT'){
           mop <- scale_fill_gradient2(
+            # Tecnicamente esta bien, pero revisar esta parte. 
+            # Los positivos estan con colores azules en vez de rojos. 
             low = '#000099', mid = 'white', high = '#A50026',
             limits = my_limits,  
             breaks = unique(my_breaks),
@@ -566,7 +577,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     
     # =--------------------------------------------------
-    if(sum(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI') ) > 0 ){
+    if(sum(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI', 'HSI_23', 'THI_23') ) > 0 ){
       var_Q <- var_toG[-which(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI'))]
     }else{var_Q <- var_toG}
     
@@ -723,32 +734,16 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       class_1 <- full_join(class_1 %>% dplyr::select(-SLGP_CV), b)
     }
     
+    
+    
+    # Aqui hay que hacer algunos cambios. Ya que la variable 
+    # de tipo 23 se construyo anteriormente. 
     # 7. 'THI_0', 'THI_1', 'THI_2', 'THI_3', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'SHI'
-    if(sum(names(to_graph) %in% c('THI_0', 'THI_1', 'THI_2', 'THI_3', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'SHI')) > 0){
+    if(sum(names(to_graph) %in% c('THI_0', 'THI_1', 'THI_2', 'THI_3', 'THI_23', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'HSI_23', 'SHI')) > 0){
       
-      if(sum(var_toG %in% glue::glue('THI_{0:3}')) > 0){
-        sum_23 <- to_graph %>% 
-          mutate(THI_23 = THI_2 + THI_3) %>% 
-          dplyr::select(id, time, time1, THI_23)
-        
-        to_graph <- inner_join(to_graph, sum_23)
-        class_1 <- inner_join(class_1, sum_23)
-        var_toG <- c(var_toG, 'THI_23')
-      }
-      
-      if(sum(str_detect(var_toG, 'HSI') > 0)){
-        sum_23 <-  to_graph %>% 
-          mutate(HSI_23 = HSI_2 + HSI_3) %>% 
-          dplyr::select(id, time, time1, HSI_23)
-        
-        to_graph <- inner_join(to_graph, sum_23)
-        class_1 <- inner_join(class_1, sum_23)
-        var_toG <- c(var_toG, 'HSI_23')
-      }
-      
-      var_b <- names(to_graph)[names(to_graph) %in% c('THI_0', 'THI_1', 'THI_2', 'THI_3', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'SHI')]
-      if(sum(var_b == 'HSI_2')>0 ){var_b <- c(var_b, 'HSI_23')}
-      if(sum(var_b == 'THI_2')>0 ){var_b <- c(var_b, 'THI_23')}
+      var_b <- names(to_graph)[names(to_graph) %in% c('THI_0', 'THI_1', 'THI_2', 'THI_3', 'THI_23', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'HSI_23', 'SHI')]
+      # if(sum(var_b == 'HSI_2')>0 ){var_b <- c(var_b, 'HSI_23')}
+      # if(sum(var_b == 'THI_2')>0 ){var_b <- c(var_b, 'THI_23')}
       
       b <- to_graph %>%
         dplyr::select(id, time1, var_b) %>% 

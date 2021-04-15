@@ -33,21 +33,34 @@ regions_all <- regions_all %>%  sf::st_as_sf() %>%
   group_by(region) %>% summarise() %>% sf::as_Spatial()
 regions_all <<- regions_all 
 
-# =--------------------------------------------------
+# =--- World boundaries.
+map_world <- raster::shapefile(glue::glue('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/all_country/all_countries.shp')) %>% 
+  sf::st_as_sf()
+map_world <<- map_world
+
+ctn <- map_world$CONTINENT[which(map_world$ISO3 == iso3)]
+ctn <- map_world %>% filter(CONTINENT == ctn)
+ctn <<- ctn
+# =--- 
+
+
+
+# =--- water sources. 
 glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_1.shp' ) 
 crs(glwd1) <- crs(shp)
-ext.sp <- raster::crop(glwd1, raster::extent(shp))
+ext.sp <- raster::crop(glwd1, raster::extent(ctn))
 glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
   sf::st_as_sf()
 glwd1 <<-  glwd1
 
 glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_2.shp' ) 
 crs(glwd2) <- crs(shp)
-ext.sp2 <- raster::crop(glwd2, raster::extent(shp))
+ext.sp2 <- raster::crop(glwd2, raster::extent(ctn))
 glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
   sf::st_as_sf()
 glwd2 <<- glwd2
-# =------------------------------------------
+# =--- 
+
 
 getAltitude <- function(iso3 = 'HTI', country = 'Haiti', Zone = 'all'){
   

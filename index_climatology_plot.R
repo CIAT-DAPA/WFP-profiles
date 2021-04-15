@@ -152,7 +152,6 @@ all_data <- full_join(tidyr::pivot_longer(all_data, cols= ATR:HSI_23 ,names_to='
 rm(all_data_sd)
 
 
-
 p <- all_data %>%
   ggplot2::ggplot(aes(x = factor(season, levels = 1:12), y = Value, fill = period)) +
   ggplot2::geom_bar(stat = "identity", position = position_dodge()) +
@@ -270,52 +269,56 @@ region_sd <- dplyr::bind_rows(tsth,tstf) %>%
   ungroup()
 
 
+region_data <- full_join(tidyr::pivot_longer(region_mean, cols= ATR:HSI_23 ,names_to='Index',values_to='Value') ,
+                      tidyr::pivot_longer(region_sd, cols= ATR:HSI_23 ,names_to='Index',values_to='sd'))
 
 
+# region_data %>% 
+#   ggplot2::ggplot(aes(x = factor(season, levels = 1:12), y = Value, fill = period)) +
+#   ggplot2::geom_bar(stat = "identity", position = position_dodge()) +
+#   ggplot2::geom_pointrange(aes(ymin=Value-sd, ymax=Value+sd), width=.2, position=position_dodge(.9)) +
+#   ggplot2::facet_grid(Index~factor(value), scales = 'free') +
+#   ggplot2::scale_fill_brewer(palette = "Paired") +
+#   ggplot2::theme_bw() +
+#   ggplot2::xlab('') +
+#   ggplot2::ylab('') +
+#   ggplot2::theme(axis.text       = element_text(size = 17),
+#                 axis.title      = element_text(size = 20),
+#                 legend.text     = element_text(size = 17),
+#                 legend.title    = element_blank(),
+#                 plot.title      = element_text(size = 25),
+#                 plot.subtitle   = element_text(size = 17),
+#                 strip.text.x    = element_text(size = 17),
+#                 plot.caption    = element_text(size = 15, hjust = 0),
+#                 legend.position = "bottom")
 
-# ggplot2::ggplot(aes(x = factor(season, levels = 1:12), y = Value, fill = period)) +
-# ggplot2::geom_bar(stat = "identity", position = position_dodge()) +
-# ggplot2::geom_pointrange(aes(ymin=Value-sd, ymax=Value+sd), width=.2, position=position_dodge(.9)) +
-# ggplot2::facet_grid(Index~factor(value), scales = 'free') +
-# ggplot2::scale_fill_brewer(palette = "Paired") +
-# ggplot2::theme_bw() +
-# ggplot2::xlab('') +
-# ggplot2::ylab('') +
-# ggplot2::theme(axis.text       = element_text(size = 17),
-#                axis.title      = element_text(size = 20),
-#                legend.text     = element_text(size = 17),
-#                legend.title    = element_blank(),
-#                plot.title      = element_text(size = 25),
-#                plot.subtitle   = element_text(size = 17),
-#                strip.text.x    = element_text(size = 17),
-#                plot.caption    = element_text(size = 15, hjust = 0),
-#                legend.position = "bottom")
+# ggplot2::ggsave(paste0(path_save, 'Por_determinar.jpeg'), device = 'jpeg', width = 24, height = 12, units = 'in', dpi = 350)
 
 # =---
 
-# dplyr::bind_rows(tsth,tstf) %>%
-#   dplyr::group_split(Index) %>%
-#   purrr::map(function(tbl){
-#     gg <- tbl %>%
-#       # dplyr::filter(Index %in% var_to$var) %>%
-#       ggplot2::ggplot(aes(x = factor(season, levels = 1:12), y = Value, fill = period)) +
-#       ggplot2::geom_bar(stat = "identity", position = position_dodge()) +
-#       ggplot2::geom_pointrange(aes(ymin=Value-sd, ymax=Value+sd), width=.2, position=position_dodge(.9)) +
-#       ggplot2::facet_grid(Index~value, scales = 'free') +
-#       ggplot2::scale_fill_brewer(palette = "Paired") +
-#       ggplot2::theme_bw() +
-#       ggplot2::xlab('') +
-#       ggplot2::ylab('') +
-#       ggplot2::theme(axis.text       = element_text(size = 17),
-#                      axis.title      = element_text(size = 20),
-#                      legend.text     = element_text(size = 17),
-#                      legend.title    = element_blank(),
-#                      plot.title      = element_text(size = 25),
-#                      plot.subtitle   = element_text(size = 17),
-#                      strip.text.x    = element_text(size = 17),
-#                      strip.text.y    = element_text(size = 17),
-#                      plot.caption    = element_text(size = 15, hjust = 0),
-#                      legend.position = "bottom")
-#     ggplot2::ggsave(filename = paste0(path_save, '/climatology_indices_',unique(tbl$Index),'.jpeg'), plot = gg, device = 'jpeg', width = 20, height = 7, units = 'in', dpi = 350)
-#     return(print(gg))
-#   })
+region_data %>%
+  dplyr::group_split(Index) %>%
+  purrr::map(function(tbl){
+    gg <- tbl %>%
+      # dplyr::filter(Index %in% var_to$var) %>%
+      ggplot2::ggplot(aes(x = factor(season, levels = 1:12), y = Value, fill = period)) +
+      ggplot2::geom_bar(stat = "identity", position = position_dodge()) +
+      ggplot2::geom_pointrange(aes(ymin=Value-sd, ymax=Value+sd), width=.2, position=position_dodge(.9)) +
+      ggplot2::facet_grid(Index~value, scales = 'free') +
+      ggplot2::scale_fill_brewer(palette = "Paired") +
+      ggplot2::theme_bw() +
+      ggplot2::xlab('') +
+      ggplot2::ylab('') +
+      ggplot2::theme(axis.text       = element_text(size = 17),
+                     axis.title      = element_text(size = 20),
+                     legend.text     = element_text(size = 17),
+                     legend.title    = element_blank(),
+                     plot.title      = element_text(size = 25),
+                     plot.subtitle   = element_text(size = 17),
+                     strip.text.x    = element_text(size = 17),
+                     strip.text.y    = element_text(size = 17),
+                     plot.caption    = element_text(size = 15, hjust = 0),
+                     legend.position = "bottom")
+    ggplot2::ggsave(filename = paste0(path_save, '/clim_Ind_',unique(tbl$Index),'.jpeg'), plot = gg, device = 'jpeg', width = 20, height = 7, units = 'in', dpi = 350)
+    return(print(gg))
+  })

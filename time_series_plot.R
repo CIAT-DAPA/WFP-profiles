@@ -40,6 +40,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
   }
   ifelse(exists('fut'), tbl <- dplyr::bind_rows(pst,fut), tbl <- pst)
   tbl <- tbl %>% tidyr::drop_na()
+  tbl <- tbl %>% dplyr::mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3)
   ss <- sort(unique(tbl$season))
   for(s in ss){
     dnm <- length(seasons[names(seasons) == s][[1]])
@@ -57,7 +58,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
     dir.create(path = paste0(outdir,'/all_s',i), F, T)
     tbl_lng <- tbl %>%
       dplyr::select(id:model) %>%
-      tidyr::pivot_longer(cols = TAI:THI_3, names_to = 'Indices', values_to = 'Value') %>%
+      tidyr::pivot_longer(cols = TAI:HSI_23, names_to = 'Indices', values_to = 'Value') %>%
       dplyr::group_by(Indices, add = T) %>%
       dplyr::group_split()
     tbl_lng %>%
@@ -69,7 +70,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
         if(vr == 'AMT'){ ylb <- expression('Temperature ('*~degree*C*')') }
         if(vr == 'ATR'){ ylb <- 'mm/season' }
         if(vr == 'TAI'){ ylb <- 'Aridity' }
-        if(vr %in% c(paste0('HSI_',0:3),paste0('THI_',0:3))){ ylb <- 'Probability' }
+        if(vr %in% c(paste0('HSI_',0:3),'HSI_23',paste0('THI_',0:3),'THI_23')){ ylb <- 'Probability' }
         if(vr == 'IRR'){ ylb <- '' }
         if(vr %in% c('NDD','NT_X','NDWS','NWLD','NWLD50','NWLD90')){ df <- df %>% tidyr::drop_na(); ylb <- 'days/month' }
         if(vr == 'P5D'){ ylb <- 'mm/5 days' } # df <- df[df$Value < 125,]

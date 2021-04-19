@@ -46,8 +46,8 @@ districts <- c("Caabudwaaq","Zeylac","Buuhoodle","Mogadisho","Boorama","Hargeysa
 for(i in 1:length(districts)){
   
   soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")
-  outfile <- paste0(root,"/1.Data/others/",country,"/past/",tolower(district),"_indices_monthly.fst")
-  spi_out <- paste0(root,"/1.Data/others/",country,"/past/",tolower(district),"_spi.fst")
+  outfile <- paste0(root,"/1.Data/others/",country,"/past/",tolower(districts[i]),"_indices_monthly.fst")
+  spi_out <- paste0(root,"/1.Data/others/",country,"/past/",tolower(districts[i]),"_spi.fst")
   
   if(!file.exists(outfile)){
     

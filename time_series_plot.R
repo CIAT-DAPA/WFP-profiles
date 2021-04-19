@@ -57,7 +57,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
   for(i in 1:length(seasons)){
     dir.create(path = paste0(outdir,'/all_s',i), F, T)
     tbl_lng <- tbl %>%
-      dplyr::select(id:model) %>%
+      dplyr::select(id:HSI_23) %>%
       tidyr::pivot_longer(cols = c(TAI:HSI_3,HSI_23,THI_23), names_to = 'Indices', values_to = 'Value') %>%
       dplyr::group_by(Indices, add = T) %>%
       dplyr::group_split()

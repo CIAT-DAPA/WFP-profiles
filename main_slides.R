@@ -21,7 +21,7 @@ create_slides <- function(country = 'Burundi', iso3 = iso3, season = season, reg
     filter(ISO3 == iso3) %>%
     rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X") %>% 
     dplyr::select(-Short_Name)
-
+# Por aqui incluir las variables 23. Aunque no estoy segura en donde. 
   to_do <- to_do %>% filter(ISO3 == iso3) %>%
       mutate(NWLD50 = NWLD, NWLD90 = NWLD, HSI_0 = HSI, HSI_1 = HSI, HSI_2 = HSI, HSI_3 = HSI,
              THI_0 = THI, THI_1 = THI, THI_2 = THI, THI_3 = THI, SLGP_CV = SLGP ) %>%
@@ -43,7 +43,6 @@ create_slides <- function(country = 'Burundi', iso3 = iso3, season = season, reg
     tidyr::pivot_longer(cols = everything(), names_to = 'var', values_to = 'count') %>%
     mutate(group = c('N/A', 'N/A', 'Drought', 'Drought', 'Drought', 'Drought', 'Drought', 'Agricultural', 'N/A', 'Waterlogging', 'Waterlogging', 'Waterlogging', 'Heat', 'Heat', 'Waterlogging', 'Waterlogging', 'N/A', 'N/A', 'Heat', 'Heat', 'N/A', 'N/A', 'Heat', 'Heat', 'Agricultural' )) %>%
     filter(count > 0, group != 'N/A')
-  
 
   for(s_i in season){
     ppt <- readLines('D:/OneDrive - CGIAR/Desktop/WFP/WFP-profiles/ppt_temp_F.Rmd')

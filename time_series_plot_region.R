@@ -19,7 +19,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
   outdir <- paste0(root,'/7.Results/',country,'/results/time_series')
   if(!dir.exists(outdir)){ dir.create(outdir, F, T) }
   
-  shp <- terra::vect(paste0(root,'/1.Data/shps/burundi/bdi_regions/bdi_regions.shp'))
+  shp <- terra::vect(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp'))
   ref <- terra::rast(paste0(root,"/1.Data/chirps-v2.0.2020.01.01.tif")) %>%
     terra::crop(., terra::ext(shp))
   shr <- terra::rasterize(x = shp, y = ref)
@@ -70,7 +70,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
     dir.create(path = paste0(outdir,'/all_s',i,'_lz'), F, T)
     tbl_lng <- tbl %>%
       dplyr::select(value:model) %>%
-      tidyr::pivot_longer(cols = TAI:HSI_23, names_to = 'Indices', values_to = 'Value') %>%
+      tidyr::pivot_longer(cols = TAI:HSI_3,HSI_23,THI_23, names_to = 'Indices', values_to = 'Value') %>%
       dplyr::group_by(Indices, add = T) %>%
       dplyr::group_split()
     tbl_lng %>%

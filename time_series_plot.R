@@ -9,7 +9,7 @@
 #   country: country name first character in capital letter
 # Output:
 #   .jpeg graphs per index and season
-time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
+time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons ){
   
   # Load packages
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
@@ -57,8 +57,8 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
   for(i in 1:length(seasons)){
     dir.create(path = paste0(outdir,'/all_s',i), F, T)
     tbl_lng <- tbl %>%
-      dplyr::select(id:HSI_23) %>%
-      tidyr::pivot_longer(cols = c(TAI:HSI_3,HSI_23,THI_23), names_to = 'Indices', values_to = 'Value') %>%
+      dplyr::select(id:HSI_23) %>% #names()
+      tidyr::pivot_longer(cols = c(TAI:THI_3,HSI_23,THI_23), names_to = 'Indices', values_to = 'Value') %>%
       dplyr::group_by(Indices, add = T) %>%
       dplyr::group_split()
     tbl_lng %>%

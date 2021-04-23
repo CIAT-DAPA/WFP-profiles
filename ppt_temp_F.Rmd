@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = FALSE)
 ![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Location.png){width="10%"}
 :::
 ::: {.column width="90%"}
-![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Elevation.png){width="10%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/Elevation.png){width="10%"}
 :::
 ::::::
 
@@ -117,7 +117,28 @@ knitr::opts_chunk$set(echo = FALSE)
 ::::::
 
 
+#### Waterlogging & flooding --- Max. 
 
+:::::: {.columns}
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/C_NWLD_max.png){width="10%"}
+:::
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Anom_NWLD_max.png){width=10%}
+:::
+::::::
+
+
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/time_series/Zone_period/NWLD.jpeg){width="10%"}
+
+:::::: {.columns}
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Q_NWLD_max.png){width="10%"} 
+:::
+::: {.column width="50%"}
+![](D:/OneDrive - CGIAR/Desktop/WFP/slides/COUNTRY/maps/Zone_period/Fix_NWLD_max.png){width="10%"}
+:::
+::::::
 
 
 #### Univariate Drought

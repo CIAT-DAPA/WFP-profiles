@@ -1,5 +1,5 @@
 # Create slides automatically
-# A. Esquivel and H. Achicanoy
+# A. Esquivel - H. Achicanoy - C.Saavedra 
 # Alliance Bioversity-CIAT, 2020
 
 options(warn = -1, scipen = 999)

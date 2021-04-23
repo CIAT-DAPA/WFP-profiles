@@ -11,7 +11,7 @@ options(warn = -1, scipen = 999)
 
 # Load libraries
 suppressMessages(library(pacman))
-suppressMessages(pacman::p_load(tidyverse, terra, gtools, future, furrr, lubridate, raster, terra,tmap, fst, sf))
+suppressMessages(pacman::p_load(tidyverse, gtools, future, furrr, lubridate, raster, terra,tmap, fst, sf))
 
 # Paths
 OSys <- Sys.info()[1]
@@ -21,9 +21,10 @@ root <<- switch(OSys,
 
 # =-------------------------------------
 # Parameters 
-iso3 <- 'GIN'
-country <- 'Guinee'
-seasons <- list(s1 =	c(4,5,6,7,8,9,10,11,12)) 
+iso3 <- 'BDI'
+country <- 'Burundi'
+seasons <- list(s1 =	c(2,3,4,5,6,7),
+                s2 =  c(9,10,11,12,1,2) )
 Zone  <- 'all'
 # =-------------------------------------
 
@@ -67,14 +68,14 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   # =--- water sources. 
   glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_1.shp' ) 
   crs(glwd1) <- crs(shp)
-  ext.sp <- raster::crop(glwd1, raster::extent(ctn))
+  ext.sp <- raster::crop(glwd1, raster::extent(shp))
   glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
     sf::st_as_sf()
   glwd1 <<-  glwd1
   
   glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_2.shp' ) 
   crs(glwd2) <- crs(shp)
-  ext.sp2 <- raster::crop(glwd2, raster::extent(ctn))
+  ext.sp2 <- raster::crop(glwd2, raster::extent(shp))
   glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
     sf::st_as_sf()
   glwd2 <<- glwd2
@@ -162,7 +163,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   rm(Climate)
   
   # =----------------------------------------------
-  mapping_g <- function(R_zone, iso3, country, Period = seasons,data_cons = data_cons, coord = coord){
+  mapping_g <- function(R_zone, iso3, country, Period = seasons, data_cons = data_cons, coord = coord){
     # R_zone <- to_do$Regions[1]
     season <-  names(Period)
     st <- tail(Period[[1]], n=1); lt <- Period[[1]][1]
@@ -218,7 +219,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     if(sum(vars == 'HSI') == 1){
       vars <- c(vars[vars != 'HSI'], glue::glue('HSI_{0:3}'))
       vars <- c(vars, 'HSI_23')}
-    
     
     # Temporal
     basic_vars <- vars[!(vars %in% c("SLGP", "LGP" ))]
@@ -287,6 +287,26 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     }
     
     # =----------------------------------------------------
+    # MAX section
+    if(sum(vars == 'NWLD') > 0){
+      max_add <- data_cons %>% filter(id %in% id_f) %>%
+        dplyr::select(time, time1, id,  'NWLD', 'NWLD50', 'NWLD90') %>%
+        group_by(time, time1, id) %>% 
+        summarise_all(~max(. , na.rm =  TRUE)) %>%
+        mutate_at(.vars =  c('NWLD', 'NWLD50', 'NWLD90'), 
+                  .funs = ~round(. , 0)) %>%
+        mutate_at(.vars =  c('NWLD', 'NWLD50', 'NWLD90'), 
+                  .funs = ~(./length_season) %>% round(. ,0) ) %>% # Here
+        ungroup() %>%  unique() %>% 
+        setNames(c('time','time1','id','NWLD_max', 'NWLD50_max', 'NWLD90_max'))
+      
+      vars <- c(vars, 'NWLD_max', 'NWLD50_max', 'NWLD90_max')
+      
+      
+      to_graph <- to_graph %>% inner_join(. , max_add)
+    }
+    
+    # =----------------------------------------------------
     special_base <- dplyr::select(pet, id, time, time1, season, ATR, AMT) %>%
       filter(id %in% id_f) %>%
       group_by(time, time1, season, id) %>% 
@@ -298,8 +318,13 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE)
     # =----------------------------------------------------
     
-    limits <- to_graph %>% dplyr::select(-id, -x, -y, -time, -time1, -ATR, -AMT) %>%
+    
+    max_lt <- to_graph %>% dplyr::select(contains('_max')) %>% 
+      dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE) 
+    
+    limits <- to_graph %>% dplyr::select(-id, -x, -y, -time1 , -ATR, -AMT, -contains('_max')) %>% 
       dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE) %>% 
+      bind_cols(max_lt) %>% 
       dplyr::bind_cols(Special_limits, . )
     
     var_toG <- names(dplyr::select(to_graph, -id, -x, -y, -time, -time1))
@@ -316,9 +341,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         my_breaks <- c(0, 0.3, 0.6, 1)
       }
       
-      if(var_toG[i] %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X')){
-        my_limits <- c(1, 31)
-        my_breaks <- c(1, 10, 20, 31)
+      if(var_toG[i] %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X', 'NWLD_max','NWLD50_max', 'NWLD90_max')){
+        my_limits <- c(0, 31)
+        my_breaks <- c(0, 10, 20, 31)
       } 
       
       pattern <- case_when(
@@ -348,6 +373,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         var_toG[i] == 'THI_3' ~ 'THI_3\n(prob)',
         var_toG[i] == 'THI_23' ~ 'THI_23\n(prob)',
         var_toG[i] == 'SPI' ~ 'SPI\n(% area)',
+        var_toG[i] == 'NWLD_max' ~ 'NWLD_max\n(days/month)', 
+        var_toG[i] == 'NWLD50_max' ~ 'NWLD50_max\n(days/month)', 
+        var_toG[i] == 'NWLD90_max' ~ 'NWLD90_max\n(days/month)',
         TRUE ~ var_toG[i])
       
       
@@ -378,8 +406,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       ggplot() +
         geom_tile(data = drop_na(to_graph, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
-        # geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
-        # geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
+        geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
+        geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
         # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
         geom_sf(data = zone, fill = NA, color = 'black') +
@@ -400,7 +428,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
     }
     
-    
+    # =-------------------------------------
     # Anomaly Maps 
     if(length(unique(to_graph$time)) == 3){
       F2030 <- to_graph %>% filter(time == '2021-2040') %>% 
@@ -440,8 +468,13 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE)
       # =---------
       
-      limits <- anomalies %>% dplyr::select(-id, -x, -y, -time1 , -ATR, -AMT) %>% 
+      
+      max_lt <- anomalies %>% dplyr::select(contains('_max')) %>% 
+        dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE) 
+      
+      limits <- anomalies %>% dplyr::select(-id, -x, -y, -time1 , -ATR, -AMT, -contains('_max')) %>% 
         dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE)  %>%
+        bind_cols(max_lt) %>% 
         bind_cols(sp_anom_l , . )
       
       
@@ -449,11 +482,14 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         j <- c('_min' , '_max')
         my_limits <- dplyr::select(limits, glue::glue('{var_toG[i]}{j}' )) %>% setNames(c('min', 'max')) %>% as.numeric()
         my_breaks <- round(seq(my_limits[1], my_limits[2],  length.out= 4), 0)
+        my_limits <- c(ifelse(my_limits[1] > my_breaks[1], my_breaks[1], my_limits[1]) ,ifelse(my_limits[2] < my_breaks[4], my_breaks[4], my_limits[2]))
+        
         
         if(var_toG[i] %in% c('SHI', glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'THI_23', 'HSI_23')){
-          my_limits <- c(0, 1)
-          my_breaks <- c(0, 0.3, 0.6, 1)
+          my_limits <- c(-1, 1)
+          my_breaks <- c(-1, -0.5, 0, 0.5, 1)
         }
+        
         
         pattern <- case_when(
           var_toG[i] == "ATR" ~ 'ATR\n(%)',
@@ -482,6 +518,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
           var_toG[i] == 'THI_3' ~ 'THI_3\n(prob)',
           var_toG[i] == 'THI_23' ~ 'THI_23\n(prob)',
           var_toG[i] == 'SPI' ~ 'SPI\n(% area)',
+          var_toG[i] == 'NWLD_max' ~ 'NWLD_max\n(days/month)', 
+          var_toG[i] == 'NWLD50_max' ~ 'NWLD50_max\n(days/month)', 
+          var_toG[i] == 'NWLD90_max' ~ 'NWLD90_max\n(days/month)',
           TRUE ~ var_toG[i])
         
         
@@ -529,6 +568,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       }
       
     }
+    # =-------------------------------------
     
     ###### Categorization... 
     labels <- function(x){
@@ -578,7 +618,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     # =--------------------------------------------------
     if(sum(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI', 'HSI_23', 'THI_23') ) > 0 ){
-      var_Q <- var_toG[-which(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI'))]
+      var_Q <- var_toG[-which(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI', 'HSI_23', 'THI_23'))]
     }else{var_Q <- var_toG}
     
     
@@ -601,9 +641,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                    '3' = glue::glue('{Q_q[2]} < {var_Q[i]} <= {Q_q[3]}'), 
                    '4' = glue::glue('{var_Q[i]} > {Q_q[3]}'))
       
-      
-      
-      
       pattern <- case_when(
         var_Q[i] == "ATR" ~ '(mm/season)',
         var_Q[i] == "AMT" ~ '(\u00B0C)' ,
@@ -620,18 +657,21 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         var_Q[i] == 'P95' ~ '(mm/day)',
         var_Q[i] == 'IRR' ~ 'IRR', 
         var_toG[i] == 'SPI' ~ '(% area)',
+        var_toG[i] == 'NWLD_max' ~ 'NWLD_max\n(days/month)', 
+        var_toG[i] == 'NWLD50_max' ~ 'NWLD50_max\n(days/month)', 
+        var_toG[i] == 'NWLD90_max' ~ 'NWLD90_max\n(days/month)',
         TRUE ~ var_Q[i])
       
       
       ggplot() +
         geom_tile(data =  drop_na(class_1, !!rlang::sym(var_Q[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_Q[i]) %>% as.factor(.) )) +
-        # geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
-        # geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
+        geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
+        geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
         # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
         geom_sf(data = zone, fill = NA, color = 'black') +
-        scale_fill_manual(values = c( '1' = "#09C5C5", '2' = "#D5DBDB", '3' = "#28B463", '4' = '#FA8072', '5' = "#A569BD "), 
-                          labels = labs_qq) +
+        scale_fill_manual(values = c( '1' = "#A7D96A", '2' = "#FFFFC1", '3' = "#FDAE61", '4' = '#D7191B', '5' = "#533104"), 
+                          breaks = c('1', '2', '3', '4'), labels = labs_qq) +
         labs(fill = pattern, x = NULL, y = NULL, title = title) +
         scale_y_continuous(breaks = round(ylims, 2), n.breaks = 3) +
         scale_x_continuous(breaks = round(xlims, 2), n.breaks = 3) +
@@ -694,8 +734,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     }
     
     # 4. 'NWLD','NWLD50','NWLD90'
-    if(sum(names(to_graph) %in% c('NWLD','NWLD50','NWLD90')) > 0){
-      var_b <- names(to_graph)[names(to_graph) %in% c('NWLD','NWLD50','NWLD90')]
+    if(sum(names(to_graph) %in% c('NWLD','NWLD50','NWLD90', 'NWLD_max','NWLD50_max','NWLD90_max')) > 0){
+      var_b <- names(to_graph)[names(to_graph) %in% c('NWLD','NWLD50','NWLD90', 'NWLD_max','NWLD50_max','NWLD90_max')]
       b <- to_graph %>%
         dplyr::select(id, time1, var_b) %>% 
         mutate_at(.vars = var_b, .funs = function(x){
@@ -735,16 +775,12 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     }
     
     
-    
     # Aqui hay que hacer algunos cambios. Ya que la variable 
     # de tipo 23 se construyo anteriormente. 
     # 7. 'THI_0', 'THI_1', 'THI_2', 'THI_3', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'SHI'
     if(sum(names(to_graph) %in% c('THI_0', 'THI_1', 'THI_2', 'THI_3', 'THI_23', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'HSI_23', 'SHI')) > 0){
       
       var_b <- names(to_graph)[names(to_graph) %in% c('THI_0', 'THI_1', 'THI_2', 'THI_3', 'THI_23', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'HSI_23', 'SHI')]
-      # if(sum(var_b == 'HSI_2')>0 ){var_b <- c(var_b, 'HSI_23')}
-      # if(sum(var_b == 'THI_2')>0 ){var_b <- c(var_b, 'THI_23')}
-      
       b <- to_graph %>%
         dplyr::select(id, time1, var_b) %>% 
         mutate_at(.vars = var_b, .funs = function(x){
@@ -762,7 +798,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       b <- to_graph %>%
         dplyr::select(id, time1, SPI) %>% 
-        mutate(SPI =case_when(SPI <= 25 ~ 0, 
+        mutate(SPI =case_when(SPI <= 25 ~ 1, 
                               SPI > 25 & SPI <= 50~ 2, 
                               SPI > 50 & SPI <= 75~ 3, 
                               SPI > 75 ~ 4, 
@@ -771,13 +807,13 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     }
     
     # =----- 
-    fix_Vars <- var_toG[var_toG %in% c('SPI','TAI', 'NDWS', 'NDD', 'NT_X', 'NWLD','NWLD50','NWLD90', 'LGP', 'THI_0', 'THI_1', 'THI_2', 'THI_3', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'SHI', 'SLGP_CV', 'THI_23', 'HSI_23')]
+    fix_Vars <- var_toG[var_toG %in% c('SPI','TAI', 'NDWS', 'NDD', 'NT_X', 'NWLD','NWLD50','NWLD90', 'LGP', 'THI_0', 'THI_1', 'THI_2', 'THI_3', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'SHI', 'SLGP_CV', 'THI_23', 'HSI_23', 'NWLD_max','NWLD50_max','NWLD90_max')]
     
     
     # fixed categorical class maps. 
     for(i in 1:length(fix_Vars)){
       
-      labs_qq <- case_when('1' = fix_Vars[i] %in%  c('TAI', 'NDWS', 'NDD', 'NT_X', 'NWLD','NWLD50','NWLD90') ~ c('No significant stress', 'Moderate stress', 'Severe','Extreme'),
+      labs_qq <- case_when('1' = fix_Vars[i] %in%  c('TAI', 'NDWS', 'NDD', 'NT_X', 'NWLD','NWLD50','NWLD90', 'NWLD_max','NWLD50_max','NWLD90_max') ~ c('No significant stress', 'Moderate stress', 'Severe','Extreme'),
                            '2' = fix_Vars[i] %in% c('LGP') ~ c('Very low','Low','Moderate','High'),
                            '3' = fix_Vars[i] %in% c('SLGP_CV') ~ c('Low','Moderate','High','Extreme'),
                            '4' = fix_Vars[i] %in% c('THI_0', 'THI_1', 'THI_2', 'THI_3', 'THI_23', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'HSI_23', 'SHI') ~ c('Low','Moderate','High','Very high'), 
@@ -807,6 +843,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         var_toG[i] == 'SPI' ~ 'SPI\n(% area)',
         fix_Vars[i] == 'THI_23' ~ 'THI_2 + THI_3\n(prob)',
         fix_Vars[i] == 'HSI_23' ~ 'HSI_2 + HSI_3\n(prob)',
+        var_toG[i] == 'NWLD_max' ~ 'NWLD_max\n(days/month)', 
+        var_toG[i] == 'NWLD50_max' ~ 'NWLD50_max\n(days/month)', 
+        var_toG[i] == 'NWLD90_max' ~ 'NWLD90_max\n(days/month)',
         TRUE ~ fix_Vars[i])
       
       ggplot() +
@@ -816,8 +855,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
         # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
         geom_sf(data = zone, fill = NA, color = 'black') +
-        # scale_fill_brewer(palette = "Spectral",direction=-1, labels = labs_qq) + 
-        scale_fill_manual(values = c('1' = "#09C5C5", '2' = "#D5DBDB", '3' = "#28B463", '4' = '#FA8072', '5' = "#A569BD "), labels = labs_qq) +
+        scale_fill_manual(values = c( '1' = "#A7D96A", '2' = "#FFFFC1", '3' = "#FDAE61", '4' = '#D7191B', '5' = "#533104"), 
+                          breaks = c('1', '2', '3', '4'), labels = labs_qq) +
         labs(fill = pattern, x = NULL, y = NULL, title = title) +
         scale_y_continuous(breaks = round(ylims, 2), n.breaks = 3) +
         scale_x_continuous(breaks = round(xlims, 2), n.breaks = 3) +
@@ -827,7 +866,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         guides(fill=guide_legend(nrow=2,byrow=TRUE)) +
         theme(legend.position = 'bottom', text = element_text(size=35),
               axis.text.x=element_blank(), axis.text.y=element_blank(),
-              # axis.ticks.x=element_blank(), axis.ticks.y=element_blank(),              strip.background = element_rect(colour = "black", fill = "white"),
               strip.background = element_rect(colour = "black", fill = "white"),
               legend.title=element_text(size=35),
               legend.spacing = unit(5, units = 'cm'),
@@ -846,8 +884,35 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     high_lvl <- c('SPI', 'TAI','NDWS', 'NDD','NT_X','THI_2','THI_3','HSI_2','HSI_3','SHI','NWLD','NWLD50', 'NWLD90','IRR','P5D','P95', 'SLGP_CV')
     low_lvl <- 'LGP'
     
-    final_groups <- group_H %>% filter(group  != 'No') %>% 
-      filter(vars %in% var_toG)
+    final_groups <- group_H %>% filter(group  != 'No') %>% filter(vars %in% var_toG)
+    
+    if(sum(pull(final_groups, vars) == 'HSI_2')){
+      final_groups <- filter(final_groups, vars %in% c('HSI_2', 'HSI_3')) %>% 
+        slice(1) %>% mutate(vars = 'HSI_23') %>% 
+        bind_rows(filter(final_groups, !(vars %in% c('HSI_2', 'HSI_3'))),.)
+      
+      high_lvl <-  c(high_lvl[-which(high_lvl %in%  c('HSI_2', 'HSI_3'))], 'HSI_23')
+      
+    }
+    
+    if(sum(pull(final_groups, vars) == 'THI_2')){
+      final_groups <- filter(final_groups, vars %in% c('THI_2', 'THI_3')) %>% 
+        slice(1) %>% mutate(vars = 'THI_23') %>% 
+        bind_rows(filter(final_groups, !(vars %in% c('THI_2', 'THI_3'))),.)
+      
+      high_lvl <-  c(high_lvl[-which(high_lvl %in%  c('THI_2', 'THI_3'))], 'THI_23')
+    }
+    
+    if(sum(pull(final_groups, vars) == 'NWLD')){
+      final_groups <- filter(final_groups, vars %in% c('NWLD', 'NWLD50', 'NWLD90')) %>%
+        mutate(vars = c('NWLD_max', 'NWLD50_max', 'NWLD90_max')) %>%
+        bind_rows(final_groups, .)
+      
+      high_lvl <-  c(high_lvl, 'NWLD_max', 'NWLD50_max', 'NWLD90_max')
+      
+    }
+    
+    # =-----
     
     
     # =- Low level var reclassify
@@ -1108,22 +1173,5 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
 }
 
-# map_graphs(iso3, country, seasons, Zone)
-
-# =-----------------------------------
-
-# Rasterize...
-# to_rast <- d_ct %>% dplyr::select(id, x, y, ndws, NDWD, THI_2 , SHI, P5D)
-# # var <- 'ndws'
-# rasterize_mod <- function(var , to_rast){
-#   spg <- to_rast %>% dplyr::select(x, y, var ) %>% drop_na()
-#   coordinates(spg) <- ~ x + y
-#   gridded(spg) <- TRUE
-#   # # do a raster, with raster data. 
-#   raster_id <- raster(spg)
-#   raster::writeRaster(x = raster_id, filename = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/Haiti/results/tif/{var}.tif') )
-#   
-#   return(raster_id)}
-# 
-# vars <- c('NDWD', 'THI_2' , 'SHI', 'P5D') # 'ndws', 
-# for(i in 1:length(vars)){rasterize_mod(vars[i], to_rast)}
+# Aqui para correr. 
+# map_graphs(iso3, country, seasons)

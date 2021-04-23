@@ -1,5 +1,7 @@
 #  rm(list = ls()); gc(reset = TRUE)
 
+#  rm(list = ls()); gc(reset = TRUE)
+
 # WFP Climate Risk Project
 # =----------------------
 # Index Climatology  
@@ -11,8 +13,8 @@ suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(tidyverse,fst,terra,raster)) #tidyft,
 
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
-country <- 'Burundi'
-iso     <- 'BDI'
+country <- 'Haiti'
+iso     <- 'HTI'
 
 # =--------------------------
 path_save <- glue::glue('{root}/7.Results/{country}/results/monthly_g/')
@@ -89,8 +91,6 @@ if(region == 'all'){
   title = dplyr::filter(to_do, Regions  == region)$Short_Name   
 }
 
-
-
 vars <- dplyr::select(var_s, -ISO3, -Country, -Regions, -Livehood_z, -Short_Name) %>% 
   tidyr::gather(key = 'var',value = 'value')  %>% 
   dplyr::filter(value > 0) %>% dplyr::pull(var)
@@ -141,15 +141,13 @@ all_data_sd <- dplyr::bind_rows(tsth,tstf) %>%
   dplyr::group_by(season,period) %>%
   summarise_all(~sd(. , na.rm =  TRUE)) %>%
   dplyr::select(-year) %>% 
-  mutate_at(.vars = vars[vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')],
-            .funs = ~round(. , 0)) %>% 
   ungroup()
 
 
 all_data <- full_join(tidyr::pivot_longer(all_data, cols= ATR:HSI_23 ,names_to='Index',values_to='Value') ,
                       tidyr::pivot_longer(all_data_sd, cols= ATR:HSI_23 ,names_to='Index',values_to='sd')) 
 
-rm(all_data_sd)
+# rm(all_data_sd)
 
 
 p <- all_data %>%
@@ -211,6 +209,7 @@ ggplot2::ggsave(paste0(path_save, 'climatology_subset_I.jpeg'), device = 'jpeg',
 # By regions
 
 shp <- terra::vect(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso),"_regions/",tolower(iso),"_regions.shp"))
+shp$Short_Name <- to_do$Short_Name
 ref <- terra::rast(paste0(root,"/1.Data/chirps-v2.0.2020.01.01.tif")) %>%
   terra::crop(., terra::ext(shp))
 shr <- terra::rasterize(x = shp, y = ref)
@@ -225,34 +224,21 @@ tsth <- allhr2 %>%
   dplyr::select(value,season,period,ATR:THI_3) %>%
   dplyr::distinct() %>%
   as.tibble() %>% 
-  mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) %>% 
-  dplyr::group_by(value,season,period) %>%
-  summarise_all(~mean(. , na.rm =  TRUE)) %>%
-  mutate_at(.vars = vars[vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')],
-            .funs = ~round(. , 0)) %>% 
-  ungroup()
+  mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) 
 
 tsth$value <- factor(tsth$value)
-levels(tsth$value) <- c("Depressions de l'est","Plaine de l'Imbo","Plateaux secs de l'Est","Depressions du Nord")
+levels(tsth$value) <- shp$region
 
 tstf <- allfr2 %>%
   dplyr::select(value,season,period,ATR:THI_3) %>%
   dplyr::distinct() %>%
   as.tibble() %>% 
-  mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) %>% 
-  dplyr::group_by(value,season,period) %>%
-  summarise_all(~mean(. , na.rm =  TRUE)) %>%
-  mutate_at(.vars = vars[vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')],
-            .funs = ~round(. , 0)) %>% 
-  ungroup()
+  mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) 
 tstf$value <- factor(tstf$value)
-levels(tstf$value) <- c("Depressions de l'est","Plaine de l'Imbo","Plateaux secs de l'Est","Depressions du Nord")
-
+levels(tstf$value) <- shp$region
 
 # Guardados... 
 region_mean <- dplyr::bind_rows(tsth,tstf) %>%
-  as.tibble() %>% 
-  mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) %>% 
   dplyr::group_by(value,season,period) %>%
   summarise_all(~mean(. , na.rm =  TRUE)) %>%
   mutate_at(.vars = vars[vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')],
@@ -260,20 +246,16 @@ region_mean <- dplyr::bind_rows(tsth,tstf) %>%
   ungroup()
 
 region_sd <- dplyr::bind_rows(tsth,tstf) %>%
-  as.tibble() %>% 
-  mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) %>% 
-  dplyr::group_by(value,season,period) %>%
-  summarise_all(~sd(. , na.rm =  TRUE)) %>%
-  mutate_at(.vars = vars[vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')],
-            .funs = ~round(. , 0)) %>% 
+  dplyr::group_by(value,season,period) %>% 
+  summarise_all(~sd(.)) %>%
   ungroup()
 
 
 region_data <- full_join(tidyr::pivot_longer(region_mean, cols= ATR:HSI_23 ,names_to='Index',values_to='Value') ,
-                      tidyr::pivot_longer(region_sd, cols= ATR:HSI_23 ,names_to='Index',values_to='sd'))
+                         tidyr::pivot_longer(region_sd, cols= ATR:HSI_23 ,names_to='Index',values_to='sd'))
 
 
-# region_data %>% 
+# region_data %>%
 #   ggplot2::ggplot(aes(x = factor(season, levels = 1:12), y = Value, fill = period)) +
 #   ggplot2::geom_bar(stat = "identity", position = position_dodge()) +
 #   ggplot2::geom_pointrange(aes(ymin=Value-sd, ymax=Value+sd), width=.2, position=position_dodge(.9)) +
@@ -299,12 +281,19 @@ region_data <- full_join(tidyr::pivot_longer(region_mean, cols= ATR:HSI_23 ,name
 region_data %>%
   dplyr::group_split(Index) %>%
   purrr::map(function(tbl){
+    
+    
+    mande <- to_do$Short_Name
+    # Modificar de acuerdo a lo que se encuentre... sino pues... 
+    mande <- str_replace(mande, '-', '\n') 
+    names(mande) <- to_do$Regions 
+    mande_label <- labeller(value = mande)
+    
     gg <- tbl %>%
-      # dplyr::filter(Index %in% var_to$var) %>%
       ggplot2::ggplot(aes(x = factor(season, levels = 1:12), y = Value, fill = period)) +
       ggplot2::geom_bar(stat = "identity", position = position_dodge()) +
       ggplot2::geom_pointrange(aes(ymin=Value-sd, ymax=Value+sd), width=.2, position=position_dodge(.9)) +
-      ggplot2::facet_grid(Index~value, scales = 'free') +
+      ggplot2::facet_grid(Index~value, labeller = mande_label  ,scales = 'free') +
       ggplot2::scale_fill_brewer(palette = "Paired") +
       ggplot2::theme_bw() +
       ggplot2::xlab('') +

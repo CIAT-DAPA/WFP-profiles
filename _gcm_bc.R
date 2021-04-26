@@ -48,9 +48,13 @@ BC_Qmap <- function(his_obs = his_obs,
   
   cat(paste0(' *** Performing Quantile-mapping bias correction***\n'))
   cat(paste0('>>> Loading obs data\n'))
-  his_obs <- his_obs %>%
-    tidyft::parse_fst(path = .) %>%
-    base::as.data.frame()
+  if(class(his_obs) == 'character'){
+    his_obs <- his_obs %>%
+      tidyft::parse_fst(path = .) %>%
+      base::as.data.frame()
+  } else {
+    his_obs <- his_obs
+  }
   his_obs$year <- NULL
   his_obs$id1 <- his_obs$id
   his_obs <- his_obs %>%
@@ -92,9 +96,13 @@ BC_Qmap <- function(his_obs = his_obs,
   his_obs$Climate <- impute_missings(tbl = his_obs)
   
   cat(paste0('>>> Loading historical GCM data\n'))
-  his_gcm <- his_gcm %>%
-    tidyft::parse_fst(path = .) %>%
-    base::as.data.frame()
+  if(class(his_gcm) == 'character'){
+    his_gcm <- his_gcm %>%
+      tidyft::parse_fst(path = .) %>%
+      base::as.data.frame()
+  } else {
+    his_gcm <- his_gcm
+  }
   his_gcm$id1 <- his_gcm$id
   his_gcm <- his_gcm %>%
     tidyr::nest(Climate = c('id','date','prec','tmax','tmin')) %>%
@@ -103,9 +111,13 @@ BC_Qmap <- function(his_obs = his_obs,
   his_gcm$Climate <- impute_missings(tbl = his_gcm)
   
   cat(paste0('>>> Loading future GCM data\n'))
-  fut_gcm <- fut_gcm %>%
-    tidyft::parse_fst(path = .) %>%
-    base::as.data.frame()
+  if(class(fut_gcm) == 'character'){
+    fut_gcm <- fut_gcm %>%
+      tidyft::parse_fst(path = .) %>%
+      base::as.data.frame()
+  } else {
+    fut_gcm <- fut_gcm
+  }
   fut_gcm$id1 <- fut_gcm$id
   fut_gcm <- fut_gcm %>%
     tidyr::nest(Climate = c('id','date','prec','tmax','tmin')) %>%

@@ -51,7 +51,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
   tbl <- tbl %>% tidyr::drop_na()
   tbl <- tbl %>% dplyr::mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3)
   tbl$value <- factor(tbl$value)
-  levels(tbl$value) <- c("Depressions de l'est","Plaine de l'Imbo","Plateaux secs de l'Est","Depressions du Nord")
+  levels(tbl$value) <- shp$region
   
   ss <- sort(unique(tbl$season))
   for(s in ss){
@@ -69,9 +69,8 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
   for(i in 1:length(seasons)){
     dir.create(path = paste0(outdir,'/all_s',i,'_lz'), F, T)
     tbl_lng <- tbl %>%
-      dplyr::select(value:model) %>%
-      tidyr::pivot_longer(cols = TAI:HSI_3,HSI_23,THI_23, names_to = 'Indices', values_to = 'Value') %>%
-      dplyr::group_by(Indices, add = T) %>%
+      dplyr::select(value:HSI_23) %>% #names()
+      tidyr::pivot_longer(cols = c(TAI:THI_3,HSI_23,THI_23), names_to = 'Indices', values_to = 'Value') %>%      dplyr::group_by(Indices, add = T) %>%
       dplyr::group_split()
     tbl_lng %>%
       purrr::map(.f = function(df){
@@ -90,6 +89,20 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
         if(vr == 'SHI'){ ylb <- 'days/season' }
         
         if(length(models) > 1){
+          
+          to_do <- readxl::read_excel('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>%
+            dplyr::filter(ISO3 == iso) %>%
+            dplyr::rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X")
+          
+          mande <- to_do$Short_Name
+          # Modificar de acuerdo a lo que se encuentre... sino pues... 
+          mande <- str_replace(mande, '-', '\n') 
+          mande <- str_replace(mande, ':', '\n') 
+          mande <- str_replace(mande, '/', '\n')
+          mande <- str_replace(mande, '(', '\n')
+          names(mande) <- to_do$Regions 
+          mande_label <- labeller(value = mande)
+          
           df %>%
             dplyr::filter(model == 'Historical') %>% 
             ggplot2::ggplot(aes(x = year, y = Value, group = model)) +
@@ -104,7 +117,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
             ggplot2::ylab(ylb) +
             ggplot2::theme_bw() +
             ggplot2::geom_vline(xintercept = 2020, size = 1, linetype = "dashed", color = "red") +
-            ggplot2::facet_grid(Indices~value, scales = 'free') +
+            ggplot2::facet_grid(Indices~value,  labeller = mande_label,scales = 'free') +
             ggplot2::theme(axis.text       = element_text(size = 16),
                            axis.title      = element_text(size = 20),
                            legend.text     = element_text(size = 15),

@@ -286,6 +286,9 @@ region_data %>%
     mande <- to_do$Short_Name
     # Modificar de acuerdo a lo que se encuentre... sino pues... 
     mande <- str_replace(mande, '-', '\n') 
+    mande <- str_replace(mande, ':', '\n') 
+    mande <- str_replace(mande, '/', '\n')
+    mande <- str_replace(mande, '(', '\n')
     names(mande) <- to_do$Regions 
     mande_label <- labeller(value = mande)
     

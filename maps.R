@@ -14,18 +14,17 @@ suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(tidyverse, gtools, future, furrr, lubridate, raster, terra,tmap, fst, sf))
 
 # Paths
-OSys <- Sys.info()[1]
-root <<- switch(OSys,
-                'Linux'   = '/home/jovyan/work/cglabs',
-                'Windows' = '//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr')
+# OSys <- Sys.info()[1]
+# root <<- switch(OSys,
+#                 'Linux'   = '/home/jovyan/work/cglabs',
+#                 'Windows' = '//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr')
 
 # =-------------------------------------
 # Parameters 
-iso3 <- 'BDI'
-country <- 'Burundi'
-seasons <- list(s1 =	c(2,3,4,5,6,7),
-                s2 =  c(9,10,11,12,1,2) )
-Zone  <- 'all'
+# iso3 <- 'GNB'
+# country <- 'Guinea-Bissau'
+# seasons <- list(s1 = c(5,6,7,8,9,10,11))
+# Zone  <- 'all'
 # =-------------------------------------
 
 map_graphs <- function(iso3, country, seasons, Zone = 'all'){
@@ -42,7 +41,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   shp <<- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_gadm/",country,"_GADM1.shp"))
   shp_sf <-  shp %>%  sf::st_as_sf() %>% 
     group_by(NAME_0) %>% summarise()
-  
   shp_sf <<- shp_sf
   
   # Regions shp
@@ -64,20 +62,30 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   # =--- 
   
   
-  
   # =--- water sources. 
   glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_1.shp' ) 
   crs(glwd1) <- crs(shp)
-  ext.sp <- raster::crop(glwd1, raster::extent(shp))
-  glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
-    sf::st_as_sf()
-  glwd1 <<-  glwd1
   
   glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_2.shp' ) 
   crs(glwd2) <- crs(shp)
-  ext.sp2 <- raster::crop(glwd2, raster::extent(shp))
-  glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
-    sf::st_as_sf()
+  
+  if(iso3 != 'NPL'){
+    ext.sp <- raster::crop(glwd1, raster::extent(shp))
+    glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
+      sf::st_as_sf()
+    
+    ext.sp2 <- raster::crop(glwd2, raster::extent(shp))
+    glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
+      sf::st_as_sf()
+  }else{
+    glwd1 <-  rgeos::gSimplify(glwd1, tol = 0.05, topologyPreserve = TRUE) %>%
+      sf::st_as_sf()
+    
+    glwd2 <- rgeos::gSimplify(glwd2, tol = 0.05, topologyPreserve = TRUE) %>%
+      sf::st_as_sf()
+  }
+  
+  glwd1 <<-  glwd1
   glwd2 <<- glwd2
   # =--- 
   
@@ -167,8 +175,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # R_zone <- to_do$Regions[1]
     season <-  names(Period)
     st <- tail(Period[[1]], n=1); lt <- Period[[1]][1]
-    length_season <- case_when(st > lt ~ st - (lt-1), 
-                               st < lt ~ (13 - st) + lt)
+    # length_season <- case_when(st > lt ~ st - (lt-1), 
+    # st < lt ~ (13 - lt) + st)
+    length_season <- length(Period[[1]])
     
     days <- sum(lubridate::days_in_month(1:12)[Period[[1]]])
     pet <- data_cons
@@ -291,7 +300,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     if(sum(vars == 'NWLD') > 0){
       max_add <- data_cons %>% filter(id %in% id_f) %>%
         dplyr::select(time, time1, id,  'NWLD', 'NWLD50', 'NWLD90') %>%
-        group_by(time, time1, id) %>% 
+        group_by(time, time1, id) %>% drop_na() %>% 
         summarise_all(~max(. , na.rm =  TRUE)) %>%
         mutate_at(.vars =  c('NWLD', 'NWLD50', 'NWLD90'), 
                   .funs = ~round(. , 0)) %>%
@@ -1172,6 +1181,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   }
   
 }
+
+
 
 # Aqui para correr. 
 # map_graphs(iso3, country, seasons)

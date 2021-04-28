@@ -38,11 +38,12 @@ seasons <- list(s1=1,s2=2,s3=3,s4=4,s5=5,s6=6,s7=7,s8=8,s9=9,s10=10,s11=11,s12=1
 # # Get future climate data
 
 # Calc agro-climatic indices (past)
-districts <- c("Caabudwaaq","Zeylac","Buuhoodle","Mogadisho","Boorama","Hargeysa",
-               "Kismaayo","Baydhabo","Lughaya","Beled Xaawo","Baar-Dheere","Dolow",
-               "Afmadow","Luuk","Qansax Dheere","Bu'aale","Diinsoor","Garoowe",
-               "Gabiley","Saakow","Beled Weyn","Bosaaso","Garbahaaray","Dhuusamareeb",
-               "Burao","Gaalkacayo","Xudur","Lascaanod","Ceerigaabo","Marka")
+districts <- c("Afmadow","Bu'aale","Dolow","Saakow")
+               # ("Caabudwaaq","Zeylac","Buuhoodle","Mogadisho","Boorama","Hargeysa",
+               # "Kismaayo","Baydhabo","Lughaya","Beled Xaawo","Baar-Dheere",
+               # "Luuk","Qansax Dheere",,"Diinsoor","Garoowe",
+               # "Gabiley","Beled Weyn","Bosaaso","Garbahaaray","Dhuusamareeb",
+               # "Burao","Gaalkacayo","Xudur","Lascaanod","Ceerigaabo","Marka")
 for(i in 1:length(districts)){
   
   soilfl  <- paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst")

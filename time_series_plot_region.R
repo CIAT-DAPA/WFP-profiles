@@ -9,7 +9,7 @@
 #   country: country name first character in capital letter
 # Output:
 #   .jpeg graphs per index and season
-time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
+time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
   
   # Load packages
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}

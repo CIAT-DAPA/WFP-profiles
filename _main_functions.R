@@ -621,6 +621,12 @@ calc_HSI <- function(tmax, RH){
                     HSI = paste0('HSI_', HSI)) %>%
       tidyr::pivot_wider(names_from = HSI, values_from = n)
   }
+  HSI_names <- HSI %>% names()
+  if(sum(HSI_names == 'HSI_0') < 1){HSI <- bind_cols( tibble(HSI_0 = NA_real_), HSI)}
+  if(sum(HSI_names == 'HSI_1') < 1){HSI <- bind_cols( tibble(HSI_1 = NA_real_), HSI)}
+  if(sum(HSI_names == 'HSI_2') < 1){HSI <- bind_cols( tibble(HSI_2 = NA_real_), HSI)}
+  if(sum(HSI_names == 'HSI_3') < 1){HSI <- bind_cols( tibble(HSI_3 = NA_real_), HSI)}
+  HSI <- dplyr::select(HSI, HSI_0, HSI_1, HSI_2, HSI_3)
   return(HSI)
 }
 calc_HSIMP <- compiler::cmpfun(calc_HSI)
@@ -651,6 +657,12 @@ calc_THI <- function(tmax, RH){
       dplyr::mutate_all(.funs = function(x){
         ifelse(x == 0, NA_real_, x)
       })}
+  THI_names <- THI %>% names()
+  if(sum(THI_names == 'THI_0') < 1){THI <- bind_cols( tibble(THI_0 = NA_real_), THI)}
+  if(sum(THI_names == 'THI_1') < 1){THI <- bind_cols( tibble(THI_1 = NA_real_), THI)}
+  if(sum(THI_names == 'THI_2') < 1){THI <- bind_cols( tibble(THI_2 = NA_real_), THI)}
+  if(sum(THI_names == 'THI_3') < 1){THI <- bind_cols( tibble(THI_3 = NA_real_), THI)}
+  THI <- dplyr::select(THI, THI_0, THI_1, THI_2, THI_3)
   return(THI)
 }
 calc_THIMP <- compiler::cmpfun(calc_THI)

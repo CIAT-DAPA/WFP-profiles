@@ -15,7 +15,7 @@ root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
 iso     <- 'TZA'
 model   <- 'INM-CM5-0'
-period  <- '2021-2040'
+period  <- '2041-2060'
 his_obs <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
 his_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/1995-2014/",iso,".fst")
 fut_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/",period,"/",iso,".fst")

@@ -1182,7 +1182,5 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
 }
 
-
-
 # Aqui para correr. 
 # map_graphs(iso3, country, seasons)

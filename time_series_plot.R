@@ -25,6 +25,11 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons ){
     base::as.data.frame()
   pst$gSeason <- pst$SLGP <- pst$LGP <- NULL
   pst$model <- 'Historical'
+  pst <- pst %>% dplyr::mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3)
+  pst_smm <- pst %>% dplyr::group_by(season, year, model) %>% dplyr::summarise_all(median, na.rm = T)
+  pst_max <- pst %>% dplyr::group_by(season, year, model) %>% dplyr::summarise(NWLD_max = max(NWLD, na.rm = T), NWLD50_max = max(NWLD50, na.rm = T), NWLD90_max = max(NWLD90, na.rm = T))
+  pst_smm <- dplyr::left_join(x = pst_smm, y = pst_max, by = c('season', 'year', 'model')); rm(pst_max)
+  pst_smm$id <- pst_smm$x <- pst_smm$y <- NULL
   fut_fls <- paste0(root,'/7.Results/',country,'/future') %>%
     list.files(., pattern = paste0(iso,'_indices.fst'), full.names = T, recursive  = T)
   if(length(fut_fls) > 0){
@@ -36,11 +41,14 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons ){
       df$model <- models[i]; return(df)
     }) %>% dplyr::bind_rows()
     fut$gSeason <- fut$SLGP <- fut$LGP <- NULL
-    fut <- fut %>% dplyr::group_by(id, season, model, year) %>% dplyr::summarise_all(median, na.rm = T)
+    fut <- fut %>% dplyr::mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3)
+    fut_smm <- fut %>% dplyr::group_by(season, year, model) %>% dplyr::summarise_all(median, na.rm = T)
+    fut_max <- fut %>% dplyr::group_by(season, year, model) %>% dplyr::summarise(NWLD_max = max(NWLD, na.rm = T), NWLD50_max = max(NWLD50, na.rm = T), NWLD90_max = max(NWLD90, na.rm = T))
+    fut_smm <- dplyr::left_join(x = fut_smm, y = fut_max, by = c('season', 'year', 'model')); rm(fut_max)
+    fut_smm$id <- fut_smm$x <- fut_smm$y <- NULL
   }
-  ifelse(exists('fut'), tbl <- dplyr::bind_rows(pst,fut), tbl <- pst)
+  ifelse(exists('fut_smm'), tbl <- dplyr::bind_rows(pst_smm,fut_smm), tbl <- pst_smm)
   tbl <- tbl %>% tidyr::drop_na()
-  tbl <- tbl %>% dplyr::mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3)
   ss <- sort(unique(tbl$season))
   for(s in ss){
     dnm <- length(seasons[names(seasons) == s][[1]])
@@ -50,6 +58,9 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons ){
     tbl$NWLD[tbl$season == s] <- tbl$NWLD[tbl$season == s]/dnm
     tbl$NWLD50[tbl$season == s] <- tbl$NWLD50[tbl$season == s]/dnm
     tbl$NWLD90[tbl$season == s] <- tbl$NWLD90[tbl$season == s]/dnm
+    tbl$NWLD_max[tbl$season == s] <- tbl$NWLD_max[tbl$season == s]/dnm
+    tbl$NWLD50_max[tbl$season == s] <- tbl$NWLD50_max[tbl$season == s]/dnm
+    tbl$NWLD90_max[tbl$season == s] <- tbl$NWLD90_max[tbl$season == s]/dnm
   }; rm(ss, s)
   
   # Obtain number of seasons
@@ -57,8 +68,8 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons ){
   for(i in 1:length(seasons)){
     dir.create(path = paste0(outdir,'/all_s',i), F, T)
     tbl_lng <- tbl %>%
-      dplyr::select(id:HSI_23) %>% #names()
-      tidyr::pivot_longer(cols = c(TAI:THI_3,HSI_23,THI_23), names_to = 'Indices', values_to = 'Value') %>%
+      tidyr::pivot_longer(cols = c(TAI:NWLD90_max), names_to = 'Indices', values_to = 'Value') %>%
+      dplyr::ungroup() %>%
       dplyr::group_by(Indices, add = T) %>%
       dplyr::group_split()
     tbl_lng %>%
@@ -72,7 +83,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons ){
         if(vr == 'TAI'){ ylb <- 'Aridity' }
         if(vr %in% c(paste0('HSI_',0:3),'HSI_23',paste0('THI_',0:3),'THI_23')){ ylb <- 'Probability' }
         if(vr == 'IRR'){ ylb <- '' }
-        if(vr %in% c('NDD','NT_X','NDWS','NWLD','NWLD50','NWLD90')){ df <- df %>% tidyr::drop_na(); ylb <- 'days/month' }
+        if(vr %in% c('NDD','NT_X','NDWS','NWLD','NWLD50','NWLD90','NWLD_max','NWLD50_max','NWLD90_max')){ df <- df %>% tidyr::drop_na(); ylb <- 'days/month' }
         if(vr == 'P5D'){ ylb <- 'mm/5 days' } # df <- df[df$Value < 125,]
         if(vr == 'P95'){ ylb <- 'mm/day' } # df <- df[df$Value < 50,]
         if(vr == 'SHI'){ ylb <- 'days/season' }

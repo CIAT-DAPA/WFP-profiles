@@ -1,17 +1,8 @@
-#  rm(list = ls()); gc(reset = TRUE)
-
 # WFP Climate Risk Project
 # =----------------------
 # Graphs.  
 # A. Esquivel - H. Achicanoy - C.Saavedra 
 # =----------------------
-
-# R options
-options(warn = -1, scipen = 999)
-
-# Load libraries
-suppressMessages(library(pacman))
-suppressMessages(pacman::p_load(tidyverse, gtools, future, furrr, lubridate, raster, terra,tmap, fst, sf))
 
 # Paths
 # OSys <- Sys.info()[1]
@@ -160,7 +151,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     dplyr::mutate(SPI = spi * 100) %>% 
     dplyr::select(time, time1 , id, year, SPI, season, time) 
   
-  data_cons <- full_join(data_cons, spi_dat) %>% drop_na(time1)
+  data_cons <- dplyr::full_join(data_cons, spi_dat) %>% tidyr::drop_na(time1)
   # =----------------------------------------------------
   # =-  Climate ---
   Climate <- fst::fst(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/{iso3}/year/climate_1981_mod.fst')) %>% as_tibble()
@@ -193,7 +184,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
         dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
         dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
-        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% ungroup()
+        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
       
       title = 'Country'
     }else{
@@ -237,7 +228,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # Cortar por el crd. 
     crd <- data_cons %>%
       dplyr::filter(year == 2019) %>% dplyr::mutate(ISO = iso3)
-    pnt <- crd %>% dplyr::select(x,y) %>% drop_na() %>% sp::SpatialPoints(coords = .)
+    pnt <- crd %>% dplyr::select(x,y) %>% tidyr::drop_na() %>% sp::SpatialPoints(coords = .)
     crs(pnt) <- crs(shp)
     # dplyr::filter coordinates that are present in the county
     pnt <- sp::over(pnt, zone_bufer) %>% data.frame  %>% complete.cases() %>% which()
@@ -255,8 +246,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
       dplyr::mutate_at(.vars = basic_vars[basic_vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')], 
                        .funs = ~round(. , 0)) %>%
-      ungroup() %>%  unique() %>% 
-      full_join(coord_zone, . )
+      dplyr::ungroup() %>%  base::unique() %>% 
+      dplyr::full_join(coord_zone, . )
     
     
     # Lenght_season
@@ -284,7 +275,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         dplyr::filter(date %in% Period[[1]]) %>% 
         dplyr::group_by(time, time1, id, gSeason) %>%
         dplyr::summarise_all(list(mean, sd), na.rm =  TRUE ) %>%
-        ungroup() %>%
+        dplyr::ungroup() %>%
         dplyr::mutate_at(.vars = c('SLGP_fn1', 'LGP_fn1'), .funs = ~round(. , 0)) %>%
         dplyr::select(-LGP_fn2) %>%
         dplyr::rename(SLGP = 'SLGP_fn1', LGP = 'LGP_fn1', SLGP_CV = 'SLGP_fn2') %>%
@@ -292,7 +283,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         dplyr::filter(gSeason == str_remove(season, 's') %>% as.numeric()) %>% 
         dplyr::select(id, time, time1, vars_s)
       
-      to_graph <- inner_join(to_graph, peta)
+      to_graph <- dplyr::inner_join(to_graph, peta)
     }
     
     # =----------------------------------------------------
@@ -300,19 +291,19 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     if(sum(vars == 'NWLD') > 0){
       max_add <- data_cons %>% dplyr::filter(id %in% id_f) %>%
         dplyr::select(time, time1, id,  'NWLD', 'NWLD50', 'NWLD90') %>%
-        dplyr::group_by(time, time1, id) %>% drop_na() %>% 
+        dplyr::group_by(time, time1, id) %>% tidyr::drop_na() %>% 
         dplyr::summarise_all(~max(. , na.rm =  TRUE)) %>%
         dplyr::mutate_at(.vars =  c('NWLD', 'NWLD50', 'NWLD90'), 
                          .funs = ~round(. , 0)) %>%
         dplyr::mutate_at(.vars =  c('NWLD', 'NWLD50', 'NWLD90'), 
                          .funs = ~(./length_season) %>% round(. ,0) ) %>% # Here
-        ungroup() %>%  unique() %>% 
+        dplyr::ungroup() %>%  unique() %>% 
         setNames(c('time','time1','id','NWLD_max', 'NWLD50_max', 'NWLD90_max'))
       
       vars <- c(vars, 'NWLD_max', 'NWLD50_max', 'NWLD90_max')
       
       
-      to_graph <- to_graph %>% inner_join(. , max_add)
+      to_graph <- to_graph %>% dplyr::inner_join(. , max_add)
     }
     
     # =----------------------------------------------------
@@ -320,7 +311,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::filter(id %in% id_f) %>%
       dplyr::group_by(time, time1, season, id) %>% 
       dplyr::summarise_all(.funs = mean, na.rm = TRUE) %>% 
-      ungroup()
+      dplyr::ungroup()
     
     Special_limits <- special_base %>% 
       dplyr::select(ATR, AMT) %>% 
@@ -414,7 +405,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       }    
       
       ggplot() +
-        geom_tile(data = drop_na(to_graph, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
+        geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
@@ -456,7 +447,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       F2050$ATR <- (F2050$ATR/HT$ATR)*100
       
       anomalies <- dplyr::bind_rows(dplyr::mutate(F2030, time1 = '2021-2040'), dplyr::mutate(F2050, time1 = '2041-2060')) %>%
-        inner_join(  dplyr::select(dplyr::filter(to_graph, time1 == 2), id, x, y), .)
+        dplyr::inner_join(  dplyr::select(dplyr::filter(to_graph, time1 == 2), id, x, y), .)
       
       # =---------
       F2030_1 <- special_base %>% dplyr::filter(time == '2021-2040') %>% 
@@ -552,7 +543,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         }
         
         ggplot() +
-          geom_tile(data = drop_na(anomalies, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
+          geom_tile(data = tidyr::drop_na(anomalies, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
           geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
           geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
           geom_sf(data = ctn, fill = NA, color = gray(.5)) +
@@ -673,7 +664,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       
       ggplot() +
-        geom_tile(data =  drop_na(class_1, !!rlang::sym(var_Q[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_Q[i]) %>% as.factor(.) )) +
+        geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(var_Q[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_Q[i]) %>% as.factor(.) )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
@@ -711,7 +702,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                      TAI > 80 ~ 4, 
                                      TRUE ~ TAI) )
       
-      class_1 <- full_join(class_1 %>% dplyr::select(-TAI), b)
+      class_1 <- dplyr::full_join(class_1 %>% dplyr::select(-TAI), b)
     }
     
     # 2. 'NDWS', 'NDD' 
@@ -726,7 +717,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                     x > 25 ~ 4,
                     TRUE ~ x)} )
       
-      class_1 <- full_join(dplyr::select(class_1, -var_b), b)
+      class_1 <- dplyr::full_join(dplyr::select(class_1, -var_b), b)
     }
     
     # 3.  NT_X
@@ -739,7 +730,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                       NT_X > 5 & NT_X <= 10~ 3, 
                                       NT_X > 10 ~ 4, 
                                       TRUE ~ NT_X) )
-      class_1 <- full_join(class_1 %>% dplyr::select(-NT_X), b)
+      class_1 <- dplyr::full_join(class_1 %>% dplyr::select(-NT_X), b)
     }
     
     # 4. 'NWLD','NWLD50','NWLD90'
@@ -754,7 +745,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                     x > 8 ~ 4,
                     TRUE ~ x)} )
       
-      class_1 <- full_join(dplyr::select(class_1, -var_b), b)
+      class_1 <- dplyr::full_join(dplyr::select(class_1, -var_b), b)
     }
     
     # 5. 'LGP'
@@ -767,7 +758,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                      LGP > 60 & LGP <= 90~ 3, 
                                      LGP > 90 ~ 4, 
                                      TRUE ~ LGP) )
-      class_1 <- full_join(class_1 %>% dplyr::select(-LGP), b)
+      class_1 <- dplyr::full_join(class_1 %>% dplyr::select(-LGP), b)
     }
     
     # 6. SLGP_CV  
@@ -780,7 +771,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                      SLGP_CV > 15 & SLGP_CV <= 30~ 3, 
                                      SLGP_CV > 30 ~ 4, 
                                      TRUE ~ SLGP_CV) )
-      class_1 <- full_join(class_1 %>% dplyr::select(-SLGP_CV), b)
+      class_1 <- dplyr::full_join(class_1 %>% dplyr::select(-SLGP_CV), b)
     }
     
     
@@ -799,7 +790,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                     x > 0.75 ~ 4,
                     TRUE ~ x)} )
       
-      class_1 <- full_join(dplyr::select(class_1, -var_b), b)
+      class_1 <- dplyr::full_join(dplyr::select(class_1, -var_b), b)
     }
     
     # 8. SPI
@@ -812,7 +803,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                      SPI > 50 & SPI <= 75~ 3, 
                                      SPI > 75 ~ 4, 
                                      TRUE ~ SPI) )
-      class_1 <- full_join(class_1 %>% dplyr::select(-SPI), b)
+      class_1 <- dplyr::full_join(class_1 %>% dplyr::select(-SPI), b)
     }
     
     # =----- 
@@ -858,7 +849,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         TRUE ~ fix_Vars[i])
       
       ggplot() +
-        geom_tile(data =  drop_na(class_1, !!rlang::sym(fix_Vars[i]) ), aes(x = x, y = y, fill = !!rlang::sym(fix_Vars[i]) %>% as.factor(.) )) +
+        geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(fix_Vars[i]) ), aes(x = x, y = y, fill = !!rlang::sym(fix_Vars[i]) %>% as.factor(.) )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
@@ -895,18 +886,18 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     final_groups <- group_H %>% dplyr::filter(group  != 'No') %>% dplyr::filter(vars %in% var_toG)
     
-    if(sum(pull(final_groups, vars) == 'HSI_2')){
+    if(sum(pull(final_groups, vars) == 'HSI_2') > 0){
       final_groups <- dplyr::filter(final_groups, vars %in% c('HSI_2', 'HSI_3')) %>% 
-        slice(1) %>% dplyr::mutate(vars = 'HSI_23') %>% 
+        dplyr::slice(1) %>% dplyr::mutate(vars = 'HSI_23') %>% 
         dplyr::bind_rows(dplyr::filter(final_groups, !(vars %in% c('HSI_2', 'HSI_3'))),.)
       
       high_lvl <-  c(high_lvl[-which(high_lvl %in%  c('HSI_2', 'HSI_3'))], 'HSI_23')
       
     }
     
-    if(sum(pull(final_groups, vars) == 'THI_2')){
+    if(sum(pull(final_groups, vars) == 'THI_2') > 0){
       final_groups <- dplyr::filter(final_groups, vars %in% c('THI_2', 'THI_3')) %>% 
-        slice(1) %>% dplyr::mutate(vars = 'THI_23') %>% 
+        dplyr::slice(1) %>% dplyr::mutate(vars = 'THI_23') %>% 
         dplyr::bind_rows(dplyr::filter(final_groups, !(vars %in% c('THI_2', 'THI_3'))),.)
       
       high_lvl <-  c(high_lvl[-which(high_lvl %in%  c('THI_2', 'THI_3'))], 'THI_23')
@@ -942,7 +933,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     # =-----------------------------------------------
     
-    groups <- count(final_groups,group) 
+    groups <- dplyr::count(final_groups,group) 
     
     all_Hz <- groups %>% dplyr::select(group) %>% 
       dplyr::group_split(group) %>% 
@@ -952,12 +943,12 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         dplyr::select(id,time1, dplyr::filter(final_groups, group == x)$vars) %>% 
         dplyr::rowwise() %>% 
         dplyr::mutate(x = sum(c_across(dplyr::filter(final_groups, group == x)$vars), na.rm = T) %>% round(. , 0)) %>% 
-        dplyr::select( id, time1,  x ) %>% ungroup() %>% 
+        dplyr::select( id, time1,  x ) %>% dplyr::ungroup() %>% 
         unique() %>%  setNames(c('id', 'time1', z))
       return(dat_mod)})
     
-    all_Hz <- all_Hz %>% purrr::reduce(.f = inner_join) %>%
-      inner_join( coord, .)
+    all_Hz <- all_Hz %>% purrr::reduce(.f = dplyr::inner_join) %>%
+      dplyr::inner_join( coord, .)
     
     
     # Drought - Heat - Waterlogging - Agricultural 
@@ -976,12 +967,12 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       df <- all_Hz %>% dplyr::filter(time1 == time_t) %>%
         dplyr::select(x, y, ind)
       
-      dfr <- rasterFromXYZ(df)
+      dfr <- raster::rasterFromXYZ(df)
       raster::writeRaster(dfr, filename = glue::glue('{path_raster}/{ind}_{time_t}.tif'))
     }
     
-    tibble(ind = rep(c('Drought','Heat', 'Waterlogging'), each = 3), 
-           time_t = rep(1:3, times = 3) ) %>% 
+    tibble::tibble(ind = rep(c('Drought','Heat', 'Waterlogging'), each = 3), 
+                   time_t = rep(1:3, times = 3) ) %>% 
       dplyr::mutate(raster = purrr::map2(.x = ind, .y = time_t, .f = rasterize_mod,  all_Hz = all_Hz))
     
     # =-----------------
@@ -1054,13 +1045,13 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # Bivariate maps. 
     final_map <- function(lab_t, all_Hz){
       
-      st_hz <- dplyr::select(all_Hz, lab_t) %>% pull
+      st_hz <- dplyr::select(all_Hz, lab_t) %>% dplyr::pull(.)
       tbl <- all_Hz %>% dplyr::select(id, x, y, time1, lab_t) %>% 
         setNames(c('id', 'x', 'y', 'time1', 'var'))
       
       tst <- data.frame(var = sort( unique(st_hz) ))
       
-      mx_lvl <- strsplit(tst$var, '-') %>% unlist %>% as.numeric() %>% max()
+      mx_lvl <- base::strsplit(tst$var, '-') %>% unlist %>% as.numeric() %>% max()
       
       col.matrix<- colmat(nquantiles = mx_lvl +1 , upperleft="#64ACBE", upperright="#574249", bottomleft="#F5EEF8", bottomright="#C85A5A", xlab='', ylab = '') 
       col.matrix <- col.matrix[-1, ][, -1]
@@ -1072,7 +1063,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         dplyr::mutate(var = glue::glue('{Var1}-{Var2}')) %>% 
         dplyr::rename(col = 'Freq')
       
-      tst <- inner_join(tst, dplyr::select(col.matrix, var, col) )
+      tst <- dplyr::inner_join(tst, dplyr::select(col.matrix, var, col) )
       tbl <- dplyr::left_join(x = tbl, y = tst, by = 'var')
       
       dat <- ggplot2::ggplot() +
@@ -1096,7 +1087,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       
       # =--- 
-      oth_tst <- dplyr::select(col.matrix, var) %>% pull()
+      oth_tst <- dplyr::select(col.matrix, var) %>% dplyr::pull()
       col.matrix$x <- as.factor(substr(x = oth_tst, start=1, stop=1))
       col.matrix$y <- as.factor(substr(x = oth_tst, start=3, stop=3))
       

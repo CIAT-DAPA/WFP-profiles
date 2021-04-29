@@ -22,7 +22,7 @@ Elv_map <- function(iso3, country){
     # Regions shp
     regions_all <- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_regions/",tolower(iso3),"_regions.shp"))
     regions_all <- regions_all %>%  sf::st_as_sf() %>% 
-      group_by(region) %>% summarise() %>% sf::as_Spatial()
+      dplyr::group_by(region) %>% summarise() %>% sf::as_Spatial()
     regions_all <<- regions_all 
   }
   
@@ -55,7 +55,7 @@ Elv_map <- function(iso3, country){
     ylims <- sf::st_bbox(adm_c)[c(2, 4)]
     
     adm_c <- sf::st_as_sf(adm_c)   
-    test <- as_tibble(st_centroid(adm_c) %>% st_coordinates())  %>%
+    test <- tibble::as_tibble(st_centroid(adm_c) %>% st_coordinates())  %>%
       dplyr::mutate(name =  adm_c$region) 
     
     # =----------------------------

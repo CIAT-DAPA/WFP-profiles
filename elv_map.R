@@ -18,7 +18,7 @@ Elv_map <- function(iso3, country){
     shp_sf <<- shp_sf
   }
   
-  if(sum(ext.files %in% c('regions_all')) > 0){
+  if(sum(ext.files %in% c('regions_all')) == 0){
     # Regions shp
     regions_all <- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_regions/",tolower(iso3),"_regions.shp"))
     regions_all <- regions_all %>%  sf::st_as_sf() %>% 
@@ -86,4 +86,4 @@ Elv_map <- function(iso3, country){
     return('Map saved successfully\n')}
   
   getAltitude(iso3 = iso3, country = country, Zone = 'all')
-}# Elv_map(iso3, country)
+}

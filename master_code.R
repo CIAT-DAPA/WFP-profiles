@@ -5,22 +5,25 @@
 # -------------------------------------------------- #
 
 # Sourcing functions
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_functions.R')      # Main functions
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_soil_data.R')       # Get soil data
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices.R')        # Calculating agro-indices
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices2.R')       # Calculating agro-indices
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_climate4regions.R') # Filter climate for areas of interest
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot.R')     # Time series graphs
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_spi_drought.R')    # SPI calculation
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/maps.R')                 # Maps
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_functions.R')         # Main functions
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_soil_data.R')          # Get soil data
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices.R')           # Calculating agro-indices
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices2.R')          # Calculating agro-indices
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_climate4regions.R')    # Filter climate for areas of interest
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_spi_drought.R')       # SPI calculation
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot.R')        # Time series graphs
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/maps.R')                    # Maps
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot_region.R') # Time series graphs by region
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/climatology_plot.R')        # Climatology graph. 
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/elv_map.R')                 # Elevation map. 
 
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
 ## Defining country parameters
 # Country
-country <- 'Somalia' # 'Tanzania'
-iso     <- 'SOM'     # 'TZA'
-seasons <- list(s1 = 4:8, s2 = c(9:12,1:2)) # list(s1 = c(11:12,1:6), s2 = c(2:8), s3 = c(9:12,1:2))
+country <- 'Guinea-Bissau' # 'Tanzania'
+iso     <- 'GNB'     # 'TZA'
+seasons <- list(s1 = c(5,6,7,8,9,10,11)) # list(s1 = c(11:12,1:6), s2 = c(2:8), s3 = c(9:12,1:2))
 
 # Get historical climate data (done)
 
@@ -59,7 +62,7 @@ calc_spi_drought(spi_data = infile,
                  seasons  = seasons)
 
 # Calc agro-climatic indices (future)
-models  <- c('INM-CM5-0') # 'GFDL-ESM4','MPI-ESM1-2-HR','MRI-ESM2-0','BCC-CSM2-MR'
+models  <- c('INM-CM5-0', 'GFDL-ESM4','MPI-ESM1-2-HR','MRI-ESM2-0','BCC-CSM2-MR') # 'GFDL-ESM4','MPI-ESM1-2-HR','MRI-ESM2-0','BCC-CSM2-MR'
 periods <- c('2021-2040','2041-2060')
 for(m in models){
   for(p in periods){
@@ -85,14 +88,22 @@ for(m in models){
 }
 
 ## Graphs
-# 1. Time series plots
+
+# 1. maps
+# ISO3 = iso3 = iso
+map_graphs(iso3 = iso, country = country, seasons = seasons)
+
+# 2. Elevation map
+Elv_map(iso3 = iso, country = country)
+
+# 3. Time series plots
 time_series_plot(country = country, iso = iso, seasons = seasons)
 
+# 4. Time series plots by zone 
+time_series_region(country = country, iso = iso, seasons = seasons)
+
 # 2. Climatology
-
-# 3. Elevation map
-
-# 4. Maps
-map_graphs(iso3 = iso, country = country, seasons = seasons, Zone = 'all')
+climatology_plot(country = country, iso = iso, output = glue::glue('{root}/7.Results/{country}/results/climatology.png'))
 
 # 6. PPT slides
+# Run it local. 

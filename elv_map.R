@@ -13,7 +13,7 @@ Elv_map <- function(iso3, country){
     # Read GDAM's shp at administrative level 1. 
     shp <<- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_gadm/",country,"_GADM1.shp"))
     shp_sf <-  shp %>%  sf::st_as_sf() %>% 
-      group_by(NAME_0) %>% summarise() %>% sf::as_Spatial()
+      dplyr::group_by(NAME_0) %>% dplyr::summarise() %>% sf::as_Spatial()
     
     shp_sf <<- shp_sf
   }
@@ -22,7 +22,7 @@ Elv_map <- function(iso3, country){
     # Regions shp
     regions_all <- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_regions/",tolower(iso3),"_regions.shp"))
     regions_all <- regions_all %>%  sf::st_as_sf() %>% 
-      dplyr::group_by(region) %>% summarise() %>% sf::as_Spatial()
+      dplyr::group_by(region) %>% dplyr::summarise() %>% sf::as_Spatial()
     regions_all <<- regions_all 
   }
   
@@ -86,6 +86,4 @@ Elv_map <- function(iso3, country){
     return('Map saved successfully\n')}
   
   getAltitude(iso3 = iso3, country = country, Zone = 'all')
-}
-
-# Elv_map(iso3, country)
+}# Elv_map(iso3, country)

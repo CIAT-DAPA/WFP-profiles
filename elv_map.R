@@ -26,7 +26,7 @@ Elv_map <- function(iso3, country){
     regions_all <<- regions_all 
   }
   
-  if(sum(ext.files %in% c('glwd1', 'glwd2')) > 0){
+  if(sum(ext.files %in% c('glwd1', 'glwd2')) < 2){
     # =--- water sources. 
     glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_1.shp' ) 
     crs(glwd1) <- crs(shp)

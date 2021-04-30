@@ -1,14 +1,10 @@
 # -------------------------------------------------- #
-# Climate Risk Profiles -- Time series plot
+# Climate Risk Profiles -- Time series plot by region
 # A. Esquivel & H. Achicanoy
 # Alliance Bioversity-CIAT, 2021
 # -------------------------------------------------- #
 
-# Input parameters:
-#   iso: ISO 3 code in capital letters
-#   country: country name first character in capital letter
-# Output:
-#   .jpeg graphs per index and season
+
 time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
   
   # Load packages
@@ -111,7 +107,7 @@ time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
           mande <- str_replace(mande, '-', '\n')
           mande <- str_replace(mande, ':', '\n')
           mande <- str_replace(mande, '/', '\n')
-          mande <- str_replace(mande, '(', '\n')
+          mande <- str_replace(mande, '[[:punct:]]', '\n')
           names(mande) <- to_do$Regions
           mande_label <- labeller(value = mande)
           

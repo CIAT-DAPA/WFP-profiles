@@ -54,7 +54,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   
   # =--- water sources. 
-  glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_1.shp' ) 
+  glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_1.shp' ) 
   crs(glwd1) <- crs(shp)
   
   glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2.shp' ) 

@@ -28,14 +28,14 @@ Elv_map <- function(iso3, country){
   
   if(sum(ext.files %in% c('glwd1', 'glwd2')) < 2){
     # =--- water sources. 
-    glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_1.shp' ) 
+    glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_1.shp' ) 
     crs(glwd1) <- crs(shp)
     ext.sp <- raster::crop(glwd1, raster::extent(shp))
     glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
       sf::st_as_sf()
     glwd1 <<-  glwd1
     
-    glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_2.shp' ) 
+    glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2.shp' ) 
     crs(glwd2) <- crs(shp)
     ext.sp2 <- raster::crop(glwd2, raster::extent(shp))
     glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%

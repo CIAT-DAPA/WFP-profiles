@@ -43,7 +43,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   
   # =--- World boundaries.
-  map_world <- raster::shapefile(glue::glue('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/all_country/all_countries.shp')) %>% 
+  map_world <- raster::shapefile(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/all_country/all_countries.shp')) %>% 
     sf::st_as_sf()
   map_world <<- map_world
   
@@ -57,7 +57,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_1.shp' ) 
   crs(glwd1) <- crs(shp)
   
-  glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_8/climateriskprofiles/data/shps/GLWD/glwd_2.shp' ) 
+  glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2.shp' ) 
   crs(glwd2) <- crs(shp)
   
   if(iso3 != 'NPL'){

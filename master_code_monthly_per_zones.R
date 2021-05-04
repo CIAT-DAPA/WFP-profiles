@@ -24,19 +24,19 @@ root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 # Country
 country <- 'Guinee'
 iso     <- 'GIN'
-seasons <- list(s1 = 4:12)
+seasons <- list(s1=1,s2=2,s3=3,s4=4,s5=5,s6=6,s7=7,s8=8,s9=9,s10=10,s11=11,s12=12)
 
 # Get historical climate data (done)
 
-# Get soil data
-crd <- paste0(root,"/1.Data/observed_data/",iso,"/year/climate_1981_mod.fst") %>%
-  tidyft::parse_fst(path = .) %>%
-  tidyft::select_fst(id,x,y) %>%
-  base::as.data.frame()
-crd <- unique(crd[,c('id','x','y')])
-get_soil(crd        = crd,
-         root_depth = 60,
-         outfile    = paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst"))
+# # Get soil data
+# crd <- paste0(root,"/1.Data/observed_data/",iso,"/year/climate_1981_mod.fst") %>%
+#   tidyft::parse_fst(path = .) %>%
+#   tidyft::select_fst(id,x,y) %>%
+#   base::as.data.frame()
+# crd <- unique(crd[,c('id','x','y')])
+# get_soil(crd        = crd,
+#          root_depth = 60,
+#          outfile    = paste0(root,"/1.Data/soil/",iso,"/soilcp_data.fst"))
 
 # Get future climate data
 
@@ -87,26 +87,26 @@ if(!file.exists(paste0(root,"/7.Results/",country,"/past/",iso,"_indices_monthly
   tidyft::export_fst(indices, path = paste0(root,"/7.Results/",country,"/past/",iso,"_indices_monthly.fst"))
 }
 
-if(!file.exists(paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst"))){
-  spis <- list.files(path = paste0(root,"/7.Results/",country,"/past"), pattern = "[0-9]_spi.fst", full.names = T) %>%
-    purrr::map(.f = function(f){
-      df <- f %>%
-        tidyft::parse_fst() %>%
-        base::as.data.frame()
-      return(df)
-    }) %>%
-    dplyr::bind_rows()
-  tidyft::export_fst(spis, path = paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst"))
-}
+# if(!file.exists(paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst"))){
+#   spis <- list.files(path = paste0(root,"/7.Results/",country,"/past"), pattern = "[0-9]_spi.fst", full.names = T) %>%
+#     purrr::map(.f = function(f){
+#       df <- f %>%
+#         tidyft::parse_fst() %>%
+#         base::as.data.frame()
+#       return(df)
+#     }) %>%
+#     dplyr::bind_rows()
+#   tidyft::export_fst(spis, path = paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst"))
+# }
 
-# How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5)
-infile  <- paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst")
-outfile <- paste0(root,'/7.Results/',country,'/past/',iso,'_spi_drought.fst')
-calc_spi_drought(spi_data = infile,
-                 output   = outfile,
-                 country  = country,
-                 iso      = iso,
-                 seasons  = seasons)
+# # How much area per municipality is on average subject to ‘Major droughts’ (SPI < -1.5)
+# infile  <- paste0(root,"/7.Results/",country,"/past/",iso,"_spi.fst")
+# outfile <- paste0(root,'/7.Results/',country,'/past/',iso,'_spi_drought.fst')
+# calc_spi_drought(spi_data = infile,
+#                  output   = outfile,
+#                  country  = country,
+#                  iso      = iso,
+#                  seasons  = seasons)
 
 # Calc agro-climatic indices (future)
 models  <- c('ACCESS-ESM1-5', 'EC-Earth3-Veg','INM-CM5-0','MPI-ESM1-2-HR','MRI-ESM2-0')
@@ -160,25 +160,25 @@ for(m in models){
       tidyft::export_fst(indices, path = paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_indices_monthly.fst"))
     }
     
-    if(!file.exists(paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi.fst"))){
-      spis <- list.files(path = paste0(root,"/7.Results/",country,"/future/",m,"/",p), pattern = "[0-9]_spi.fst", full.names = T) %>%
-        purrr::map(.f = function(f){
-          df <- f %>%
-            tidyft::parse_fst() %>%
-            base::as.data.frame()
-          return(df)
-        }) %>%
-        dplyr::bind_rows()
-      tidyft::export_fst(spis, path = paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi.fst"))
-    }
-    
-    infile  <- paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi.fst")
-    outfile <- paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi_drought.fst")
-    calc_spi_drought(spi_data = infile,
-                     output   = outfile,
-                     country  = country,
-                     iso      = iso,
-                     seasons  = seasons)
+    # if(!file.exists(paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi.fst"))){
+    #   spis <- list.files(path = paste0(root,"/7.Results/",country,"/future/",m,"/",p), pattern = "[0-9]_spi.fst", full.names = T) %>%
+    #     purrr::map(.f = function(f){
+    #       df <- f %>%
+    #         tidyft::parse_fst() %>%
+    #         base::as.data.frame()
+    #       return(df)
+    #     }) %>%
+    #     dplyr::bind_rows()
+    #   tidyft::export_fst(spis, path = paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi.fst"))
+    # }
+    # 
+    # infile  <- paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi.fst")
+    # outfile <- paste0(root,"/7.Results/",country,"/future/",m,"/",p,"/",iso,"_spi_drought.fst")
+    # calc_spi_drought(spi_data = infile,
+    #                  output   = outfile,
+    #                  country  = country,
+    #                  iso      = iso,
+    #                  seasons  = seasons)
   }
 }
 

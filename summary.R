@@ -19,7 +19,8 @@ Other_parameters <- function(country, iso3){
   regions_all <<- regions_all
 }
 # =---------------------------------------------
-# =---------------------------------------------------
+
+
 # Functions. 
 read_data_seasons <- function(country, iso3) {
   

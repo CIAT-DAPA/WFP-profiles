@@ -212,14 +212,22 @@ read_monthly_data <- function(country, iso3){
   
   gcm <- c('INM-CM5-0', 'ACCESS-ESM1-5', 'EC-Earth3-Veg', 'MPI-ESM1-2-HR', 'MRI-ESM2-0')
   
+  # Run the process in parallel for the 30% of the pixels
+  ncores <- 5
+  future::plan(cluster, workers = ncores, gc = TRUE)
+  
+  
   future <- tibble( file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices_monthly') ) %>%
     dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
-    dplyr::mutate(data = purrr::map(.x = file, .f = function(x){x <- fst::fst(x) %>% tibble::as_tibble()})) %>%
+    dplyr::mutate(data = furrr::future_map(.x = file, .f = function(x){x <- fst::fst(x) %>% tibble::as_tibble()})) %>%
     dplyr::mutate(stringr::str_split(shot_file, '/') %>% 
              purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
              dplyr::bind_rows()) %>% 
     dplyr::select(gcm, time, data) %>% 
     tidyr::unnest()
+  
+  future:::ClusterRegistry("stop")
+  gc(reset = T)
   
   future  <- future %>% dplyr::select(-gcm) %>% 
     dplyr::group_by(time,id,x,y,season,year) %>%

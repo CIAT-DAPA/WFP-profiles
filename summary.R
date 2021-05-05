@@ -86,8 +86,7 @@ summary_index <- function(Zone, data_init = data_cons, Period){
   
   season <-  names(Period)
   st <- tail(Period[[1]], n=1); lt <- Period[[1]][1]
-  length_season <- dplyr::case_when(st > lt ~ st - (lt-1), 
-                             st < lt ~ (13 - st) + lt)
+  length_season <- length(Period[[1]])
   
   days <- sum(lubridate::days_in_month(1:12)[Period[[1]]])
   
@@ -129,7 +128,7 @@ summary_index <- function(Zone, data_init = data_cons, Period){
   
   
   # Cortar por el crd. 
-  crd <- data_init  %>% dplyr::filter(season == names(Period))  %>% dplyr::filter(year == 2019) %>% dplyr::mutate(ISO = iso3)
+  crd <- data_init  %>% dplyr::filter(season == names(Period))  %>% dplyr::filter(year == 2019) %>% dplyr::mutate(ISO =  iso)
   pnt <- crd %>% dplyr::select(x,y) %>% 
     tidyr::drop_na() %>% sp::SpatialPoints(coords = .)
   crs(pnt) <- crs(regions_all)
@@ -249,17 +248,12 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
   to_do <- dplyr::select(to_do, -SPI)
   season <-  names(Period)
   st <- tail(Period[[1]], n=1); lt <- Period[[1]][1]
-  length_season <- dplyr::case_when(st > lt ~ st - (lt-1), 
-                             st < lt ~ (13 - st) + lt)
+  length_season <- length(Period[[1]])
   
   days <- sum(lubridate::days_in_month(1:12)[Period[[1]]])
   
   data <-  data_init %>% dplyr::filter(season == names(Period)) 
   # =--------------
-  #path <- glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/results/maps/{Zone}_{season}')
-  #dir.create(path,recursive = TRUE)  
-  # =--------------
-  
   if(Zone == 'all'){
     zone <- regions_all # %>% sf::as_Spatial() 
     var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
@@ -292,7 +286,7 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
   
   
   # Cortar por el crd. 
-  crd <- data_init  %>% dplyr::filter(season == names(Period))  %>% dplyr::filter(year == 2019) %>% dplyr::mutate(ISO = iso3)
+  crd <- data_init  %>% dplyr::filter(season == names(Period))  %>% dplyr::filter(year == 2019) %>% dplyr::mutate(ISO = iso)
   pnt <- crd %>% dplyr::select(x,y) %>% tidyr::drop_na() %>% sp::SpatialPoints(coords = .)
   crs(pnt) <- crs(regions_all)
   # dplyr::filter coordinates that are present in the county
@@ -304,13 +298,13 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
   data <- data %>% dplyr::filter(id %in% id_f) %>% dplyr::select(time, id, vars) %>% 
     dplyr::group_by(time, id) %>%dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
     dplyr::mutate_at(.vars = vars[vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')], 
-              .funs = ~round(. , 0)) %>%
+                     .funs = ~round(. , 0)) %>%
     dplyr::ungroup() %>%  unique() 
   
   
   # Lenght_season
   data <- dplyr::mutate_at(data, .vars = vars[vars %in% c('NDD','NDWS',  'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X')],
-                    .funs = ~(./1) %>% round(. ,0) )
+                           .funs = ~(./1) %>% round(. ,0) )
   
   # Transform variables. 
   if(sum(vars == 'SHI') == 1){
@@ -357,8 +351,8 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
     dplyr::mutate(Index = rep(rownames(asa$ind[[1]]), 3) ) %>% 
     dplyr::select(-n, -vars, -mad) %>%
     dplyr::mutate(cod_name = Zone, 
-           Livelihood_zone = Name, 
-           Season = names(Period)) %>% 
+                  Livelihood_zone = Name, 
+                  Season = names(Period)) %>% 
     dplyr::rename(Period = 'time') %>% 
     dplyr::select(Index, cod_name, Livelihood_zone, Period, Season, everything(.))
   

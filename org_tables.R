@@ -72,3 +72,4 @@ changes_paths <- function(country, iso){
     purrr::map(.f = function(x){fst::write_fst(x = x, path = glue::glue('{root}/7.Results/{country}/data_/future/{unique(x$gcm)}/{iso}_indices_gSeason.fst'))})
   # =-
 }
+

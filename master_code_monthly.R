@@ -112,7 +112,7 @@ index_mod <- tibble(Zone = c('all', regions_all$region) ) %>%
       indx[[i]] <- summary_monthly(Zone = x, data_init = monthly_data, Period = seasons[i])
     }
     
-    indx <- bind_rows(indx)
+    indx <- dplyr::bind_rows(indx)
   })) %>% 
   tidyr::unnest() %>% 
   dplyr::select(-cod_name )

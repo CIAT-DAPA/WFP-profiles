@@ -208,7 +208,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     vars <- dplyr::select(var_s, -ISO3, -Country, -Regions, -Livehood_z, -Short_Name) %>% 
       tidyr::gather(key = 'var',value = 'value')  %>% 
-      dplyr::filter(value > 0) %>% pull(var)
+      dplyr::filter(value > 0) %>% dplyr::pull(var)
     
     if(sum(vars == 'NWLD') == 1){vars <- c(vars, "NWLD50", "NWLD90")}
     
@@ -625,7 +625,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # Quantile maps. 
     for(i in 1:length(var_Q)){
       
-      Q_q <- round(labels(pull(to_graph[, var_Q[i]])), 0)
+      Q_q <- round(labels(dplyr::pull(to_graph[, var_Q[i]])), 0)
       
       
       if(var_Q[i] == 'ATR'){
@@ -886,7 +886,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     final_groups <- group_H %>% dplyr::filter(group  != 'No') %>% dplyr::filter(vars %in% var_toG)
     
-    if(sum(pull(final_groups, vars) == 'HSI_2') > 0){
+    if(sum(dplyr::pull(final_groups, vars) == 'HSI_2') > 0){
       final_groups <- dplyr::filter(final_groups, vars %in% c('HSI_2', 'HSI_3')) %>% 
         dplyr::slice(1) %>% dplyr::mutate(vars = 'HSI_23') %>% 
         dplyr::bind_rows(dplyr::filter(final_groups, !(vars %in% c('HSI_2', 'HSI_3'))),.)
@@ -895,7 +895,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
     }
     
-    if(sum(pull(final_groups, vars) == 'THI_2') > 0){
+    if(sum(dplyr::pull(final_groups, vars) == 'THI_2') > 0){
       final_groups <- dplyr::filter(final_groups, vars %in% c('THI_2', 'THI_3')) %>% 
         dplyr::slice(1) %>% dplyr::mutate(vars = 'THI_23') %>% 
         dplyr::bind_rows(dplyr::filter(final_groups, !(vars %in% c('THI_2', 'THI_3'))),.)
@@ -903,7 +903,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       high_lvl <-  c(high_lvl[-which(high_lvl %in%  c('THI_2', 'THI_3'))], 'THI_23')
     }
     
-    if(sum(pull(final_groups, vars) == 'NWLD')){
+    if(sum(dplyr::pull(final_groups, vars) == 'NWLD')){
       final_groups <- dplyr::filter(final_groups, vars %in% c('NWLD', 'NWLD50', 'NWLD90')) %>%
         dplyr::mutate(vars = c('NWLD_max', 'NWLD50_max', 'NWLD90_max')) %>%
         dplyr::bind_rows(final_groups, .)

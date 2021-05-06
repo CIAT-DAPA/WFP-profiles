@@ -16,7 +16,7 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/maps.R')  
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot_region.R') # Time series graphs by region
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/climatology_plot.R')        # Climatology graph. 
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/elv_map.R')                 # Elevation map. 
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/migration/_get_climate4regions_districts.R') # Filter climate for districts of interest
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/summary.R')                 # summary indices (mean, median...)
 
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
@@ -197,8 +197,29 @@ time_series_plot(country = country, iso = iso, seasons = seasons)
 # 4. Time series plots by zone 
 time_series_region(country = country, iso = iso, seasons = seasons)
 
-# 2. Climatology
+# 5. Climatology
 climatology_plot(country = country, iso = iso, output = glue::glue('{root}/7.Results/{country}/results/climatology.png'))
+
+
+# 7. Summary index. 
+Other_parameters(country = country, iso3 = iso)
+
+# Seasonal Run. 
+data_cons <- read_data_seasons(country = country, iso3 = iso)
+
+index <- tibble(Zone = c('all', regions_all$region) ) %>% 
+  dplyr::mutate(index = purrr::map(.x = Zone, .f = function(x){
+    indx <- list()
+    for(i in 1:length(seasons)){
+      indx[[i]] <- summary_index(Zone = x, data_init = data_cons, Period = seasons[i])
+    }
+    
+    indx <- dplyr::bind_rows(indx)
+  })) %>% 
+  tidyr::unnest() %>% 
+  dplyr::select(-cod_name )
+
+write_csv(x = index, file = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/sesons_ind.csv') )
 
 # 6. PPT slides
 # Run it local. 

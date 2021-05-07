@@ -14,16 +14,16 @@ flt_clm_subunits <- function(iso = 'SOM', country = 'Somalia', district = 'Caabu
   
   # Load packages
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
-  suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyfst,tidyft,sf))
+  suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,sf))
   
   root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
   
   cat('>>> Load all coords\n')
   crd <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst')
   crd <- crd %>%
-    tidyfst::parse_fst(path = .) %>%
-    tidyfst::select_fst(id, x, y) %>%
-    tidyfst::distinct_dt() %>%
+    tidyft::parse_fst(path = .) %>%
+    tidyft::select_fst(id, x, y) %>%
+    tidyft::distinct_dt() %>%
     base::as.data.frame()
   
   cat('>>> Regions shape and add a buffer of 5 km\n')

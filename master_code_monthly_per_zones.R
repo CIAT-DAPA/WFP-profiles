@@ -18,7 +18,10 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/summary.R'
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/org_tables.R')              # Tablas Julian
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/migration/_get_climate4regions_districts.R') # Filter climate for districts of interest
 
-root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+OSys <- Sys.info()[1]
+root <<- switch(OSys,
+                'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
 
 ## Defining country parameters
 # Country

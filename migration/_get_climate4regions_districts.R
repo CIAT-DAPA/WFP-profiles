@@ -21,9 +21,9 @@ flt_clm_subunits <- function(iso = 'SOM', country = 'Somalia', district = 'Caabu
   cat('>>> Load all coords\n')
   crd <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst')
   crd <- crd %>%
-    tidyft::parse_fst(path = .) %>%
-    tidyft::select_fst(id, x, y) %>%
-    tidyft::distinct() %>%
+    tidyfst::parse_fst(path = .) %>%
+    tidyfst::select_fst(id, x, y) %>%
+    tidyfst::distinct_dt() %>%
     base::as.data.frame()
   
   cat('>>> Regions shape and add a buffer of 5 km\n')
@@ -60,9 +60,9 @@ flt_clm_subunits2 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   cat('>>> Load all coords\n')
   crd <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst')
   crd <- crd %>%
-    tidyft::parse_fst(path = .) %>%
-    tidyft::select_fst(id, x, y) %>%
-    tidyft::distinct() %>%
+    tidyfst::parse_fst(path = .) %>%
+    tidyfst::select_fst(id, x, y) %>%
+    tidyfst::distinct_dt() %>%
     base::as.data.frame()
   
   cat('>>> Regions shape and add a buffer of 5 km\n')
@@ -99,9 +99,9 @@ flt_clm_subunits3 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   cat('>>> Load all coords\n')
   crd <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst')
   crd <- crd %>%
-    tidyft::parse_fst(path = .) %>%
-    tidyft::select_fst(id, x, y) %>%
-    tidyft::distinct() %>%
+    tidyfst::parse_fst(path = .) %>%
+    tidyfst::select_fst(id, x, y) %>%
+    tidyfst::distinct_dt() %>%
     base::as.data.frame()
   
   cat('>>> Regions shape and add a buffer of 5 km\n')

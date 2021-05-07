@@ -25,18 +25,18 @@ Other_parameters <- function(country, iso3){
 read_data_seasons <- function(country, iso3) {
   
   # Read all data complete. 
-  past <- fst::fst(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_indices.fst') )%>% 
+  past <- tidyft::parse_fst(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_indices.fst') )%>% 
     tibble::as_tibble() %>% dplyr::mutate(time = 'Historic')
   
   gcm <- c('INM-CM5-0', 'ACCESS-ESM1-5', 'EC-Earth3-Veg', 'MPI-ESM1-2-HR', 'MRI-ESM2-0')
   
-  future <- tibble(file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices') ) %>%
-    dplyr::filter(!grepl('_monthly', file) & !grepl('_old', file)) %>% 
+  future <- tibble(file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices'  ) ) %>%
+    dplyr::filter(!grepl('_monthly', file) & !grepl('_old', file) & !grepl('zone', file)) %>%
     dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
-    dplyr::mutate(data = purrr::map(.x = file, .f = function(x){x <- fst::fst(x) %>% tibble::as_tibble()})) %>%
+    dplyr::mutate(data = purrr::map(.x = file, .f = function(x){x <- tidyft::parse_fst(x) %>% tibble::as_tibble()})) %>%
     dplyr::mutate(stringr::str_split(shot_file, '/') %>% 
-             purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
-             dplyr::bind_rows()) %>% 
+                    purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
+                    dplyr::bind_rows()) %>% 
     dplyr::select(gcm, time, data) %>% 
     tidyr::unnest()
   
@@ -44,27 +44,27 @@ read_data_seasons <- function(country, iso3) {
     dplyr::group_by(time,id,x,y,season,year) %>%
     dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
     dplyr::mutate_at(.vars = c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP'), 
-              .funs = ~round(. , 0))
+                     .funs = ~round(. , 0))
   
   data_cons <- dplyr::bind_rows(past, future)  %>% 
     dplyr::mutate(time1 = dplyr::case_when(time == 'Historic' ~ 1, 
-                                    time == '2021-2040'~ 2, 
-                                    time == '2041-2060'~ 3,   
-                                    TRUE ~ NA_real_)) %>% 
+                                           time == '2021-2040'~ 2, 
+                                           time == '2041-2060'~ 3,   
+                                           TRUE ~ NA_real_)) %>% 
     dplyr::select(time, time1 ,everything())
   
   # =---------------------------------------------------
-  spi_past <- fst::fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_spi_drought.fst') )%>% 
+  spi_past <- tidyft::parse_fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_spi_drought.fst') )%>% 
     tibble::as_tibble() %>% 
     dplyr::mutate(time = 'Historic')
   
   spi_future <- tibble( file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names = TRUE, recursive = TRUE, pattern = '_spi_drought') ) %>%
     dplyr::filter(!grepl('_monthly', file) & !grepl('_old', file)) %>%
     dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
-    dplyr::mutate(data = purrr::map(.x = file, .f = function(x){x <- fst::fst(x) %>% tibble::as_tibble()})) %>%
+    dplyr::mutate(data = purrr::map(.x = file, .f = function(x){x <- tidyft::parse_fst(x) %>% tibble::as_tibble()})) %>%
     dplyr::mutate(stringr::str_split(shot_file, '/') %>% 
-             purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
-             dplyr::bind_rows()) %>% dplyr::select(gcm, time, data) %>% 
+                    purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
+                    dplyr::bind_rows()) %>% dplyr::select(gcm, time, data) %>% 
     tidyr::unnest() %>% dplyr::select(-gcm) %>% 
     dplyr::group_by(time,id,x,y,season,year) %>%
     dplyr::summarise_all(~mean(. , na.rm =  TRUE))
@@ -72,9 +72,9 @@ read_data_seasons <- function(country, iso3) {
   
   spi_dat <- dplyr::bind_rows(spi_past, spi_future)  %>%
     dplyr::mutate(time1 = dplyr::case_when(time == 'Historic' ~ 1, 
-                                    time == '2021-2040'~ 2, 
-                                    time == '2041-2060'~ 3,   
-                                    TRUE ~ NA_real_)) %>% 
+                                           time == '2021-2040'~ 2, 
+                                           time == '2041-2060'~ 3,   
+                                           TRUE ~ NA_real_)) %>% 
     dplyr::mutate(year = as.numeric(year)) %>% dplyr::mutate(SPI = spi * 100) %>% 
     dplyr::select(time, time1 , id, year, SPI, season, time) 
   
@@ -205,7 +205,7 @@ summary_index <- function(Zone, data_init = data_cons, Period){
 # =----------------------------------------------
 read_monthly_data <- function(country, iso3){
   # Read all data complete. 
-  past <- fst::fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_indices_monthly.fst') )%>% 
+  past <- tidyft::parse_fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_indices_monthly.fst') )%>% 
     tibble::as_tibble() %>% 
     dplyr::mutate(time = 'Historic')
   
@@ -218,7 +218,7 @@ read_monthly_data <- function(country, iso3){
   
   future <- tibble( file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices_monthly') ) %>%
     dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
-    dplyr::mutate(data = furrr::future_map(.x = file, .f = function(x){x <- fst::fst(x) %>% tibble::as_tibble()})) %>%
+    dplyr::mutate(data = furrr::future_map(.x = file, .f = function(x){x <- tidyft::parse_fst(x) %>% tibble::as_tibble()})) %>%
     dplyr::mutate(stringr::str_split(shot_file, '/') %>% 
              purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
              dplyr::bind_rows()) %>% 

@@ -4,8 +4,14 @@
 # Alliance Bioversity-CIAT, 2021
 # =----------------------
 Elv_map <- function(iso3, country){
+  
   # Country...
-  alt <- raster::getData('alt', country = iso3, path = paste0(root,'/1.Data/shps/',country))
+  if(country == 'Guinee'){
+    alt <- raster::raster('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/guinee/GIN_alt/GIN_alt.gri')
+  }else{
+    alt <- raster::getData('alt', country = iso3, path = paste0(root,'/1.Data/shps/',country))
+  }
+  
   ext.files <- ls() 
   
   

@@ -12,18 +12,18 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indi
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_climate4regions.R')    # Filter climate for areas of interest
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_spi_drought.R')       # SPI calculation
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot.R')        # Time series graphs
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/maps.R')                    # Maps
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot_region.R') # Time series graphs by region
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/climatology_plot.R')        # Climatology graph. 
-source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/elv_map.R')                 # Elevation map. 
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/index_climatology_plot.R')  # Bar Graphs
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/summary.R')                 # summary indices (mean, median...)
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/org_tables.R')              # Tablas Julian
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/migration/_get_climate4regions_districts.R') # Filter climate for districts of interest
 
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
 ## Defining country parameters
 # Country
-country <- 'Guinee'
-iso     <- 'GIN'
+country <- 'Nepal'
+iso     <- 'NPL'
 seasons <- list(s1=1,s2=2,s3=3,s4=4,s5=5,s6=6,s7=7,s8=8,s9=9,s10=10,s11=11,s12=12)
 
 # Get historical climate data (done)
@@ -183,22 +183,37 @@ for(m in models){
 }
 
 ## Graphs
-
-# 1. maps
-# ISO3 = iso3 = iso
-map_graphs(iso3 = iso, country = country, seasons = seasons)
-
-# 2. Elevation map
-Elv_map(iso3 = iso, country = country)
-
-# 3. Time series plots
+# 1. Time series plots
 time_series_plot(country = country, iso = iso, seasons = seasons)
 
-# 4. Time series plots by zone 
+# 2. Time series plots by zone 
 time_series_region(country = country, iso = iso, seasons = seasons)
 
-# 2. Climatology
-climatology_plot(country = country, iso = iso, output = glue::glue('{root}/7.Results/{country}/results/climatology.png'))
+# 3. Barplot series de tiempo
+bar_graphs(country = country, iso = iso)
 
-# 6. PPT slides
-# Run it local. 
+# 4. Summary tablas
+Other_parameters(country = country, iso3 = iso)
+
+# 5. Summary index. 
+tictoc::tic()
+monthly_data <- read_monthly_data(country = country , iso3 = iso)
+tictoc::toc() # 19.15 Min. 
+
+index_mod <- tibble(Zone = c('all', regions_all$region) ) %>% 
+  dplyr::mutate(index = purrr::map(.x = Zone, .f = function(x){
+    indx <- list()
+    for(i in 1:length(seasons)){
+      indx[[i]] <- summary_monthly(Zone = x, data_init = monthly_data, Period = seasons[i])
+    }
+    
+    indx <- dplyr::bind_rows(indx)
+  })) %>% 
+  tidyr::unnest() %>% 
+  dplyr::select(-cod_name )
+
+write_csv(x = index_mod, file = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/monthly_ind.csv'))
+
+# 7. Julian tables order. 
+
+changes_paths(country = country, iso = iso)

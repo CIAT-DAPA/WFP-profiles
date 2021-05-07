@@ -15,9 +15,18 @@ if (packageVersion("terra") < "1.1.0"){
 # supporting file
 readRast <- function(f, sdate, edate){
   # as of terra_1.1-7, it is having problem with correctly reading time band from the netcdf files
+  f <- grep(pattern = paste0(sdate,'_',edate), x = f, value = T)
   r <- raster::stack(f)
   # manage and convert to epoch time
   tm <- seq(from = as.Date(sdate), to = as.Date(edate), by = 1) # tm <- as.Date(gsub("X","",names(r)), "%Y.%m.%d")
+  if(length(grep(pattern = 'INM-CM5-0', x = f)) > 0){
+    df <- data.frame(date = tm)
+    df <- df %>%
+      dplyr::mutate(month = lubridate::month(date),
+                    day   = lubridate::day(date)) %>%
+      .[-which(.$month == 2 & .$day == 29),]
+    tm <- df$date; rm(df)
+  }
   # which bands are within the wmo baseline
   k <- which(tm >= sdate & tm <= edate)
   if(sum(k)>0){
@@ -99,6 +108,7 @@ getGCMdailyTable <- function(i, rgn_shp, setup, root, ref, ff, overwrite = FALSE
   cmask <- file.path(vdir, paste0(iso, "_mask_chirps.tif"))
   if(!file.exists(cmask)){
     shp <- raster::shapefile(rgn_shp)
+    if(iso == 'NER'){shp <- spTransform(shp, raster::crs("+proj=longlat +datum=WGS84"))}
     shpb <- raster::buffer(shp, 0.05)
     e <- terra::ext(shpb)
     shpr <- terra::rasterize(x = terra::vect(shpb), y = ref) %>% terra::crop(x = ., y = e)
@@ -111,6 +121,7 @@ getGCMdailyTable <- function(i, rgn_shp, setup, root, ref, ff, overwrite = FALSE
   
   # search files
   f <- grep(paste(var,model,experiment,sep = "_.*"), ff, value = TRUE)
+  f <- grep(pattern = paste0(sdate,'_',edate), x = f, value = T)
   
   # GCM raster prep ############################################################
   # rotate
@@ -257,7 +268,7 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
 
 ##################################################################################################################
 # Extractions setup
-iso <- c("PAK","SOM","NER","TZA") # "BDI","HTI","GIN","GNB","MMR","NPL"
+iso <- c("TZA") # "BDI","HTI","GIN","GNB","MMR","NPL","PAK","SOM","NER"
 setup <- data.frame(expand.grid(iso = iso,
                                 var = c('pr','tas','tasmax','tasmin'),
                                 model = c("ACCESS-ESM1-5","EC-Earth3-Veg","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0"),
@@ -294,10 +305,10 @@ if(!file.exists(ref)){
 }
 
 # If there are in priority countries
-country <- 'Pakistan'
-iso     <- 'PAK'
+country <- 'Tanzania'
+iso     <- 'TZA'
 setupx  <- setup[setup$iso == iso,]
-setupx  <- setupx[-c(1:2),]
+rownames(setupx) <- 1:nrow(setupx)
 rgn_shp <- paste0('//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp')
 
 library(future.apply)

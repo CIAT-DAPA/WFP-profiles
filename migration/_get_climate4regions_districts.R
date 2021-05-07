@@ -23,7 +23,7 @@ flt_clm_subunits <- function(iso = 'SOM', country = 'Somalia', district = 'Caabu
   crd <- crd %>%
     tidyft::parse_fst(path = .) %>%
     tidyft::select_fst(id, x, y) %>%
-    tidyft::distinct_dt() %>%
+    tidyft::distinct() %>%
     base::as.data.frame()
   
   cat('>>> Regions shape and add a buffer of 5 km\n')
@@ -62,7 +62,7 @@ flt_clm_subunits2 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   crd <- crd %>%
     tidyft::parse_fst(path = .) %>%
     tidyft::select_fst(id, x, y) %>%
-    tidyft::distinct_dt() %>%
+    tidyft::distinct() %>%
     base::as.data.frame()
   
   cat('>>> Regions shape and add a buffer of 5 km\n')
@@ -101,7 +101,7 @@ flt_clm_subunits3 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   crd <- crd %>%
     tidyft::parse_fst(path = .) %>%
     tidyft::select_fst(id, x, y) %>%
-    tidyft::distinct_dt() %>%
+    tidyft::distinct() %>%
     base::as.data.frame()
   
   cat('>>> Regions shape and add a buffer of 5 km\n')

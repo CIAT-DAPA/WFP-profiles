@@ -10,7 +10,7 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_func
 
 # Load libraries
 suppressMessages(library(pacman))
-suppressMessages(pacman::p_load(qmap, furrr, future, ncdf4, raster, tidyverse, compiler, vroom, gtools, fst))
+suppressMessages(pacman::p_load(qmap, future.apply, furrr, future, ncdf4, raster, tidyverse, compiler, vroom, gtools, fst))
 
 OSys <- Sys.info()[1]
 root <<- switch(OSys,
@@ -136,20 +136,20 @@ BC_Qmap_lnx <- function(his_obs = his_obs,
   his_gcm_bc <<- his_gcm
   fut_gcm_bc <<- fut_gcm
   
-  plan(cluster, workers = ncores, gc = TRUE)
-  bc_data <- 1:nrow(his_obs) %>%
-    furrr::future_map(.x = ., .f = function(i){
-      tryCatch(expr={
-        bc_data <<- bc_qmap(df_obs     = his_obs$Climate[[i]],
-                            df_his_gcm = his_gcm$Climate[[i]],
-                            df_fut_gcm = fut_gcm$Climate[[i]])
-      },
-      error = function(e){
-        cat(paste0("Quantile mapping failed for pixel: ",i,"\n"))
-        return("Done\n")
-      })
-      return(bc_data)
+  library(future.apply)
+  plan(multiprocess, workers = 20)
+  future_lapply(1:nrow(setupx), FUN = function(i){
+    tryCatch(expr={
+      bc_data <<- bc_qmap(df_obs     = his_obs$Climate[[i]],
+                          df_his_gcm = his_gcm$Climate[[i]],
+                          df_fut_gcm = fut_gcm$Climate[[i]])
+    },
+    error = function(e){
+      cat(paste0("Quantile mapping failed for pixel: ",i,"\n"))
+      return("Done\n")
     })
+    return(bc_data)
+  }, future.seed = TRUE)
   future:::ClusterRegistry("stop")
   gc(reset = T)
   

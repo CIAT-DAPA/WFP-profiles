@@ -137,7 +137,7 @@ BC_Qmap_lnx <- function(his_obs = his_obs,
   fut_gcm_bc <<- fut_gcm
   
   library(future.apply)
-  plan(multiprocess, workers = ncores)
+  plan(multicore, workers = ncores)
   bc_data <- future.apply::future_lapply(1:nrow(his_obs), FUN = function(i){
     tryCatch(expr={
       bc_data <<- bc_qmap(df_obs     = his_obs$Climate[[i]],
@@ -149,7 +149,7 @@ BC_Qmap_lnx <- function(his_obs = his_obs,
       return("Done\n")
     })
     return(bc_data)
-  }, future.seed = FALSE, USE.NAMES = FALSE)
+  }, USE.NAMES = FALSE)
   future:::ClusterRegistry("stop")
   gc(reset = T)
   

@@ -16,24 +16,81 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,lubridate,fst,tidyft))
   
-  root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+  OSys <- Sys.info()[1]
+  root <<- switch(OSys,
+                  'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+                  'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
   
-  # Load historical climate
-  h0 <- paste0(root,'/1.Data/observed_data/',iso,'/',iso,'.fst') %>%
-    tidyft::parse_fst(path = .) %>%
+  # Historical climate data (observed)
+  ho <- paste0(root,'/1.Data/observed_data/',iso,'/',iso,'.fst') %>%
+    tidyft::parse_fst() %>%
+    tidyft::select_fst(id) %>%
+    tidyft::distinct() %>%
     base::as.data.frame()
-  h0$period <- '1981-2019'
-  h0$model <- 'Historical'
+  ho <- ho$id
+  
   # List and load future climate
   ff <- list.files(path = paste0(root,'/1.Data/future_data'), pattern = '.fst$', full.names = T, recursive = T) %>%
     grep(pattern = 'bias_corrected', x = ., value = T) %>%
     grep(pattern = iso, x = ., value = T)
+  
+  # Future GCM climate data 2021-2040
+  f1 <- ff %>%
+    grep(pattern = '2021-2040', x = ., value = T) %>%
+    purrr::map(.f = function(m){
+      tb <- m %>%
+        tidyft::parse_fst(path = .) %>%
+        tidyft::select_fst(id) %>%
+        tidyft::distinct()
+      return(tb)
+    }) %>%
+    dplyr::bind_rows()
+  f1 <- unique(f1)
+  f1 <- f1$id
+  # Future GCM climate data 2041-2060
+  f2 <- ff %>%
+    grep(pattern = '2041-2060', x = ., value = T) %>%
+    purrr::map(.f = function(m){
+      tb <- m %>%
+        tidyft::parse_fst(path = .) %>%
+        tidyft::select_fst(id) %>%
+        tidyft::distinct()
+      return(tb)
+    }) %>%
+    dplyr::bind_rows()
+  f2 <- unique(f2)
+  f2 <- f2$id
+  
+  # Identify pixels intersection
+  px <- base::intersect(ho, f1)
+  px <- base::intersect(px, f2)
+  px <- sort(px); rm(ho, hg, fg)
+  
+  # Generate a random sample of 100 pixels
+  if(length(px) > 100){
+    set.seed(1235)
+    smpl <- sample(x = px, size = 100, replace = F) %>% sort()
+  } else {
+    smpl <- px
+  }
+  
+  pft <<- smpl
+  
+  # Load historical climate
+  h0 <- paste0(root,'/1.Data/observed_data/',iso,'/',iso,'.fst') %>%
+    tidyft::parse_fst(path = .) %>%
+    tidyft::filter_fst(id %in% pft) %>%
+    base::as.data.frame()
+  h0$period <- '1981-2019'
+  h0$model <- 'Historical'
+  
   if(length(ff) > 0){
     f1 <- ff %>%
       grep(pattern = '2021-2040', x = ., value = T) %>%
       purrr::map(.f = function(m){
         tb <- m %>%
           tidyft::parse_fst(path = .) %>%
+          tidyft::filter_fst(id %in% pft) %>%
           base::as.data.frame()
         tb$model  <- m %>% strsplit(x = ., split = '/') %>% purrr::map(8) %>% unlist()
         tb$period <- '2021-2040'
@@ -45,6 +102,7 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
       purrr::map(.f = function(m){
         tb <- m %>%
           tidyft::parse_fst(path = .) %>%
+          tidyft::filter_fst(id %in% pft) %>%
           base::as.data.frame()
         tb$model  <- m %>% strsplit(x = ., split = '/') %>% purrr::map(8) %>% unlist()
         tb$period <- '2041-2060'
@@ -82,14 +140,6 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
     h0 <- h0[h0$id %in% px,]
     f1 <- f1[f1$id %in% px,]
     f2 <- f2[f2$id %in% px,]
-    
-    # Generate a random sample of 100 pixels
-    if(nrow(h0) > 100){
-      set.seed(1235)
-      smpl <- sample(x = 1:nrow(h0), size = 100, replace = F) %>% sort()
-    } else {
-      smpl <- 1:nrow(h0)
-    }
     
     all_clmtlgy <- list(h0, f1, f2) %>%
       purrr::map(.f = function(tbl){

@@ -138,7 +138,7 @@ BC_Qmap_lnx <- function(his_obs = his_obs,
   
   library(future.apply)
   plan(multiprocess, workers = 20)
-  future_lapply(1:nrow(setupx), FUN = function(i){
+  bc_data <- future_lapply(1:nrow(his_obs), FUN = function(i){
     tryCatch(expr={
       bc_data <<- bc_qmap(df_obs     = his_obs$Climate[[i]],
                           df_his_gcm = his_gcm$Climate[[i]],

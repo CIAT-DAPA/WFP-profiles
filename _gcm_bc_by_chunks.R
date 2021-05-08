@@ -11,7 +11,10 @@ suppressMessages(pacman::p_load(tidyverse,tidyft))
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_functions.R') # Main functions
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_gcm_bc.R')         # GCMs bias-correction
 
-root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+OSys <- Sys.info()[1]
+root <<- switch(OSys,
+                'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
 
 iso     <- 'TZA'
 model   <- 'INM-CM5-0'
@@ -72,13 +75,13 @@ chnks <- chunk(px, 4000)
     his_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/1995-2014/",iso,"_chunk_",j,".fst")
     fut_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,"_chunk_",j,".fst")
     
-    BC_Qmap(his_obs = his_obs,
-            his_gcm = his_gcm,
-            fut_gcm = fut_gcm,
-            his_bc  = his_bc,
-            fut_bc  = fut_bc,
-            period  = period,
-            ncores  = 1)
+    BC_Qmap_lnx(his_obs = his_obs,
+                his_gcm = his_gcm,
+                fut_gcm = fut_gcm,
+                his_bc  = his_bc,
+                fut_bc  = fut_bc,
+                period  = period,
+                ncores  = 1)
     
     return(cat(paste0('Chunk ',j,' finished\n')))
     

@@ -137,8 +137,8 @@ BC_Qmap_lnx <- function(his_obs = his_obs,
   fut_gcm_bc <<- fut_gcm
   
   library(future.apply)
-  plan(multiprocess, workers = 20)
-  bc_data <- future_lapply(1:nrow(his_obs), FUN = function(i){
+  plan(multiprocess, workers = ncores)
+  bc_data <- future.apply::future_lapply(1:nrow(his_obs), FUN = function(i){
     tryCatch(expr={
       bc_data <<- bc_qmap(df_obs     = his_obs$Climate[[i]],
                           df_his_gcm = his_gcm$Climate[[i]],
@@ -149,7 +149,7 @@ BC_Qmap_lnx <- function(his_obs = his_obs,
       return("Done\n")
     })
     return(bc_data)
-  }, future.seed = TRUE)
+  }, future.seed = FALSE, USE.NAMES = FALSE)
   future:::ClusterRegistry("stop")
   gc(reset = T)
   
@@ -177,10 +177,10 @@ BC_Qmap_lnx <- function(his_obs = his_obs,
   
   if(!file.exists(his_bc)){
     dir.create(dirname(his_bc),FALSE,TRUE)
-    fst::write_fst(his_gcm_bc,his_bc)
+    tidyft::export_fst(his_gcm_bc,his_bc)
   }
   dir.create(dirname(fut_bc),FALSE,TRUE)
-  fst::write_fst(fut_gcm_bc,fut_bc)
+  tidyft::export_fst(fut_gcm_bc,fut_bc)
   
   cat('Bias correction process completed successfully\n')
   
@@ -343,10 +343,10 @@ BC_Qmap_wnd <- function(his_obs = his_obs,
   
   if(!file.exists(his_bc)){
     dir.create(dirname(his_bc),FALSE,TRUE)
-    fst::write_fst(his_gcm_bc,his_bc)
+    tidyft::export_fst(his_gcm_bc,his_bc)
   }
   dir.create(dirname(fut_bc),FALSE,TRUE)
-  fst::write_fst(fut_gcm_bc,fut_bc)
+  tidyft::export_fst(fut_gcm_bc,fut_bc)
   
   cat('Bias correction process completed successfully\n')
   

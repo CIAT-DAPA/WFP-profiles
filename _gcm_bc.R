@@ -149,7 +149,7 @@ BC_Qmap_lnx <- function(his_obs = his_obs,
       return("Done\n")
     })
     return(bc_data)
-  }, USE.NAMES = FALSE)
+  })
   future:::ClusterRegistry("stop")
   gc(reset = T)
   

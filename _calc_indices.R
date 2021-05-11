@@ -6,7 +6,7 @@
 
 options(warn = -1, scipen = 999)
 suppressMessages(library(pacman))
-suppressMessages(pacman::p_load(SPEI,tidyverse,raster,ncdf4,sf,future,furrr,lubridate,glue,vroom,sp,fst,compiler))
+suppressMessages(pacman::p_load(SPEI,tidyverse,raster,ncdf4,sf,future,future.apply,furrr,lubridate,glue,vroom,sp,fst,compiler))
 
 # Input parameters:
 #   climate: path or data frame with the climate data. This file must exists
@@ -31,6 +31,8 @@ calc_indices <- function(climate = infile,
                          ncores  = 10,
                          outfile = outfile,
                          spi_out = spi_out){
+  
+  OSys <- Sys.info()[1]
   
   if(!file.exists(outfile)){
     dir.create(path = dirname(outfile), FALSE, TRUE)
@@ -319,13 +321,25 @@ calc_indices <- function(climate = infile,
       clim_data_flt <- clim_data %>% dplyr::filter(id %in% id_sample)
       
       # Run the process in parallel for the 30% of the pixels
-      plan(cluster, workers = ncores, gc = TRUE)
-      index_by_pixel <- clim_data_flt %>%
-        dplyr::pull(id) %>%
-        furrr::future_map(.x = ., .f = run_pixel) %>%
-        dplyr::bind_rows()
-      future:::ClusterRegistry("stop")
-      gc(reset = T)
+      if(OSys == 'Windows'){
+        plan(cluster, workers = ncores, gc = TRUE)
+        index_by_pixel <- clim_data_flt %>%
+          dplyr::pull(id) %>%
+          furrr::future_map(.x = ., .f = run_pixel) %>%
+          dplyr::bind_rows()
+        future:::ClusterRegistry("stop")
+        gc(reset = T)
+      } else {
+        if(OSys == 'Linux'){
+          plan(multicore, workers = ncores)
+          index_by_pixel <- clim_data_flt %>%
+            dplyr::pull(id) %>%
+            future.apply::future_lapply(.x = ., FUN = run_pixel) %>%
+            dplyr::bind_rows()
+          future:::ClusterRegistry("stop")
+          gc(reset = T)
+        }
+      }
       index_by_pixel <- index_by_pixel %>%
         dplyr::select(id,season,year,
                       ATR,AMT,NDD,P5D,P95,NT_X,

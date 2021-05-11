@@ -21,58 +21,32 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
                   'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
                   'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
   
-  # Historical climate data (observed)
-  ho <- paste0(root,'/1.Data/observed_data/',iso,'/',iso,'.fst') %>%
-    tidyft::parse_fst() %>%
-    tidyft::select_fst(id) %>%
-    tidyft::distinct() %>%
-    base::as.data.frame()
-  ho <- ho$id
   
-  # List and load future climate
-  ff <- list.files(path = paste0(root,'/1.Data/future_data'), pattern = '.fst$', full.names = T, recursive = T) %>%
-    grep(pattern = 'bias_corrected', x = ., value = T) %>%
-    grep(pattern = iso, x = ., value = T)
   
-  # Future GCM climate data 2021-2040
-  f1 <- ff %>%
-    grep(pattern = '2021-2040', x = ., value = T) %>%
-    purrr::map(.f = function(m){
-      tb <- m %>%
-        tidyft::parse_fst(path = .) %>%
-        tidyft::select_fst(id) %>%
-        tidyft::distinct()
-      return(tb)
-    }) %>%
-    dplyr::bind_rows()
-  f1 <- unique(f1)
-  f1 <- f1$id
-  # Future GCM climate data 2041-2060
-  f2 <- ff %>%
-    grep(pattern = '2041-2060', x = ., value = T) %>%
-    purrr::map(.f = function(m){
-      tb <- m %>%
-        tidyft::parse_fst(path = .) %>%
-        tidyft::select_fst(id) %>%
-        tidyft::distinct()
-      return(tb)
-    }) %>%
-    dplyr::bind_rows()
-  f2 <- unique(f2)
-  f2 <- f2$id
+  px_past <- paste0(root,'/7.Results/', country, '/past/', iso,'_indices.fst') %>% 
+    tidyft::parse_fst() %>% tidyft::select_fst(id) %>% dplyr::pull() %>% unique()
+  
+  
+  fut <- paste0(root,'/7.Results/',country,'/future') %>%
+    list.files(., pattern = paste0(iso,'_indices.fst'), full.names = T, recursive  = T)
+  
+  # px_future <-
+  
+  
+  fut_id <- 1:length(fut) %>% as.list()  %>% 
+    purrr::map(.f = function(i){
+      df <- fut %>% tidyft::parse_fst() %>% tidyft::select_fst(id) %>% 
+        dplyr::pull() %>% unique()
+    })  %>% unlist() %>% unique()
   
   # Identify pixels intersection
-  px <- base::intersect(ho, f1)
-  px <- base::intersect(px, f2)
-  px <- sort(px); rm(ho, hg, fg)
+  px <- base::intersect(px_past, fut_id)
   
   # Generate a random sample of 100 pixels
   if(length(px) > 100){
     set.seed(1235)
     smpl <- sample(x = px, size = 100, replace = F) %>% sort()
-  } else {
-    smpl <- px
-  }
+  } else {smpl <- px}
   
   pft <<- smpl
   
@@ -84,10 +58,21 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
   h0$period <- '1981-2019'
   h0$model <- 'Historical'
   
+  tictoc::tic()
+  # List and load future climate
+  ff <- list.files(path = paste0(root,'/1.Data/future_data'), pattern = '.fst$', full.names = T, recursive = T) %>%
+    grep(pattern = 'bias_corrected', x = ., value = T) %>%
+    grep(pattern = iso, x = ., value = T)
+  
+  # Tratar de poner esto en paralelo... 
+  
+  ncores <- 5
+  plan(cluster, workers = ncores, gc = TRUE)
+  
   if(length(ff) > 0){
     f1 <- ff %>%
       grep(pattern = '2021-2040', x = ., value = T) %>%
-      purrr::map(.f = function(m){
+      furrr::future_map(.f = function(m){
         tb <- m %>%
           tidyft::parse_fst(path = .) %>%
           tidyft::filter_fst(id %in% pft) %>%
@@ -99,7 +84,7 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
       dplyr::bind_rows()
     f2 <- ff %>%
       grep(pattern = '2041-2060', x = ., value = T) %>%
-      purrr::map(.f = function(m){
+      furrr::future_map(.f = function(m){
         tb <- m %>%
           tidyft::parse_fst(path = .) %>%
           tidyft::filter_fst(id %in% pft) %>%
@@ -110,6 +95,12 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
       }) %>%
       dplyr::bind_rows()
   }
+  
+  future:::ClusterRegistry("stop")
+  gc(reset = T)
+  
+  tictoc::toc()
+  
   
   if(exists('f1') & exists('f2')){
     
@@ -143,9 +134,9 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
     
     all_clmtlgy <- list(h0, f1, f2) %>%
       purrr::map(.f = function(tbl){
-        clmtlgy <- 1:length(smpl) %>%
+        clmtlgy <- 1:length(px) %>%
           purrr::map(.f = function(i){
-            clmtlgy <- tbl[which(tbl$id == px[smpl[i]]),] %>%
+            clmtlgy <-  tbl[which(tbl$id == px[i]),] %>% 
               tidyr::unnest() %>% 
               dplyr::mutate(Year  = lubridate::year(lubridate::as_date(date)),
                             Month = lubridate::month(lubridate::as_date(date))) %>%

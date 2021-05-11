@@ -2,7 +2,7 @@ options(warn = -1, scipen = 999)
 suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(tidyverse,tidyft,terra))
 
-OSys <- Sys.info()[1]
+OSys <<- Sys.info()[1]
 root <<- switch(OSys,
                 'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
                 'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')

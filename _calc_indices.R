@@ -32,7 +32,7 @@ calc_indices <- function(climate = infile,
                          outfile = outfile,
                          spi_out = spi_out){
   
-  OSys <- Sys.info()[1]
+  OSys <<- Sys.info()[1]
   
   if(!file.exists(outfile)){
     dir.create(path = dirname(outfile), FALSE, TRUE)

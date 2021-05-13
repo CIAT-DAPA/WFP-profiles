@@ -334,7 +334,7 @@ calc_indices <- function(climate = infile,
           plan(multicore, workers = ncores)
           index_by_pixel <- clim_data_flt %>%
             dplyr::pull(id) %>%
-            future.apply::future_lapply(.x = ., FUN = run_pixel) %>%
+            future.apply::future_lapply(X = ., FUN = run_pixel) %>%
             dplyr::bind_rows()
           future:::ClusterRegistry("stop")
           gc(reset = T)
@@ -531,7 +531,7 @@ calc_indices <- function(climate = infile,
           plan(multicore, workers = ncores)
           index_by_pixel <- clim_data %>%
             dplyr::pull(id) %>%
-            future.apply::future_lapply(.x = ., FUN = run_pixel) %>%
+            future.apply::future_lapply(X = ., FUN = run_pixel) %>%
             dplyr::bind_rows()
           future:::ClusterRegistry("stop")
           gc(reset = T)

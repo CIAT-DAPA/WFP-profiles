@@ -14,7 +14,7 @@ flt_clm_subunits <- function(iso = 'SOM', country = 'Somalia', district = 'Caabu
   
   # Load packages
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
-  suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,sf))
+  suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,tidyfst,sf))
   
   OSys <<- Sys.info()[1]
   root <<- switch(OSys,
@@ -62,7 +62,7 @@ flt_clm_subunits2 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   
   # Load packages
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
-  suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,sf))
+  suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,tidyfst,sf))
   
   OSys <<- Sys.info()[1]
   root <<- switch(OSys,
@@ -110,7 +110,7 @@ flt_clm_subunits3 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   
   # Load packages
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
-  suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,sf))
+  suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,tidyfst,sf))
   
   OSys <<- Sys.info()[1]
   root <<- switch(OSys,

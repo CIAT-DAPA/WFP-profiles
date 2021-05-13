@@ -474,12 +474,17 @@ calc_cNWLD90MP <- compiler::cmpfun(calc_cNWLD90)
 # Aridity index
 calc_tai <- function(clm = tbl){
   
+  OSys <<- Sys.info()[1]
+  root <<- switch(OSys,
+                  'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+                  'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+  
   # Load packages
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(fst,envirem,gtools,tidyverse,raster))
   
   # Load CHIRPS template
-  tmp <- raster::raster("//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/daily/chirps-v2.0.2020.01.01.tif")
+  tmp <- raster::raster(paste0(root,"/1.Data/chirps-v2.0.2020.01.01.tif"))
   
   # Transform table to raster study area
   r <- raster::rasterFromXYZ(xyz = clm[,c('x','y')] %>% unique %>% dplyr::mutate(vals = 1),
@@ -487,7 +492,7 @@ calc_tai <- function(clm = tbl){
                              crs = raster::crs(tmp))
   
   # ET SRAD
-  srf <- list.dirs('//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/climate/ET_SolRad', full.names = T, recursive = F)
+  srf <- list.dirs(paste0(root,'/1.Data/climate/ET_SolRad'), full.names = T, recursive = F)
   srf <- srf[-length(srf)]
   srf <- srf %>% gtools::mixedsort()
   srd <- srf %>% raster::stack()

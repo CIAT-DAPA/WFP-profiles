@@ -436,9 +436,19 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       F2050 <- to_graph %>% dplyr::filter(time == '2041-2060') %>%
         dplyr::select(-x, -y, -time,-time1) 
       HT <- to_graph %>% dplyr::filter(time == 'Historic') %>% 
-        dplyr::select(-x, -y, -time,-time1) %>% 
-        dplyr::filter(id %in% F2050$id)
+        dplyr::select(-x, -y, -time,-time1) 
       
+      # =---
+      px1 <- dplyr::intersect(unique(HT$id), unique(F2030$id))
+      px2 <- dplyr::intersect(unique(HT$id), unique(F2050$id))
+      px <- dplyr::intersect(px1, px2)
+      
+      HT <- dplyr::filter(HT, id %in% px)
+      F2030 <- dplyr::filter(F2030, id %in% px)
+      F2050 <- dplyr::filter(F2050, id %in% px)
+      
+      rm(px1, px2)
+      # =---
       
       for(i in 2:ncol(HT)){F2030[,i] <- F2030[,i] - HT[,i]
       F2050[,i] <- F2050[,i] - HT[,i]}
@@ -455,8 +465,19 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       F2050_1 <- special_base %>% dplyr::filter(time == '2041-2060') %>%
         dplyr::select(-time,-time1) 
       HT_1 <- special_base %>% dplyr::filter(time == 'Historic') %>% 
-        dplyr::select(-time,-time1) %>% 
-        dplyr::filter(id %in% F2050_1$id)
+        dplyr::select(-time,-time1) 
+      
+      # =---
+      px1 <- dplyr::intersect(unique(HT_1$id), unique(F2030_1$id))
+      px2 <- dplyr::intersect(unique(HT_1$id), unique(F2050_1$id))
+      px <- dplyr::intersect(px1, px2)
+      
+      HT_1 <- dplyr::filter(HT_1, id %in% px)
+      F2030_1 <- dplyr::filter(F2030_1, id %in% px)
+      F2050_1 <- dplyr::filter(F2050_1, id %in% px)
+      
+      rm(px1, px2)
+      # =---
       
       for(i in 2:ncol(HT_1)){F2030_1[,i] <- F2030_1[,i] - HT_1[,i]
       F2050_1[,i] <- F2050_1[,i] - HT_1[,i]}
@@ -467,7 +488,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       sp_anom_l <-dplyr::bind_rows(dplyr::mutate(F2030_1, time1 = '2021-2040'), dplyr::mutate(F2050_1, time1 = '2041-2060')) %>% dplyr::select(ATR, AMT) %>% 
         dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE)
       # =---------
-      
       
       max_lt <- anomalies %>% dplyr::select(contains('_max')) %>% 
         dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE) 

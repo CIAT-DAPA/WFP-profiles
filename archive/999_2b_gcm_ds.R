@@ -94,10 +94,23 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   dir.create(vdir, FALSE, TRUE)
   
   # Country/zone boundary
-  cmask <- file.path(vdir, paste0(iso, "_mask_chirps.tif"))
+  if(iso=="NER"){
+    cmask <- file.path(vdir, paste0(iso, "_lz_mask_chirps.tif"))
+  } else {
+    cmask <- file.path(vdir, paste0(iso, "_mask_chirps.tif"))
+  }
+  
+  
   if(!file.exists(cmask)){
-    shp <- raster::getData("GADM", country = iso, level = 0, path = vdir)
-    shpb <- buffer(shp, 0.05)
+    if(iso=="NER"){
+      f <- list.files("~/code/WFP-profiles/data/shps/niger/ner_livelihood_zones/", pattern = ".shp", full.names = TRUE)
+      v <- lapply(f, vect)
+      shp <- do.call(rbind, v)
+      shp <- project(shp, "epsg:4326")
+    } else {
+      shp <- raster::getData("GADM", country = iso, level = 0, path = vdir)
+    }
+    shpb <- terra::buffer(shp, 10000) # Unit is meter if x has a longitude/latitude CRS
     e <- terra::ext(shpb)
     # Crop reference raster
     riso <- terra::crop(x = ref, y = e, filename = cmask, wopt= list(gdal=c("COMPRESS=LZW")))
@@ -117,38 +130,33 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   # resample to reference raster --- most time taking part
   soutf <- file.path(outdir, paste0(iso, "_" ,basename(routf)))
   
-  if(!file.exists(soutf)){
-    # reproject outline to same coordinate system if needed?
-    rotsub <- terra::crop(rot, ext(riso))
-    # disaggregate first
-    rotsub <- terra::disaggregate(rotsub, fact =  round(res(rotsub)/res(riso)))
-    # resample 
-    rotsub <- terra::resample(rotsub, riso, filename = soutf, wopt= list(gdal=c("COMPRESS=LZW")), overwrite = overwrite)
-    
-    # ?implement a parallel resample
-
-    # should we mask and save?
-    # rotsub <- terra::mask(rotsub, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
-  } else {
-    rotsub <- rast(soutf)
-  }
+  # if(!file.exists(soutf)){
+  #   # reproject outline to same coordinate system if needed?
+  #   rotsub <- terra::crop(rot, ext(riso))
+  #   # disaggregate first
+  #   rotsub <- terra::disaggregate(rotsub, fact =  round(res(rotsub)/res(riso)))
+  #   # resample 
+  #   rotsub <- terra::resample(rotsub, riso, filename = soutf, wopt= list(gdal=c("COMPRESS=LZW", "BIGTIFF=YES")), overwrite = overwrite)
+  #   
+  #   # ?implement a parallel resample
+  # 
+  #   # should we mask and save?
+  #   # rotsub <- terra::mask(rotsub, mask = riso, filename = paste0(ofile, ".tif"), overwrite = TRUE)
+  # } else {
+  #   rotsub <- rast(soutf)
+  # }
   
   #################################################################################################################
   # finally the fst files
   foutf <- gsub(".tif", ".fst", soutf)
   
   if(!file.exists(foutf)){
-    # Is this memory safe? get cell values
-    dd <- terra::as.data.frame(rotsub, xy = TRUE)
-    # names(dd) <- c("x", "y", dates)
-    names(dd) <- c("x", "y", names(rotsub))
-    
-    # convert from wide to long with dataframe, safer way?
-    ddl <- melt(setDT(dd), id.vars = c("x","y"), value.name = var, variable = "date")
-    
-    # add cellnumbers for using with join later
-    xy <- as.matrix(ddl[,c("x","y")])
-    ddl <- data.frame(cell_id = cellFromXY(rotsub, xy), ddl, stringsAsFactors = FALSE)
+    # pixel center coordinates from CHIRPS
+    cc <- as.data.frame(riso, xy=TRUE)
+    dd <- extract(rot, cc[, c("x", "y")], cells=TRUE, xy=TRUE)
+    dd$ID <- NULL
+    # convert from wide to long with dataframe
+    ddl <- melt(setDT(dd), id.vars = c("x","y", "cell"), value.name = var, variable = "date")
     write_fst(ddl, path = foutf)
   }
   return(NULL)
@@ -201,10 +209,12 @@ if(!file.exists(ref)){
 
 # prioritize HTI and BDI
 
-setupx <- setup[setup$iso == "GNB",]
+setupx <- setup[setup$iso == "NER",]
 
 rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
-                          mc.preschedule = FALSE, mc.cores = 6)
+                          mc.preschedule = FALSE, mc.cores = 20)
+
+# getGCMdailyTable(1, setupx, root, ref, ff, overwrite = FALSE)
 
 library(future.apply)
 availableCores()

@@ -786,7 +786,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       b <- to_graph %>%  
         dplyr::select(id, time1, SLGP_CV) %>% 
-        dplyr::mutate(LGP =case_when(SLGP_CV <= 5 ~ 1, 
+        dplyr::mutate(SLGP_CV =case_when(SLGP_CV <= 5 ~ 1, 
                                      SLGP_CV > 5 & SLGP_CV <= 15~ 2, 
                                      SLGP_CV > 15 & SLGP_CV <= 30~ 3, 
                                      SLGP_CV > 30 ~ 4, 

@@ -133,7 +133,7 @@ makeChangeMapLegend <- function(chg, lbls, pcols, portrait){
 
 #############################################################################################
 # barplot
-makeChartByProvince <- function(s, vr, brs, cat, fill, xlabs){
+makeChartByProvince <- function(s, vr, brs, suitcat, fills, xlabs){
   # compute area in each category for each province
   vs <- vr[s,]
   abr <- lapply(brs, FUN = function(r,vs){r <- mask(r,vs); data.frame(t(tapply(area(r), r[], sum)))}, vs)
@@ -147,20 +147,20 @@ makeChartByProvince <- function(s, vr, brs, cat, fill, xlabs){
   abrs[is.na(abrs)] <- 0
   
   colnames(abrs) <- xlabs
-  abrs <- data.frame(cat = row.names(abrs), 
+  abrs <- data.frame(suitcat = row.names(abrs), 
                      abrs, stringsAsFactors = FALSE, row.names = NULL)
   
   # color category for all
-  nms <- data.frame(xx = paste0("X",1:length(cat)), lbl = cat, fill = fill, stringsAsFactors = FALSE)
+  nms <- data.frame(xx = paste0("X",1:length(suitcat)), lbl = suitcat, fills = fills, stringsAsFactors = FALSE)
   
   # merge colors and tables
-  abrsn <- merge(abrs, nms, by.x = 'cat', by.y = "xx", all = TRUE)
+  abrsn <- merge(abrs, nms, by.x = 'suitcat', by.y = "xx", all = TRUE)
   
   # ensure legend order
-  abrsn$cat <- factor(abrsn$cat, levels = abrsn$cat)
+  abrsn$suitcat <- factor(abrsn$suitcat, levels = abrsn$suitcat)
   
   # wide to long
-  vls85 <- abrsn %>% gather(clim, area, -c(cat, lbl, fill))
+  vls85 <- abrsn %>% gather(clim, area, -c(suitcat, lbl, fills))
   vls85$area[is.na(vls85$area)] <- 0
   
   # rcp 85
@@ -168,9 +168,9 @@ makeChartByProvince <- function(s, vr, brs, cat, fill, xlabs){
   # name of the province
   uname <- vs$pnames
   
-  plot85 <- ggplot() + geom_bar(aes(y = area, x = clim, fill = cat), data = vls85,
+  plot85 <- ggplot() + geom_bar(aes(y = area, x = clim, fill = suitcat), data = vls85,
                                 stat="identity", width = 0.5) +
-    scale_fill_manual(values=vls85$fill) +
+    scale_fill_manual(values=vls85$fills) +
     labs(title = uname, x=NULL, y=NULL) +
     scale_y_continuous(name="Cumulative percentage of area (%)", limits=c(-5, 105)) +
     scale_x_discrete(labels=xlabs) +
@@ -182,7 +182,7 @@ makeChartByProvince <- function(s, vr, brs, cat, fill, xlabs){
 
 #############################################################################################
 
-makePlotSingle <- function(admin,level,vs,f,pdir){
+makePlotSingle <- function(f,vr,pdir){
   
   # cat("processing ", unique(v$iso3), "\n")
   
@@ -192,8 +192,8 @@ makePlotSingle <- function(admin,level,vs,f,pdir){
   # }
   # adnm <- unique(switch(level+1, v$NAME_0, v$NAME_1, v$NAME_2, v$NAME_c)) # v$NAME_c is combined
   # vr <- v[adnm %in% admin,]
-  vr <- vs[vs$LZNAMEF == admin,]
-  # 
+  # vr <- vs[vs$LZNAMEF == admin,]
+  # vr <- vs
   # get corresponding layer names
   nm <- gsub(".tif","_stackname.rds" ,f)
   
@@ -202,10 +202,10 @@ makePlotSingle <- function(admin,level,vs,f,pdir){
   names(rs) <- nm
   
   # crop by roi but expand the extent to include more context
-  rr <- crop(rs, extent(vr)*1.25)
+  # rr <- crop(rs, extent(vs)*1.25)
   # change resolution to make the plot look better
-  rr <- disaggregate(rr, fact = 5)
-  rr <- mask(rr, vr)
+  rr <- disaggregate(rs, fact = 5)
+  # rr <- mask(rr, vr)
   
   # border of the focus province
   # pnames <- get('vr')[[paste0('NAME_',level)]]
@@ -229,9 +229,9 @@ makePlotSingle <- function(admin,level,vs,f,pdir){
   ######################################################################################
   # more data prep for plots
   # barplot: compute area in each category for each province
-  onames <- paste(vr$pnames, collapse = "_")
+  onames <- paste(gsub(".tif","",basename(f)), collapse = "_")
   
-  cname2 <- file.path(pdir, paste0(onames, "_suitability_group_maps_", gsub(".tif",".png",basename(f))))
+  cname2 <- file.path(pdir, paste0("suitability_group_maps_", onames, ".tif"))
   
   ############################# map #################################################
   suitcat <- c("unsuitable(0%)", "poor suit (0-40%)", 
@@ -347,18 +347,16 @@ makePlotSingle <- function(admin,level,vs,f,pdir){
 
 
 makePlots <- function(i, eco, vs, dir, outdir){
-  ecos <- eco[i,]
-  
   # dissolve situations are tricky
   # if(ecos$dissolve){next}
   
   # country name
-  iso <- ecos$ISO
+  iso <- unique(eco$ISO)
   
   cat("processing ", iso, "\n")
   
   # sub-national unit name
-  roi <- ecos$region_name
+  # roi <- eco$region_name
   
   # data/outputfolder
   fdir <- file.path(outdir, iso)
@@ -370,7 +368,7 @@ makePlots <- function(i, eco, vs, dir, outdir){
   roi <- vs$LZNAMEF
   
   # list of crops
-  crp <- ecos$value_chain
+  crp <- unique(eco$value_chain)
   
   datadir <- file.path(dir, "result/2_5min")
   # list all crop tif files
@@ -380,6 +378,29 @@ makePlots <- function(i, eco, vs, dir, outdir){
   # read one crop
   for (f in ff){
     cat("processing ", f, "\n")
-    lapply(roi,makePlotSingle,level,vs,f,pdir)
+    lapply(f,makePlotSingle,vs,pdir)
   }
 }
+
+
+##################################################################################################
+# HTI plots
+# prepare the zones first
+
+vdir <- "G:\\.shortcut-targets-by-id\\1zTxTZGK0LOQdQnN8N2TGWOP0PBUY-aMy\\shps"
+v <- list.files(vdir, pattern = glob2rx("*livelihoodzones*geonode*.shp$"), recursive = TRUE, full.names = TRUE)
+iso3 <- "HTI"
+v1 <- grep(tolower(iso3), v, value = TRUE)
+v1 <- shapefile(v1)
+
+# we will work at the adm 1 level
+tlz <- c("Littoral sec maÃ¯s et charbon", "Littoral sud-ouest maÃ¯s, manioc et cueillette", "Nord tubercules et horticulture", "Sud haricot, banane et petit commerce")
+vs <- v1[v1$LZNAMEF %in% tlz, ]
+vs <- aggregate(vs, "LZNAMEF")
+
+#####################################################################################
+dir <- "G:\\My Drive\\work\\ciat\\ecocrop"
+eco <- readxl::read_excel("suitability/ecocrop_runs.xlsx", sheet = 3)
+eco <- eco[eco$ISO == "HTI",]
+
+outdir <- "G:\\My Drive\\work\\ciat\\wfp"

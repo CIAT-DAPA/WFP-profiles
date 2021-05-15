@@ -102,10 +102,10 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   
   
   if(!file.exists(cmask)){
-    if(iso=="NER"){
-      f <- list.files("~/code/WFP-profiles/data/shps/niger/ner_livelihood_zones/", pattern = ".shp", full.names = TRUE)
-      v <- lapply(f, vect)
-      shp <- do.call(rbind, v)
+    bfile <- "~/code/WFP-profiles/data/all_zones_countries.shp"
+    if(file.exists(bfile)){
+      bnd <- vect(bfile)
+      shp <- bnd[bnd$iso3 == iso, ]
       shp <- project(shp, "epsg:4326")
     } else {
       shp <- raster::getData("GADM", country = iso, level = 0, path = vdir)
@@ -211,6 +211,8 @@ if(!file.exists(ref)){
 
 setupx <- setup[setup$iso == "NER",]
 
+setupx <- setup[setup$iso %in% c("PAK", "TZA", "SOM", "MMR"),]
+
 rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
                           mc.preschedule = FALSE, mc.cores = 20)
 
@@ -228,8 +230,7 @@ Sys.time() - t1
 
 
 # copy files to GCP
-# gsutil cp -r /home/anighosh/data/output/downscale/CMIP6/daily/BDI gs://cmip6results/data/output/downscale/CMIP6/daily/BDI
-# gsutil -m cp -r /home/anighosh/data/interim/rotated/CMIP6/daily gs://cmip6results/data/output/downscale/CMIP6/daily/rotated
+# gsutil -m cp -r /home/anighosh/data/output/downscale/CMIP6/daily/NER gs://cmip6results/data/output/downscale/CMIP6/daily/NER
 
 
 

@@ -139,15 +139,15 @@ summary_index <- function(Zone, data_init = data_cons, Period){
   
   
   data <- data %>% dplyr::filter(id %in% id_f) %>% dplyr::select(time, id, vars) %>% 
-    dplyr::group_by(time, id) %>%dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
+    dplyr::group_by(time, id) %>% dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
     dplyr::mutate_at(.vars = vars[vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')], 
-              .funs = ~round(. , 0)) %>%
+                     .funs = ~round(. , 0)) %>%
     dplyr::ungroup() %>%  unique() 
   
   
   # Lenght_season
   data <- dplyr::mutate_at(data, .vars = vars[vars %in% c('NDD','NDWS',  'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X')],
-                    .funs = ~(./length_season) %>% round(. ,0) )
+                           .funs = ~(./length_season) %>% round(. ,0) )
   
   # Transform variables. 
   if(sum(vars == 'SHI') == 1){
@@ -160,7 +160,7 @@ summary_index <- function(Zone, data_init = data_cons, Period){
     if(sum(vars == 'SLGP') > 0){vars <- c(vars, 'SLGP_CV')}
     vars_s <- vars[vars %in% c("SLGP", "LGP", 'SLGP_CV')]
     
-    peta <- data %>% 
+    peta <- data_init %>% 
       dplyr::filter(id %in% id_f) %>%
       dplyr::select(time, time1, id, year, gSeason, SLGP, LGP) 
     peta$date <- as.Date(peta$SLGP, origin = "2001-01-01") %>% lubridate::month()
@@ -194,8 +194,8 @@ summary_index <- function(Zone, data_init = data_cons, Period){
     dplyr::mutate(Index = rep(rownames(asa$ind[[1]]), 3) ) %>% 
     dplyr::select(-n, -vars, -mad) %>%
     dplyr::mutate(cod_name = Zone, 
-           Livelihood_zone = Name, 
-           Season = names(Period)) %>% 
+                  Livelihood_zone = Name, 
+                  Season = names(Period)) %>% 
     dplyr::rename(Period = 'time') %>% 
     dplyr::select(Index, cod_name, Livelihood_zone, Period, Season, everything(.))
   

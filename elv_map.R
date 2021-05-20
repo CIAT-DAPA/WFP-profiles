@@ -39,7 +39,7 @@ Elv_map <- function(iso3, country){
     glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2.shp' ) 
     crs(glwd2) <- crs(shp)
     
-    if(!(iso3  %in% c('NPL', 'PAK')) ){
+    if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){
       ext.sp <- raster::crop(glwd1, raster::extent(shp))
       glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
         sf::st_as_sf()
@@ -86,7 +86,7 @@ Elv_map <- function(iso3, country){
                                                    barwidth = 2, label.theme = element_text(size = 35))) +
       scale_y_continuous(breaks = round(ylims, 2), n.breaks = 3) +
       scale_x_continuous(breaks = round(xlims, 2), n.breaks = 3) +
-      labs(fill = glue::glue('Elevation (m)'), x = 'Longitude', y = 'Latitude') + # title = county ,
+      labs(fill = glue::glue('Elevation (m)'), x = NULL, y = NULL) + # title = county ,
       theme_bw() + theme(text = element_text(size=35), 
                          legend.title=element_text(size=35), 
                          legend.spacing = unit(5, units = 'cm'),

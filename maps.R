@@ -60,7 +60,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2.shp' ) 
   crs(glwd2) <- crs(shp)
   
-  if(!(iso3  %in% c('NPL', 'PAK')) ){
+  if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){
     ext.sp <- raster::crop(glwd1, raster::extent(shp))
     glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
       sf::st_as_sf()

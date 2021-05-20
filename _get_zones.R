@@ -2,13 +2,15 @@ options(warn = -1, scipen = 999)
 suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(tidyverse, raster))
 
-country <- 'Guinee'
-iso     <- 'GIN'
+country <- 'Niger'
+iso     <- 'NER'
 
 root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
 
 adm <- raster::shapefile(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_gadm/',country,'_GADM2.shp'))
 zns <- raster::shapefile(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp'))
+
+if(iso == 'NER'){zns <- spTransform(zns, raster::crs("+proj=longlat +datum=WGS84"))}
 
 shp <- raster::intersect(adm, zns)
 shp$key <- paste0('zone_',1:nrow(shp@data))

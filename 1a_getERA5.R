@@ -18,6 +18,11 @@ getERA5 <- function(i, qq, year, month){
   format <- "zip"
   ofile <- paste0(paste(q$variable, q$statistics, year, month, sep = "-"), ".",format)
   
+  ndays <- lubridate::days_in_month(as.Date(paste0(year, "-" ,month, "-01")))
+  ndays <- 1:ndays
+  ndays <- sapply(ndays, function(x) ifelse(length(x) == 1, sprintf("%02d", x), x))
+  ndays <- dput(as.character(ndays))
+    
   cat("Downloading", q[!is.na(q)], "for", year, month, "\n"); flush.console();
   
   request <- list("dataset_short_name" = "sis-agrometeorological-indicators",
@@ -25,6 +30,7 @@ getERA5 <- function(i, qq, year, month){
                   "statistics" = q$statistics,
                   "year" = year,
                   "month" = month,
+                  "day" = ndays,
                   "area" = "90/-180/-90/179.9", # download global #c(ymax,xmin,ymin,xmax)? 
                   "time" = q$time,
                   "format" = format,
@@ -32,7 +38,7 @@ getERA5 <- function(i, qq, year, month){
   
   request <- Filter(Negate(anyNA), request)
   
-  file <- wf_request(user     = "76816",   # user ID (for authentification)
+  file <- wf_request(user     = "76741",   # user ID (for authentification)
                      request  = request,  # the request
                      transfer = TRUE,     # download the file
                      path     = datadir)     
@@ -42,7 +48,8 @@ getERA5 <- function(i, qq, year, month){
 
 ########################################################################################################
 # TODO: change data directory
-datadir <- "~/data/era5"
+datadir <- "~/data/input/climate/era5/"
+dir.create(datadir, FALSE, TRUE)
 
 # combinations to download
 qq <- data.frame(variable = c("precipitation_flux","solar_radiation_flux",rep("2m_temperature",3),

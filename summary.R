@@ -177,11 +177,11 @@ summary_index <- function(Zone, data_init = data_cons, Period){
       dplyr::filter(gSeason == str_remove(season, 's') %>% as.numeric()) %>% 
       dplyr::select(id, time, time1, vars_s)
     
-    data <- dplyr::inner_join(data, peta)
+    data <- dplyr::full_join(data, peta)
   }
   
   # =---
-  asa <- dplyr::select(data, -id) %>% 
+  asa <- dplyr::select(data, -id) %>%
     tidyr::nest(-time) %>% 
     dplyr::mutate(ind = purrr::map(.x = data, .f = function(pp){
       pp <- pp %>% tidyr::drop_na() %>% 
@@ -190,7 +190,7 @@ summary_index <- function(Zone, data_init = data_cons, Period){
     dplyr::select(-data) 
   
   
-  Summary_final <- tidyr::unnest(asa) %>% 
+  Summary_final <- tidyr::unnest(asa) %>%
     dplyr::mutate(Index = rep(rownames(asa$ind[[1]]), 3) ) %>% 
     dplyr::select(-n, -vars, -mad) %>%
     dplyr::mutate(cod_name = Zone, 
@@ -317,7 +317,7 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
     if(sum(vars == 'SLGP') > 0){vars <- c(vars, 'SLGP_CV')}
     vars_s <- vars[vars %in% c("SLGP", "LGP", 'SLGP_CV')]
     
-    peta <- data %>% 
+    peta <- data_init %>% 
       dplyr::filter(id %in% id_f) %>%
       dplyr::select(time, time1, id, year, gSeason, SLGP, LGP) 
     peta$date <- as.Date(peta$SLGP, origin = "2001-01-01") %>% lubridate::month()
@@ -334,7 +334,7 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
       dplyr::filter(gSeason == str_remove(season, 's') %>% as.numeric()) %>% 
       dplyr::select(id, time, time1, vars_s)
     
-    data <- dplyr::inner_join(data, peta)
+    data <- dplyr::full_join(data, peta)
   }
   
   # =---

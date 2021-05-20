@@ -77,6 +77,7 @@ Elv_map <- function(iso3, country){
     
     pp <- ggplot() +
       geom_tile(data = alt_c %>% setNames(c('x', 'y', 'alt')), aes(x = x, y = y, fill =  alt)) +
+      geom_sf(data = shp_sf, fill = NA, color = gray(.5)) +
       geom_sf(data = adm_c, fill = NA, color = gray(.2)) +
       geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
       geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +

@@ -170,7 +170,7 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
         if(length(grep(pattern = '_tas_', x = d, fixed = T)) > 0){d <- d[-grep(pattern = '_tas_', x = d, fixed = T)]}
         df <- lapply(d, function(x){
           tb <- data.table(read_fst(x))
-          if(length(grep(pattern = 'cell', x = names(df))) > 0){names(df)[grep(pattern = 'cell', x = names(df))] <- 'id'}
+          if(length(grep(pattern = 'cell', x = names(tb))) > 0){names(tb)[grep(pattern = 'cell', x = names(tb))] <- 'id'}
           return(tb)
         })
         df <- 1:length(df) %>%
@@ -212,7 +212,7 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
     if(length(grep(pattern = '_tas_', x = d, fixed = T)) > 0){d <- d[-grep(pattern = '_tas_', x = d, fixed = T)]}
     df <- lapply(d, function(x){
       tb <- data.table(read_fst(x))
-      if(length(grep(pattern = 'cell', x = names(df))) > 0){names(df)[grep(pattern = 'cell', x = names(df))] <- 'id'}
+      if(length(grep(pattern = 'cell', x = names(tb))) > 0){names(tb)[grep(pattern = 'cell', x = names(tb))] <- 'id'}
       return(tb)
     })
     df <- 1:length(df) %>%

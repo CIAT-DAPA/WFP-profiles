@@ -369,7 +369,7 @@ model      <- 'ACCESS-ESM1-5'
 experiment <- 'historical'
 gcmdir     <- paste0(root,"/1.Data/climate/CMIP6")
 outdir     <- paste0(root,'/1.Data/future_data/',model)
-rref       <- "//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/daily/chirps-v2.0.2020.01.01.tif"
+rref       <- paste0(root,'/1.Data/chirps-v2.0.2020.01.01.tif')
 mergeGCMdailyTable(iso, country, model, experiment, gcmdir, outdir, rref)
 experiment <- 'ssp585'
 mergeGCMdailyTable(iso, country, model, experiment, gcmdir, outdir, rref)

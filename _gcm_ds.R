@@ -283,86 +283,93 @@ mergeGCMdailyTable <- function(iso, country, model, experiment, gcmdir, outdir, 
   }
 }
 
-##################################################################################################################
-# Extractions setup
-iso <- c("BDI","HTI","GIN","GNB","MMR","NPL","NER","PAK","SOM","TZA")
-setup <- data.frame(expand.grid(iso = iso,
-                                var = c('pr','tas','tasmax','tasmin'),
-                                model = c("ACCESS-ESM1-5","EC-Earth3-Veg","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0"),
-                                exp = c('historical','ssp585_1','ssp585_2'), stringsAsFactors = FALSE))
+# ##################################################################################################################
+# # Extractions setup
+# iso <- c("BDI","HTI","GIN","GNB","MMR","NPL","NER","PAK","SOM","TZA")
+# setup <- data.frame(expand.grid(iso = iso,
+#                                 var = c('pr','tas','tasmax','tasmin'),
+#                                 model = c("ACCESS-ESM1-5","EC-Earth3-Veg","INM-CM5-0","MPI-ESM1-2-HR","MRI-ESM2-0"),
+#                                 exp = c('historical','ssp585_1','ssp585_2'), stringsAsFactors = FALSE))
+# 
+# setup$sdate <- NA
+# setup$edate <- NA
+# setup$sdate[setup$exp == 'historical'] <- "1995-01-01"
+# setup$edate[setup$exp == 'historical'] <- "2014-12-31"
+# setup$sdate[setup$exp == 'ssp585_1'] <- "2021-01-01"
+# setup$edate[setup$exp == 'ssp585_1'] <- "2040-12-31"
+# setup$sdate[setup$exp == 'ssp585_2'] <- "2041-01-01"
+# setup$edate[setup$exp == 'ssp585_2'] <- "2060-12-31"
+# setup$exp <- gsub('_1|_2','',setup$exp)
+# 
+# 
+# #######################################################################################################
+# # cloud setup
+# # Input parameters
+# root <- "~/data"
+# gcmdir <- paste0(root,"/input/climate/CMIP6/daily")
+# ff     <- list.files(gcmdir, pattern = ".nc$", full.names = TRUE)
+# 
+# # CHIRPS reference raster 
+# churl <- "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_dekad/tifs/chirps-v2.0.1981.01.1.tif.gz"
+# refile <- file.path(root, "input/vector", basename(churl))
+# ref <- gsub(".gz","",refile)
+# if(!file.exists(ref)){
+#   download.file(churl, dest = refile)
+#   R.utils::gunzip(refile)
+#   ref <- rast(ref)
+# } else {
+#   ref <- rast(ref)
+# }
+# 
+# # If there are in priority countries
+# setupx <- setup[setup$iso == "GNB",]
+# 
+# library(future.apply)
+# availableCores()
+# plan(multiprocess, workers = 20)
+# future_lapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE, future.seed = TRUE)
+# 
+# 
+# #################################################################################################################
+# # cali cluster setup
+# # Input parameters
+# gcmdir <- paste0(root,"/1.Data/climate/CMIP6")
+# ff     <- list.files(gcmdir, pattern = ".nc$", recursive = TRUE, full.names = TRUE)
+# shp    <- paste0(root,"/1.Data/shps/tanzania/tza_gadm/Tanzania_GADM1.shp")
+# 
+# # CHIRPS reference raster 
+# ref <- terra::rast("//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/daily/chirps-v2.0.2020.01.01.tif")
+# ref[ref == -9999] <- NA
+# 
+# setup <- setup[setup$model == 'INM-CM5-0',] # INM-CM5-0
+# 1:nrow(setup) %>%
+#   purrr::map(.f = function(i){
+#     t1 <- Sys.time()
+#     getGCMdailyTable(shp        = shp,
+#                      iso        = setup$iso[i],
+#                      var        = setup$var[i],
+#                      model      = setup$model[i],
+#                      experiment = setup$exp[i],
+#                      gcmdir     = gcmdir,
+#                      ff         = ff,
+#                      sdate      = setup$sdate[i],
+#                      edate      = setup$edate[i],
+#                      ref        = ref)
+#     cat("time to create table for", setup$iso[i], setup$var[i], setup$model[i], setup$exp[i], Sys.time() - t1, "\n")
+#   })
 
-setup$sdate <- NA
-setup$edate <- NA
-setup$sdate[setup$exp == 'historical'] <- "1995-01-01"
-setup$edate[setup$exp == 'historical'] <- "2014-12-31"
-setup$sdate[setup$exp == 'ssp585_1'] <- "2021-01-01"
-setup$edate[setup$exp == 'ssp585_1'] <- "2040-12-31"
-setup$sdate[setup$exp == 'ssp585_2'] <- "2041-01-01"
-setup$edate[setup$exp == 'ssp585_2'] <- "2060-12-31"
-setup$exp <- gsub('_1|_2','',setup$exp)
-
-
-#######################################################################################################
-# cloud setup
-# Input parameters
-root <- "~/data"
-gcmdir <- paste0(root,"/input/climate/CMIP6/daily")
-ff     <- list.files(gcmdir, pattern = ".nc$", full.names = TRUE)
-
-# CHIRPS reference raster 
-churl <- "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_dekad/tifs/chirps-v2.0.1981.01.1.tif.gz"
-refile <- file.path(root, "input/vector", basename(churl))
-ref <- gsub(".gz","",refile)
-if(!file.exists(ref)){
-  download.file(churl, dest = refile)
-  R.utils::gunzip(refile)
-  ref <- rast(ref)
-} else {
-  ref <- rast(ref)
-}
-
-# If there are in priority countries
-setupx <- setup[setup$iso == "GNB",]
-
-library(future.apply)
-availableCores()
-plan(multiprocess, workers = 20)
-future_lapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE, future.seed = TRUE)
-
-
-#################################################################################################################
-# cali cluster setup
-# Input parameters
-gcmdir <- paste0(root,"/1.Data/climate/CMIP6")
-ff     <- list.files(gcmdir, pattern = ".nc$", recursive = TRUE, full.names = TRUE)
-shp    <- paste0(root,"/1.Data/shps/tanzania/tza_gadm/Tanzania_GADM1.shp")
-
-# CHIRPS reference raster 
-ref <- terra::rast("//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/daily/chirps-v2.0.2020.01.01.tif")
-ref[ref == -9999] <- NA
-
-setup <- setup[setup$model == 'INM-CM5-0',] # INM-CM5-0
-1:nrow(setup) %>%
-  purrr::map(.f = function(i){
-    t1 <- Sys.time()
-    getGCMdailyTable(shp        = shp,
-                     iso        = setup$iso[i],
-                     var        = setup$var[i],
-                     model      = setup$model[i],
-                     experiment = setup$exp[i],
-                     gcmdir     = gcmdir,
-                     ff         = ff,
-                     sdate      = setup$sdate[i],
-                     edate      = setup$edate[i],
-                     ref        = ref)
-    cat("time to create table for", setup$iso[i], setup$var[i], setup$model[i], setup$exp[i], Sys.time() - t1, "\n")
-  })
-
-model <- 'INM-CM5-0'
+# To execute tables merge
+OSys <<- Sys.info()[1]
+root <<- switch(OSys,
+                'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+iso        <- 'NER'
+country    <- 'Niger'
+model      <- 'ACCESS-ESM1-5'
 experiment <- 'historical'
-gcmdir <- paste0(root,"/1.Data/climate/CMIP6")
-outdir <- paste0(root,'/1.Data/future_data/',model)
-rref <- "//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/daily/chirps-v2.0.2020.01.01.tif"
-mergeGCMdailyTable(iso, model, experiment, gcmdir, outdir, rref)
+gcmdir     <- paste0(root,"/1.Data/climate/CMIP6")
+outdir     <- paste0(root,'/1.Data/future_data/',model)
+rref       <- "//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/daily/chirps-v2.0.2020.01.01.tif"
+mergeGCMdailyTable(iso, country, model, experiment, gcmdir, outdir, rref)
 experiment <- 'ssp585'
-mergeGCMdailyTable(iso, model, experiment, gcmdir, outdir, rref)
+mergeGCMdailyTable(iso, country, model, experiment, gcmdir, outdir, rref)

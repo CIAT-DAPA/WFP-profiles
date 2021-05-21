@@ -54,27 +54,28 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   
   # =--- water sources. 
-  glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_1.shp' ) 
+  glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_1_fix.shp' ) 
   crs(glwd1) <- crs(shp)
   
-  glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2.shp' ) 
+  glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2_fix.shp' ) 
   crs(glwd2) <- crs(shp)
   
-  if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){
-    ext.sp <- raster::crop(glwd1, raster::extent(shp))
-    glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
-      sf::st_as_sf()
-    
-    ext.sp2 <- raster::crop(glwd2, raster::extent(shp))
-    glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
-      sf::st_as_sf()
-  }else{   
-    glwd1 <-  rgeos::gSimplify(glwd1, tol = 0.05, topologyPreserve = TRUE) %>%
-      sf::st_as_sf()
-    
-    glwd2 <- rgeos::gSimplify(glwd2, tol = 0.05, topologyPreserve = TRUE) %>%
-      sf::st_as_sf()
-  }
+  # if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){
+  ext.sp <- raster::crop(glwd1, raster::extent(shp))
+  glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
+    sf::st_as_sf()
+  
+  ext.sp2 <- raster::crop(glwd2, raster::extent(shp))
+  glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
+    sf::st_as_sf()
+  
+  # }else{   
+  #   glwd1 <-  rgeos::gSimplify(glwd1, tol = 0.05, topologyPreserve = TRUE) %>%
+  #     sf::st_as_sf()
+  #   
+  #   glwd2 <- rgeos::gSimplify(glwd2, tol = 0.05, topologyPreserve = TRUE) %>%
+  #     sf::st_as_sf()
+  # }
   
   glwd1 <<-  glwd1
   glwd2 <<- glwd2
@@ -84,11 +85,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   # =----------------------------------------------
   # Read all data complete. 
-  
-  past <- tidyft::parse_fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_indices.fst') )%>% 
+  past <- tidyft::parse_fst(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_indices.fst') )%>% 
     tibble::as_tibble() %>% 
     dplyr::mutate(time = 'Historic')
-  
   
   gcm <- c('INM-CM5-0', 'ACCESS-ESM1-5', 'EC-Earth3-Veg', 'MPI-ESM1-2-HR', 'MRI-ESM2-0')
   
@@ -122,7 +121,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     dplyr::select(time, time1 ,everything())
   
   # =---------------------------------------------------
-  
   
   spi_past <- tidyft::parse_fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_spi_drought.fst') )%>% 
     tibble::as_tibble() %>% 
@@ -283,7 +281,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         dplyr::filter(gSeason == str_remove(season, 's') %>% as.numeric()) %>% 
         dplyr::select(id, time, time1, vars_s)
       
-      to_graph <- dplyr::inner_join(to_graph, peta)
+      to_graph <- dplyr::full_join(to_graph, peta)
     }
     
     # =----------------------------------------------------
@@ -303,7 +301,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       vars <- c(vars, 'NWLD_max', 'NWLD50_max', 'NWLD90_max')
       
       
-      to_graph <- to_graph %>% dplyr::inner_join(. , max_add)
+      to_graph <- to_graph %>% dplyr::full_join(. , max_add)
     }
     
     # =----------------------------------------------------
@@ -787,10 +785,10 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       b <- to_graph %>%  
         dplyr::select(id, time1, SLGP_CV) %>% 
         dplyr::mutate(SLGP_CV =case_when(SLGP_CV <= 5 ~ 1, 
-                                     SLGP_CV > 5 & SLGP_CV <= 15~ 2, 
-                                     SLGP_CV > 15 & SLGP_CV <= 30~ 3, 
-                                     SLGP_CV > 30 ~ 4, 
-                                     TRUE ~ SLGP_CV) )
+                                         SLGP_CV > 5 & SLGP_CV <= 15~ 2, 
+                                         SLGP_CV > 15 & SLGP_CV <= 30~ 3, 
+                                         SLGP_CV > 30 ~ 4, 
+                                         TRUE ~ SLGP_CV) )
       class_1 <- dplyr::full_join(class_1 %>% dplyr::select(-SLGP_CV), b)
     }
     

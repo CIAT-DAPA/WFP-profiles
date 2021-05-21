@@ -157,7 +157,7 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
 
 ###########################################################################################################################################
 # Merge output tables
-mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
+mergeGCMdailyTable <- function(iso, country, model, experiment, gcmdir, outdir, rref){
   cat("Processing", iso, model, experiment, "\n")
   dir.create(outdir, FALSE, TRUE)
   # search files
@@ -173,6 +173,13 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
           if(length(grep(pattern = 'cell', x = names(tb))) > 0){names(tb)[grep(pattern = 'cell', x = names(tb))] <- 'id'}
           return(tb)
         })
+        # Filter to LZ regions
+        shp <- raster::shapefile(paste0(root,"/1.Data/shps/",tolower(country),"/",tolower(iso),"_regions/",tolower(iso),"_regions.shp"))
+        shp <- sp::spTransform(shp, raster::crs("+proj=longlat +datum=WGS84"))
+        tmp <- raster::raster(rref) %>% raster::crop(raster::extent(shp))
+        shpr <- raster::rasterize(x = shp, y = tmp)
+        rm(shp, tmp)
+        shpr <- terra::rast(shpr)
         df <- 1:length(df) %>%
           purrr::map(.f = function(i){
             if(i != 1){
@@ -184,6 +191,15 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
             }
             tbl$id   <- as.character(tbl$id)
             tbl$date <- as.Date(tbl$date)
+            if(packageVersion('terra') == '1.1.0'){
+              tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% unlist() %>% as.numeric()
+            } else {
+              if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
+                tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% dplyr::pull('layer') %>% unlist() %>% as.numeric()
+              }
+            }
+            tbl <- tbl[complete.cases(tbl),]
+            tbl$cond <- NULL
             return(tbl)
           })
         # merge list of dataframes
@@ -215,6 +231,13 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
       if(length(grep(pattern = 'cell', x = names(tb))) > 0){names(tb)[grep(pattern = 'cell', x = names(tb))] <- 'id'}
       return(tb)
     })
+    # Filter to LZ regions
+    shp <- raster::shapefile(paste0(root,"/1.Data/shps/",tolower(country),"/",tolower(iso),"_regions/",tolower(iso),"_regions.shp"))
+    shp <- sp::spTransform(shp, raster::crs("+proj=longlat +datum=WGS84"))
+    tmp <- raster::raster(rref) %>% raster::crop(raster::extent(shp))
+    shpr <- raster::rasterize(x = shp, y = tmp)
+    rm(shp, tmp)
+    shpr <- terra::rast(shpr)
     df <- 1:length(df) %>%
       purrr::map(.f = function(i){
         if(i != 1){
@@ -226,6 +249,15 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
         }
         tbl$id   <- as.character(tbl$id)
         tbl$date <- as.Date(tbl$date)
+        if(packageVersion('terra') == '1.1.0'){
+          tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% unlist() %>% as.numeric()
+        } else {
+          if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
+            tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% dplyr::pull('layer') %>% unlist() %>% as.numeric()
+          }
+        }
+        tbl <- tbl[complete.cases(tbl),]
+        tbl$cond <- NULL
         return(tbl)
       })
     # merge list of dataframes

@@ -30,7 +30,6 @@ readRast <- function(f, sdate, edate){
   }
 }
 
-
 rotateGCM <- function(f, sdate, edate, interimdir, overwrite = FALSE){
   
   # GCM raster prep ############################################################
@@ -154,10 +153,9 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   return(NULL)
 }
 
-
 ###########################################################################################################################################
 # Merge output tables
-mergeGCMdailyTable <- function(iso, country, model, experiment, gcmdir, outdir, rref){
+mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
   cat("Processing", iso, model, experiment, "\n")
   dir.create(outdir, FALSE, TRUE)
   # search files
@@ -173,37 +171,37 @@ mergeGCMdailyTable <- function(iso, country, model, experiment, gcmdir, outdir, 
           if(length(grep(pattern = 'cell', x = names(tb))) > 0){names(tb)[grep(pattern = 'cell', x = names(tb))] <- 'id'}
           return(tb)
         })
-        # Filter to LZ regions
-        shp <- raster::shapefile(paste0(root,"/1.Data/shps/",tolower(country),"/",tolower(iso),"_regions/",tolower(iso),"_regions.shp"))
-        shp <- sp::spTransform(shp, raster::crs("+proj=longlat +datum=WGS84"))
-        tmp <- raster::raster(rref) %>% raster::crop(raster::extent(shp))
-        shpr <- raster::rasterize(x = shp, y = tmp)
-        rm(shp, tmp)
-        shpr <- terra::rast(shpr)
-        df <- 1:length(df) %>%
-          purrr::map(.f = function(i){
-            if(i != 1){
-              tbl <- df[[i]]
-              tbl$x <- NULL
-              tbl$y <- NULL
-            } else {
-              tbl <- df[[i]]
-            }
-            tbl$id   <- as.character(tbl$id)
-            tbl$date <- as.Date(tbl$date)
-            if(packageVersion('terra') == '1.1.0'){
-              tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% unlist() %>% as.numeric()
-            } else {
-              if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
-                tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% dplyr::pull('layer') %>% unlist() %>% as.numeric()
-              }
-            }
-            tbl <- tbl[complete.cases(tbl),]
-            tbl$cond <- NULL
-            return(tbl)
-          })
+        # # Filter to LZ regions
+        # shp <- raster::shapefile(paste0(root,"/1.Data/shps/",tolower(country),"/",tolower(iso),"_regions/",tolower(iso),"_regions.shp"))
+        # shp <- sp::spTransform(shp, raster::crs("+proj=longlat +datum=WGS84"))
+        # tmp <- raster::raster(rref) %>% raster::crop(raster::extent(shp))
+        # shpr <- raster::rasterize(x = shp, y = tmp)
+        # rm(shp, tmp)
+        # shpr <- terra::rast(shpr)
+        # df <- 1:length(df) %>%
+        #   purrr::map(.f = function(i){
+        #     if(i != 1){
+        #       tbl <- df[[i]]
+        #       tbl$x <- NULL
+        #       tbl$y <- NULL
+        #     } else {
+        #       tbl <- df[[i]]
+        #     }
+        #     tbl$id   <- as.character(tbl$id)
+        #     tbl$date <- as.Date(tbl$date)
+        #     # if(packageVersion('terra') == '1.1.0'){
+        #     #   tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% unlist() %>% as.numeric()
+        #     # } else {
+        #     #   if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
+        #     #     tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% dplyr::pull('layer') %>% unlist() %>% as.numeric()
+        #     #   }
+        #     # }
+        #     # tbl <- tbl[complete.cases(tbl),]
+        #     # tbl$cond <- NULL
+        #     return(tbl)
+        #   })
         # merge list of dataframes
-        df <- Reduce(function(...) dplyr::inner_join(..., by = c("id","date")), df)
+        df <- Reduce(function(...) merge(..., all=T,  by = c("x","y","id","date")), df)
         # convert to epoch time
         # df$date <- as.POSIXct(as.numeric(as.character(df$date)), origin="1970-01-01")
         df$date <- as.Date(df$date)
@@ -231,37 +229,37 @@ mergeGCMdailyTable <- function(iso, country, model, experiment, gcmdir, outdir, 
       if(length(grep(pattern = 'cell', x = names(tb))) > 0){names(tb)[grep(pattern = 'cell', x = names(tb))] <- 'id'}
       return(tb)
     })
-    # Filter to LZ regions
-    shp <- raster::shapefile(paste0(root,"/1.Data/shps/",tolower(country),"/",tolower(iso),"_regions/",tolower(iso),"_regions.shp"))
-    shp <- sp::spTransform(shp, raster::crs("+proj=longlat +datum=WGS84"))
-    tmp <- raster::raster(rref) %>% raster::crop(raster::extent(shp))
-    shpr <- raster::rasterize(x = shp, y = tmp)
-    rm(shp, tmp)
-    shpr <- terra::rast(shpr)
-    df <- 1:length(df) %>%
-      purrr::map(.f = function(i){
-        if(i != 1){
-          tbl <- df[[i]]
-          tbl$x <- NULL
-          tbl$y <- NULL
-        } else {
-          tbl <- df[[i]]
-        }
-        tbl$id   <- as.character(tbl$id)
-        tbl$date <- as.Date(tbl$date)
-        if(packageVersion('terra') == '1.1.0'){
-          tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% unlist() %>% as.numeric()
-        } else {
-          if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
-            tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% dplyr::pull('layer') %>% unlist() %>% as.numeric()
-          }
-        }
-        tbl <- tbl[complete.cases(tbl),]
-        tbl$cond <- NULL
-        return(tbl)
-      })
+    # # Filter to LZ regions
+    # shp <- raster::shapefile(paste0(root,"/1.Data/shps/",tolower(country),"/",tolower(iso),"_regions/",tolower(iso),"_regions.shp"))
+    # shp <- sp::spTransform(shp, raster::crs("+proj=longlat +datum=WGS84"))
+    # tmp <- raster::raster(rref) %>% raster::crop(raster::extent(shp))
+    # shpr <- raster::rasterize(x = shp, y = tmp)
+    # rm(shp, tmp)
+    # shpr <- terra::rast(shpr)
+    # df <- 1:length(df) %>%
+    #   purrr::map(.f = function(i){
+    #     if(i != 1){
+    #       tbl <- df[[i]]
+    #       tbl$x <- NULL
+    #       tbl$y <- NULL
+    #     } else {
+    #       tbl <- df[[i]]
+    #     }
+    #     tbl$id   <- as.character(tbl$id)
+    #     tbl$date <- as.Date(tbl$date)
+    #     # if(packageVersion('terra') == '1.1.0'){
+    #     #   tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% unlist() %>% as.numeric()
+    #     # } else {
+    #     #   if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
+    #     #     tbl$cond <- terra::extract(x = shpr, y = tbl[,c('x','y')]) %>% dplyr::pull('layer') %>% unlist() %>% as.numeric()
+    #     #   }
+    #     # }
+    #     # tbl <- tbl[complete.cases(tbl),]
+    #     # tbl$cond <- NULL
+    #     return(tbl)
+    #   })
     # merge list of dataframes
-    df <- Reduce(function(...) dplyr::inner_join(..., by = c("id","date")), df)
+    df <- Reduce(function(...) merge(..., all=T,  by = c("x","y","id","date")), df)
     # convert to epoch time
     # df$date <- as.POSIXct(as.numeric(as.character(df$date)), origin="1970-01-01")
     df$date <- as.Date(df$date)
@@ -363,13 +361,16 @@ OSys <<- Sys.info()[1]
 root <<- switch(OSys,
                 'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
                 'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
-iso        <- 'NER'
-country    <- 'Niger'
-model      <- 'ACCESS-ESM1-5'
-experiment <- 'historical'
-gcmdir     <- paste0(root,"/1.Data/climate/CMIP6")
-outdir     <- paste0(root,'/1.Data/future_data/',model)
-rref       <- paste0(root,'/1.Data/chirps-v2.0.2020.01.01.tif')
-mergeGCMdailyTable(iso, country, model, experiment, gcmdir, outdir, rref)
-experiment <- 'ssp585'
-mergeGCMdailyTable(iso, country, model, experiment, gcmdir, outdir, rref)
+iso          <- 'NER'
+models       <- c('MPI-ESM1-2-HR','MRI-ESM2-0') # 'ACCESS-ESM1-5','EC-Earth3-Veg','INM-CM5-0'
+for(model in models){
+  experiment <- 'historical'
+  gcmdir     <- paste0(root,"/1.Data/climate/CMIP6")
+  outdir     <- paste0(root,'/1.Data/future_data/',model)
+  rref       <- paste0(root,'/1.Data/chirps-v2.0.2020.01.01.tif')
+  mergeGCMdailyTable(iso, model, experiment, gcmdir, outdir, rref)
+  g          <- gc(reset = T); rm(g)
+  experiment <- 'ssp585'
+  mergeGCMdailyTable(iso, model, experiment, gcmdir, outdir, rref)
+  g          <- gc(reset = T); rm(g)
+}

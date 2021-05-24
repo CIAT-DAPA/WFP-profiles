@@ -185,19 +185,13 @@ for(m in models){
 }
 
 ## Graphs
-# 1. Time series plots
-time_series_plot(country = country, iso = iso, seasons = seasons)
-
-# 2. Time series plots by zone 
-time_series_region(country = country, iso = iso, seasons = seasons)
-
-# 3. Barplot series de tiempo
+# 1. Barplot series de tiempo
 bar_graphs(country = country, iso = iso)
 
-# 4. Summary tablas
+# 2. Summary tablas
 Other_parameters(country = country, iso3 = iso)
 
-# 5. Summary index. 
+# 3. Summary index. 
 tictoc::tic()
 monthly_data <- read_monthly_data(country = country , iso3 = iso)
 tictoc::toc() # 19.15 Min. 
@@ -216,6 +210,6 @@ index_mod <- tibble(Zone = c('all', regions_all$region) ) %>%
 
 write_csv(x = index_mod, file = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/monthly_ind.csv'))
 
-# 7. Julian tables order. 
+# 4. Julian tables order. 
 
 changes_paths(country = country, iso = iso)

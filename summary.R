@@ -371,3 +371,20 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
   
   return(Summary_final)}
 # =---------------------------------------------------
+run_by_seasons <- function(Zone, data_init, Period){
+  
+  run_by_one <- function(x, time, data_init){
+    time <- as.list(time)
+    names(time) <- glue::glue('s{time}')
+    
+    op <- summary_monthly(Period = time,Zone = x, data_init = data_init)
+    return(op)}
+  
+  # Run process in parallel. 
+  SSD <- tibble::tibble(time = unlist(Period, use.names = FALSE), x = Zone) %>% 
+    dplyr::mutate(data = purrr::map2(.x = time, .y = x, .f = function(z, u){run_by_one(time = z, x = u, data_init = data_init)})) %>% 
+    dplyr::select(-time, -x) %>% 
+    tidyr::unnest() # 1.24 min
+  
+  
+  return(SSD)}

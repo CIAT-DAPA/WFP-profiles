@@ -196,17 +196,65 @@ tictoc::tic()
 monthly_data <- read_monthly_data(country = country , iso3 = iso)
 tictoc::toc() # 19.15 Min. 
 
+# -------------------------------------------------- #
+# Climate Risk Profiles -- Master code monthly runs
+# A. Esquivel, C. Saavedra, H. Achicanoy & J. Ramirez-Villegas
+# Alliance Bioversity-CIAT, 2021
+# -------------------------------------------------- #
+
+# Sourcing functions
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_functions.R')         # Main functions
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_soil_data.R')          # Get soil data
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices.R')           # Calculating agro-indices
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices2.R')          # Calculating agro-indices
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_spi_drought.R')       # SPI calculation
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot.R')        # Time series graphs
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/time_series_plot_region.R') # Time series graphs by region
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/index_climatology_plot.R')  # Bar Graphs
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/summary.R')                 # summary indices (mean, median...)
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/org_tables.R')              # Tablas Julian
+source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/migration/_get_climate4regions_districts.R') # Filter climate for districts of interest
+
+OSys <<- Sys.info()[1]
+root <<- switch(OSys,
+                'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+
+## Defining country parameters
+# Country
+country <- 'Pakistan'
+iso     <- 'PAK'
+seasons <- list(s1=1,s2=2,s3=3,s4=4,s5=5,s6=6,s7=7,s8=8,s9=9,s10=10,s11=11,s12=12)
+
+
+
+# Fix desde aqui...
+# 4. Summary tablas
+Other_parameters(country = country, iso3 = iso)
+
+# 5. Summary index. 
+tictoc::tic()
+monthly_data <- read_monthly_data(country = country , iso3 = iso)
+tictoc::toc() # 10 Min. --- Pakistan 
+
+gc(reset = TRUE)
+
+
+tictoc::tic()
+# Run the process in parallel for the 30% of the pixels
+# ncores <- 3
+# options(future.global.maxSize = 768 * 1024^2)
+# future::plan(cluster, workers = ncores, gc = TRUE)
+
 index_mod <- tibble(Zone = c('all', regions_all$region) ) %>% 
-  dplyr::mutate(index = purrr::map(.x = Zone, .f = function(x){
-    indx <- list()
-    for(i in 1:length(seasons)){
-      indx[[i]] <- summary_monthly(Zone = x, data_init = monthly_data, Period = seasons[i])
-    }
-    
-    indx <- dplyr::bind_rows(indx)
-  })) %>% 
+  dplyr::mutate(index = purrr::map(.x = Zone, .f = function(w){run_by_seasons(Zone =  w, data_init = monthly_data, Period = seasons)})) %>% 
   tidyr::unnest() %>% 
   dplyr::select(-cod_name )
+
+# future:::ClusterRegistry("stop")
+# gc(reset = T)
+
+tictoc::toc() # 40 min 
 
 write_csv(x = index_mod, file = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/monthly_ind.csv'))
 

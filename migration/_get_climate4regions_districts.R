@@ -40,7 +40,7 @@ flt_clm_subunits <- function(iso = 'SOM', country = 'Somalia', district = 'Caabu
   if(packageVersion('terra') == '1.1.0'){
     crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% unlist() %>% as.numeric()
   } else {
-    if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
+    if(packageVersion('terra') == '1.1.4'| packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
       crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% dplyr::pull('V2') %>% unlist() %>% as.numeric()
     }
   }
@@ -88,7 +88,7 @@ flt_clm_subunits2 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   if(packageVersion('terra') == '1.1.0'){
     crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% unlist() %>% as.numeric()
   } else {
-    if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
+    if(packageVersion('terra') == '1.1.4'| packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
       crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% dplyr::pull('V2') %>% unlist() %>% as.numeric()
     }
   }
@@ -136,7 +136,7 @@ flt_clm_subunits3 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   if(packageVersion('terra') == '1.1.0'){
     crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% unlist() %>% as.numeric()
   } else {
-    if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
+    if(packageVersion('terra') == '1.1.4'| packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
       crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% dplyr::pull('V2') %>% unlist() %>% as.numeric()
     }
   }

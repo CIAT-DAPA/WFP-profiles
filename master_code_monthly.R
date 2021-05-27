@@ -5,13 +5,6 @@
 # -------------------------------------------------- #
 
 # Sourcing functions
-# -------------------------------------------------- #
-# Climate Risk Profiles -- Master code
-# A. Esquivel, C. Saavedra, H. Achicanoy & J. Ramirez-Villegas
-# Alliance Bioversity-CIAT, 2021
-# -------------------------------------------------- #
-
-# Sourcing functions
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_functions.R')         # Main functions
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_get_soil_data.R')          # Get soil data
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_calc_indices.R')           # Calculating agro-indices

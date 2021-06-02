@@ -37,8 +37,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   # Regions shp
   regions_all <- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_regions/",tolower(iso3),"_regions.shp"))
   regions_all <- regions_all %>%  sf::st_as_sf() %>% 
-    dplyr::group_by(region) %>% dplyr::summarise() %>% 
-    dplyr::mutate(Short_Name = to_do$Short_Name)
+    dplyr::group_by(region) %>% dplyr::summarise() %>% arrange(region) %>% 
+    dplyr::mutate(Short_Name = arrange(to_do, Regions)$Short_Name)
+  regions_all <<- regions_all
   regions_all <<- regions_all
   
   
@@ -120,9 +121,10 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                            TRUE ~ NA_real_)) %>% 
     dplyr::select(time, time1 ,everything())
   
+  px_filter <- unique(data_cons$id)
   # =---------------------------------------------------
   
-  spi_past <- tidyft::parse_fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_spi_drought.fst') )%>% 
+  spi_past <- tidyft::parse_fst(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_spi_drought.fst') )%>% 
     tibble::as_tibble() %>% 
     dplyr::mutate(time = 'Historic')
   
@@ -147,7 +149,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                            TRUE ~ NA_real_)) %>% 
     dplyr::mutate(year = as.numeric(year)) %>% 
     dplyr::mutate(SPI = spi * 100) %>% 
-    dplyr::select(time, time1 , id, year, SPI, season, time) 
+    dplyr::select(time, time1 , id, year, SPI, season, time) %>% 
+    dplyr::filter(id %in% batata)
   
   data_cons <- dplyr::full_join(data_cons, spi_dat) %>% tidyr::drop_na(time1)
   # =----------------------------------------------------

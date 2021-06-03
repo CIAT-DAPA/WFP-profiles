@@ -18,7 +18,7 @@ shp$key <- paste0('zone_',1:nrow(shp@data))
 zones <- paste0('zone_',1:nrow(shp@data))
 
 for(zone in zones){
-  out <- paste0("//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/",tolower(country),"/",tolower(iso),"_zones/",tolower(zone),".shp")
+  out <- paste0(root,"/1.Data/shps/",tolower(country),"/",tolower(iso),"_zones/",tolower(zone),".shp")
   if(!dir.exists(dirname(out))){dir.create(path = dirname(out),F,T)}
   if(!file.exists(out)){
     shp2 <- shp[shp$key == zone,]

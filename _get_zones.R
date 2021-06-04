@@ -2,10 +2,10 @@ options(warn = -1, scipen = 999)
 suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(tidyverse, raster))
 
-country <- 'Niger'
-iso     <- 'NER'
+country <- 'Somalia'
+iso     <- 'SOM'
 
-root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+root <- '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr'
 
 adm <- raster::shapefile(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_gadm/',country,'_GADM2.shp'))
 zns <- raster::shapefile(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp'))

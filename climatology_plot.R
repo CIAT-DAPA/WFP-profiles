@@ -16,10 +16,10 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,lubridate,fst,tidyft))
   
-  OSys <- Sys.info()[1]
-  root <<- switch(OSys,
-                  'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-                  'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+  # OSys <- Sys.info()[1]
+  # root <<- switch(OSys,
+  #                 'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+  #                 'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
   
   fut <- paste0(root,'/7.Results/',country,'/future') %>%
     list.files(., pattern = paste0(iso,'_indices.fst'), full.names = T, recursive  = T)

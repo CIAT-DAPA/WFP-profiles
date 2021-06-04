@@ -15,7 +15,7 @@ flt_clm <- function(iso = 'TZA', country = 'Tanzania'){
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyfst,tidyft,sf))
   
-  root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+  # root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
   
   cat('>>> Load all coords\n')
   crd <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst')

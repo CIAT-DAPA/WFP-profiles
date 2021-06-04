@@ -2,7 +2,7 @@ Elv_map <- function(iso3, country){
   
   # Country...
   if(country == 'Guinee'){
-    alt <- raster::raster('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/guinee/GIN_alt/GIN_alt.gri')
+    alt <- raster::raster('{root}/1.Data/shps/guinee/GIN_alt/GIN_alt.gri')
   }else{
     alt <- raster::getData('alt', country = iso3, path = paste0(root,'/1.Data/shps/',country))
   }
@@ -29,10 +29,10 @@ Elv_map <- function(iso3, country){
   
   if(sum(ext.files %in% c('glwd1', 'glwd2')) < 2){
     # =--- water sources. 
-    glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_1_fix.shp' ) 
+    glwd1 <- raster::shapefile(glue::glue('{root}/1.Data/shps/GLWD/glwd_1_fix.shp' ) )
     crs(glwd1) <- crs(shp)
     
-    glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2_fix.shp' ) 
+    glwd2 <- raster::shapefile(glue::glue('{root}/1.Data/shps/GLWD/glwd_2_fix.shp' ) )
     crs(glwd2) <- crs(shp)
     
     # if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){
@@ -91,7 +91,7 @@ Elv_map <- function(iso3, country){
                          legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
     
     
-    path <- glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/results/')
+    path <- glue::glue('{root}/7.Results/{country}/results/')
     dir.create(path,recursive = TRUE)  
     
     ggsave(glue::glue('{path}/Elevation.png'), width = 12, height = 12,  dpi = 300)

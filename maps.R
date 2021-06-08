@@ -21,7 +21,7 @@
 map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   # Reading the tables of future indices. 
-  to_do <<- readxl::read_excel('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>% 
+  to_do <<- readxl::read_excel(glue::glue('{root}/1.Data/regions_ind.xlsx') )%>% 
     dplyr::filter(ISO3 == iso3) %>% 
     dplyr::rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X")
   # =----------------------------------------------
@@ -37,13 +37,14 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   # Regions shp
   regions_all <- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_regions/",tolower(iso3),"_regions.shp"))
   regions_all <- regions_all %>%  sf::st_as_sf() %>% 
-    dplyr::group_by(region) %>% dplyr::summarise() %>% 
-    dplyr::mutate(Short_Name = to_do$Short_Name)
+    dplyr::group_by(region) %>% dplyr::summarise() %>% arrange(region) %>% 
+    dplyr::mutate(Short_Name = arrange(to_do, Regions)$Short_Name)
+  regions_all <<- regions_all
   regions_all <<- regions_all
   
   
   # =--- World boundaries.
-  map_world <- raster::shapefile(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/all_country/all_countries.shp')) %>% 
+  map_world <- raster::shapefile(glue::glue('{root}/1.Data/shps/all_country/all_countries.shp')) %>% 
     sf::st_as_sf()
   map_world <<- map_world
   
@@ -54,10 +55,10 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   
   # =--- water sources. 
-  glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_1_fix.shp' ) 
+  glwd1 <- raster::shapefile('{root}/1.Data/shps/GLWD/glwd_1_fix.shp' ) 
   crs(glwd1) <- crs(shp)
   
-  glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2_fix.shp' ) 
+  glwd2 <- raster::shapefile('{root}/1.Data/shps/GLWD/glwd_2_fix.shp' ) 
   crs(glwd2) <- crs(shp)
   
   # if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){
@@ -85,7 +86,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   # =----------------------------------------------
   # Read all data complete. 
-  past <- tidyft::parse_fst(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_indices.fst') )%>% 
+  past <- tidyft::parse_fst(glue::glue('{root}/7.Results/{country}/past/{iso3}_indices.fst') )%>% 
     tibble::as_tibble() %>% 
     dplyr::mutate(time = 'Historic')
   
@@ -94,9 +95,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   ncores <- 5
   plan(cluster, workers = ncores, gc = TRUE)
   
-  future <- tibble( file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices') ) %>%
+  future <- tibble( file = list.files(glue::glue('{root}/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices') ) %>%
     dplyr::filter(!grepl('_monthly', file) & !grepl('_old', file) & !grepl('zone', file)) %>%
-    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
+    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('{root}/7.Results/{country}/future/'))) %>% 
     dplyr::mutate(data = furrr::future_map(.x = file, .f = function(x){x <- tidyft::parse_fst(x) %>% tibble::as_tibble()})) %>%
     dplyr::mutate(str_split(shot_file, '/') %>% 
                     purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
@@ -120,16 +121,17 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                            TRUE ~ NA_real_)) %>% 
     dplyr::select(time, time1 ,everything())
   
+  px_filter <- unique(data_cons$id)
   # =---------------------------------------------------
   
-  spi_past <- tidyft::parse_fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_spi_drought.fst') )%>% 
+  spi_past <- tidyft::parse_fst(glue::glue('{root}/7.Results/{country}/past/{iso3}_spi_drought.fst') )%>% 
     tibble::as_tibble() %>% 
     dplyr::mutate(time = 'Historic')
   
   
-  spi_future <- tibble( file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names = TRUE, recursive = TRUE, pattern = '_spi_drought') ) %>%
+  spi_future <- tibble( file = list.files(glue::glue('{root}/7.Results/{country}/future/{gcm}/'), full.names = TRUE, recursive = TRUE, pattern = '_spi_drought') ) %>%
     dplyr::filter(!grepl('_monthly', file) & !grepl('_old', file)) %>%
-    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
+    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('{root}/7.Results/{country}/future/'))) %>% 
     dplyr::mutate(data = purrr::map(.x = file, .f = function(x){x <- tidyft::parse_fst(x) %>% tibble::as_tibble()})) %>%
     dplyr::mutate(str_split(shot_file, '/') %>% 
                     purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
@@ -147,12 +149,13 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                            TRUE ~ NA_real_)) %>% 
     dplyr::mutate(year = as.numeric(year)) %>% 
     dplyr::mutate(SPI = spi * 100) %>% 
-    dplyr::select(time, time1 , id, year, SPI, season, time) 
+    dplyr::select(time, time1 , id, year, SPI, season, time) %>% 
+    dplyr::filter(id %in% batata)
   
   data_cons <- dplyr::full_join(data_cons, spi_dat) %>% tidyr::drop_na(time1)
   # =----------------------------------------------------
   # =-  Climate ---
-  Climate <- tidyft::parse_fst(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/{iso3}/year/climate_1981_mod.fst')) %>% as_tibble()
+  Climate <- tidyft::parse_fst(glue::glue('{root}/1.Data/observed_data/{iso3}/year/climate_1981_mod.fst')) %>% as_tibble()
   
   # Para los graphs... es importante tener en cuenta que se 
   # debe guardar las coordenadas, ya que sino no grafica correctamente. 
@@ -173,7 +176,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     data_cons <-  data_cons %>% dplyr::filter(season == names(Period)) 
     # =--------------
-    path <- glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/results/maps/{R_zone}_{season}')
+    path <- glue::glue('{root}/7.Results/{country}/results/maps/{R_zone}_{season}')
     dir.create(path,recursive = TRUE)  
     # =--------------
     
@@ -976,7 +979,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                     Dr_Wa = glue::glue('{Drought}-{Waterlogging }'), 
                     Ha_Wa = glue::glue('{Heat}-{Waterlogging}'))
     
-    path_raster <- glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/results/maps/{R_zone}_{season}/tif')
+    path_raster <- glue::glue('{root}/7.Results/{country}/results/maps/{R_zone}_{season}/tif')
     dir.create(path_raster,recursive = TRUE) 
     write_fst(all_Hz ,  glue::glue('{path_raster}/Final.fst'))
     

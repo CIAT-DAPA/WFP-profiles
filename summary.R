@@ -6,7 +6,7 @@
 
 Other_parameters <- function(country, iso3){
   # Reading the tables of future indices. 
-  to_do <<- readxl::read_excel('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>% 
+  to_do <<- readxl::read_excel(glue::glue('{root}/1.Data/regions_ind.xlsx')) %>% 
     dplyr::filter(ISO3 == iso3) %>% 
     dplyr::rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X")
   
@@ -25,14 +25,14 @@ Other_parameters <- function(country, iso3){
 read_data_seasons <- function(country, iso3) {
   
   # Read all data complete. 
-  past <- tidyft::parse_fst(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_indices.fst') )%>% 
+  past <- tidyft::parse_fst(glue::glue('{root}/7.Results/{country}/past/{iso3}_indices.fst') )%>% 
     tibble::as_tibble() %>% dplyr::mutate(time = 'Historic')
   
   gcm <- c('INM-CM5-0', 'ACCESS-ESM1-5', 'EC-Earth3-Veg', 'MPI-ESM1-2-HR', 'MRI-ESM2-0')
   
-  future <- tibble(file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices'  ) ) %>%
+  future <- tibble(file = list.files(glue::glue('{root}/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices'  ) ) %>%
     dplyr::filter(!grepl('_monthly', file) & !grepl('_old', file) & !grepl('zone', file)) %>%
-    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
+    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('{root}/7.Results/{country}/future/'))) %>% 
     dplyr::mutate(data = purrr::map(.x = file, .f = function(x){x <- tidyft::parse_fst(x) %>% tibble::as_tibble()})) %>%
     dplyr::mutate(stringr::str_split(shot_file, '/') %>% 
                     purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
@@ -54,13 +54,13 @@ read_data_seasons <- function(country, iso3) {
     dplyr::select(time, time1 ,everything())
   
   # =---------------------------------------------------
-  spi_past <- tidyft::parse_fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_spi_drought.fst') )%>% 
+  spi_past <- tidyft::parse_fst( glue::glue('{root}/7.Results/{country}/past/{iso3}_spi_drought.fst') )%>% 
     tibble::as_tibble() %>% 
     dplyr::mutate(time = 'Historic')
   
-  spi_future <- tibble( file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names = TRUE, recursive = TRUE, pattern = '_spi_drought') ) %>%
+  spi_future <- tibble( file = list.files(glue::glue('{root}/7.Results/{country}/future/{gcm}/'), full.names = TRUE, recursive = TRUE, pattern = '_spi_drought') ) %>%
     dplyr::filter(!grepl('_monthly', file) & !grepl('_old', file)) %>%
-    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
+    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('{root}/7.Results/{country}/future/'))) %>% 
     dplyr::mutate(data = purrr::map(.x = file, .f = function(x){x <- tidyft::parse_fst(x) %>% tibble::as_tibble()})) %>%
     dplyr::mutate(stringr::str_split(shot_file, '/') %>% 
                     purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
@@ -92,7 +92,7 @@ summary_index <- function(Zone, data_init = data_cons, Period){
   
   data <-  data_init %>% dplyr::filter(season == names(Period)) 
   # =--------------
-  path <- glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/results/maps/{Zone}_{season}')
+  path <- glue::glue('{root}/7.Results/{country}/results/maps/{Zone}_{season}')
   dir.create(path,recursive = TRUE)  
   # =--------------
   
@@ -205,40 +205,52 @@ summary_index <- function(Zone, data_init = data_cons, Period){
 # =----------------------------------------------
 read_monthly_data <- function(country, iso3){
   # Read all data complete. 
-  past <- tidyft::parse_fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso3}_indices_monthly.fst') )%>% 
+  past <- tidyft::parse_fst( glue::glue('{root}/7.Results/{country}/past/{iso3}_indices_monthly.fst') )%>% 
     tibble::as_tibble() %>% 
     dplyr::mutate(time = 'Historic')
   
   gcm <- c('INM-CM5-0', 'ACCESS-ESM1-5', 'EC-Earth3-Veg', 'MPI-ESM1-2-HR', 'MRI-ESM2-0')
   
   # Run the process in parallel for the 30% of the pixels
-  ncores <- 5
+  ncores <- 4
   future::plan(cluster, workers = ncores, gc = TRUE)
   
   
-  future <- tibble( file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices_monthly') ) %>%
-    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
+  future <- tibble( file = list.files(glue::glue('{root}/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = '_indices_monthly') ) %>%
+    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('{root}/7.Results/{country}/future/'))) %>% 
     dplyr::mutate(data = furrr::future_map(.x = file, .f = function(x){x <- tidyft::parse_fst(x) %>% tibble::as_tibble()})) %>%
     dplyr::mutate(stringr::str_split(shot_file, '/') %>% 
-             purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
-             dplyr::bind_rows()) %>% 
-    dplyr::select(gcm, time, data) %>% 
-    tidyr::unnest()
+                    purrr::map(.f = function(x){tibble(gcm = x[1], time = x[3])}) %>% 
+                    dplyr::bind_rows()) %>% 
+    dplyr::select(gcm, time, data) 
   
   future:::ClusterRegistry("stop")
   gc(reset = T)
   
-  future  <- future %>% dplyr::select(-gcm) %>% 
-    dplyr::group_by(time,id,x,y,season,year) %>%
-    dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
+  # =-- 
+  # tictoc::tic()
+  future <- future %>% dplyr::group_split(gcm, time) %>% 
+    purrr::map(.f = tidyr::unnest) %>% 
+    dplyr::bind_rows()
+  # tictoc::toc() # 29.89 sec
+  
+  gc(reset = T)
+  
+  
+  # =----- Voy a agregar a 
+  names_F <- names(future)[-c(1:7)]
+  fut_table <- data.table::data.table(future)
+  fut_table <- fut_table[, lapply(.SD, mean, na.rm=TRUE), by=c('time','id','x','y','season','year'), .SDcols= names_F ]
+  future <- fut_table %>% as.tibble()  %>%
     dplyr::mutate_at(.vars = c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP'), 
-              .funs = ~round(. , 0))
+                     .funs = ~round(. , 0)) 
+  rm(names_F, fut_table)
   
   data_cons <- dplyr::bind_rows(past, future)  %>% 
     dplyr::mutate(time1 = dplyr::case_when(time == 'Historic' ~ 1, 
-                                    time == '2021-2040'~ 2, 
-                                    time == '2041-2060'~ 3,   
-                                    TRUE ~ NA_real_)) %>% 
+                                           time == '2021-2040'~ 2, 
+                                           time == '2041-2060'~ 3,   
+                                           TRUE ~ NA_real_)) %>% 
     dplyr::select(time, time1 ,everything())
   
   return(data_cons)}
@@ -295,7 +307,8 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
   id_f <- unique(crd$id)
   
   
-  data <- data %>% dplyr::filter(id %in% id_f) %>% dplyr::select(time, id, vars) %>% 
+  data <- data %>% dplyr::filter(id %in% id_f) %>%
+    dplyr::select(time, id, vars) %>% 
     dplyr::group_by(time, id) %>%dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
     dplyr::mutate_at(.vars = vars[vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')], 
                      .funs = ~round(. , 0)) %>%
@@ -308,9 +321,7 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
   
   # Transform variables. 
   if(sum(vars == 'SHI') == 1){
-    data <- data %>% #dplyr::select(id, time, season, SHI) %>% 
-      dplyr::mutate(SHI = (SHI/days) )
-  }
+    data <- data %>% dplyr::mutate(SHI = (SHI/days) )}
   
   if(sum(vars %in% c("SLGP", "LGP")) > 0 ){
     
@@ -341,7 +352,7 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
   asa <- dplyr::select(data, -id) %>% 
     tidyr::nest(-time) %>% 
     dplyr::mutate(ind = purrr::map(.x = data, .f = function(pp){
-      pp <- pp %>% tidyr::drop_na() %>% 
+      pp <- pp %>% # tidyr::drop_na() %>% 
         psych::describe() %>% 
         dplyr::ungroup() }) )%>% 
     dplyr::select(-data) 
@@ -360,3 +371,20 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
   
   return(Summary_final)}
 # =---------------------------------------------------
+run_by_seasons <- function(Zone, data_init, Period){
+  
+  run_by_one <- function(x, time, data_init){
+    time <- as.list(time)
+    names(time) <- glue::glue('s{time}')
+    
+    op <- summary_monthly(Period = time,Zone = x, data_init = data_init)
+    return(op)}
+  
+  # Run process in parallel. 
+  SSD <- tibble::tibble(time = unlist(Period, use.names = FALSE), x = Zone) %>% 
+    dplyr::mutate(data = purrr::map2(.x = time, .y = x, .f = function(z, u){run_by_one(time = z, x = u, data_init = data_init)})) %>% 
+    dplyr::select(-time, -x) %>% 
+    tidyr::unnest() # 1.24 min
+  
+  
+  return(SSD)}

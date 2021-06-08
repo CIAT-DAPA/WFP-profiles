@@ -185,37 +185,39 @@ for(m in models){
 }
 
 ## Graphs
-# 1. Time series plots
-time_series_plot(country = country, iso = iso, seasons = seasons)
-
-# 2. Time series plots by zone 
-time_series_region(country = country, iso = iso, seasons = seasons)
-
-# 3. Barplot series de tiempo
+# 1. Barplot series de tiempo
 bar_graphs(country = country, iso = iso)
 
+# Fix desde aqui...
 # 4. Summary tablas
 Other_parameters(country = country, iso3 = iso)
 
 # 5. Summary index. 
 tictoc::tic()
 monthly_data <- read_monthly_data(country = country , iso3 = iso)
-tictoc::toc() # 19.15 Min. 
+tictoc::toc() # 10 Min. --- Pakistan 
+
+gc(reset = TRUE)
+
+
+tictoc::tic()
+# Run the process in parallel for the 30% of the pixels
+# ncores <- 3
+# options(future.global.maxSize = 768 * 1024^2)
+# future::plan(cluster, workers = ncores, gc = TRUE)
 
 index_mod <- tibble(Zone = c('all', regions_all$region) ) %>% 
-  dplyr::mutate(index = purrr::map(.x = Zone, .f = function(x){
-    indx <- list()
-    for(i in 1:length(seasons)){
-      indx[[i]] <- summary_monthly(Zone = x, data_init = monthly_data, Period = seasons[i])
-    }
-    
-    indx <- dplyr::bind_rows(indx)
-  })) %>% 
+  dplyr::mutate(index = purrr::map(.x = Zone, .f = function(w){run_by_seasons(Zone =  w, data_init = monthly_data, Period = seasons)})) %>% 
   tidyr::unnest() %>% 
   dplyr::select(-cod_name )
 
+# future:::ClusterRegistry("stop")
+# gc(reset = T)
+
+tictoc::toc() # 40 min 
+
 write_csv(x = index_mod, file = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/monthly_ind.csv'))
 
-# 7. Julian tables order. 
+# 4. Julian tables order. 
 
 changes_paths(country = country, iso = iso)

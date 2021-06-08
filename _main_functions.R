@@ -474,10 +474,10 @@ calc_cNWLD90MP <- compiler::cmpfun(calc_cNWLD90)
 # Aridity index
 calc_tai <- function(clm = tbl){
   
-  OSys <<- Sys.info()[1]
-  root <<- switch(OSys,
-                  'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-                  'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+  # OSys <<- Sys.info()[1]
+  # root <<- switch(OSys,
+  #                 'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+  #                 'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
   
   # Load packages
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}

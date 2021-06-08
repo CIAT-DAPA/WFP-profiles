@@ -16,10 +16,10 @@ flt_clm_subunits <- function(iso = 'SOM', country = 'Somalia', district = 'Caabu
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,tidyfst,sf))
   
-  OSys <<- Sys.info()[1]
-  root <<- switch(OSys,
-                  'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-                  'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+  # OSys <<- Sys.info()[1]
+  # root <<- switch(OSys,
+  #                 'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+  #                 'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
   
   cat('>>> Load all coords\n')
   crd <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst')
@@ -37,7 +37,7 @@ flt_clm_subunits <- function(iso = 'SOM', country = 'Somalia', district = 'Caabu
   rst <- terra::rasterize(x = shp, y = ref)
   
   cat('>>> Filter coords in regions of interest\n')
-  if(packageVersion('terra') == '1.1.0'){
+  if(packageVersion('terra') == '1.1.0' | packageVersion('terra') == '1.1.4'){
     crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% unlist() %>% as.numeric()
   } else {
     if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
@@ -64,10 +64,10 @@ flt_clm_subunits2 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,tidyfst,sf))
   
-  OSys <<- Sys.info()[1]
-  root <<- switch(OSys,
-                  'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-                  'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+  # OSys <<- Sys.info()[1]
+  # root <<- switch(OSys,
+  #                 'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+  #                 'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
   
   cat('>>> Load all coords\n')
   crd <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst')
@@ -85,7 +85,7 @@ flt_clm_subunits2 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   rst <- terra::rasterize(x = shp, y = ref)
   
   cat('>>> Filter coords in regions of interest\n')
-  if(packageVersion('terra') == '1.1.0'){
+  if(packageVersion('terra') == '1.1.0' | packageVersion('terra') == '1.1.4'){
     crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% unlist() %>% as.numeric()
   } else {
     if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
@@ -112,10 +112,10 @@ flt_clm_subunits3 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,tidyfst,sf))
   
-  OSys <<- Sys.info()[1]
-  root <<- switch(OSys,
-                  'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-                  'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+  # OSys <<- Sys.info()[1]
+  # root <<- switch(OSys,
+  #                 'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
+  #                 'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
   
   cat('>>> Load all coords\n')
   crd <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst')
@@ -133,7 +133,7 @@ flt_clm_subunits3 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   rst <- terra::rasterize(x = shp, y = ref)
   
   cat('>>> Filter coords in regions of interest\n')
-  if(packageVersion('terra') == '1.1.0'){
+  if(packageVersion('terra') == '1.1.0' | packageVersion('terra') == '1.1.4'){
     crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% unlist() %>% as.numeric()
   } else {
     if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){

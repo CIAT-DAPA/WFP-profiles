@@ -59,7 +59,7 @@ bar_graphs <- function(country, iso, region = 'all'){
   all <- dplyr::bind_rows(h0,f1,f2)
   
   # -------------------------------------------------------------------------- #
-  to_do <- readxl::read_excel('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>%
+  to_do <- readxl::read_excel(glue::glue('{root}/1.Data/regions_ind.xlsx') )%>%
     dplyr::filter(ISO3 == iso) %>%
     dplyr::rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X")
   

@@ -225,7 +225,11 @@ mergeGCMdailyTable <- function(iso, country, model, experiment, gcmdir, outdir, 
       })
   } else {
     d  <- grep(paste(model,experiment,sep = ".*"), dd, value = TRUE)
-    if(length(grep(pattern = '_tas_', x = d, fixed = T)) > 0){d <- d[-grep(pattern = '_tas_', x = d, fixed = T)]}
+    
+    # no need if(length(grep(pattern = '_tas_', x = d, fixed = T)) > 0){d <- d[-grep(pattern = '_tas_', x = d, fixed = T)]}
+    # drop avergae
+    d <- grep(pattern = '_tas_', x = d, fixed = T, invert = T, value = T)
+    
     df <- lapply(d, function(x){
       tb <- data.table(read_fst(x))
       if(length(grep(pattern = 'cell', x = names(tb))) > 0){names(tb)[grep(pattern = 'cell', x = names(tb))] <- 'id'}
@@ -261,7 +265,8 @@ mergeGCMdailyTable <- function(iso, country, model, experiment, gcmdir, outdir, 
         return(tbl)
       })
     # merge list of dataframes
-    df <- Reduce(function(...) dplyr::inner_join(..., by = c("id","date")), df)
+    dff <- Reduce(function(...) dplyr::inner_join(..., by = c("id","date")), df)
+    dff <- Reduce(function(...) merge(..., all=T,  by = c("x","y","id","date")), df)
     # convert to epoch time
     # df$date <- as.POSIXct(as.numeric(as.character(df$date)), origin="1970-01-01")
     df$date <- as.Date(df$date)

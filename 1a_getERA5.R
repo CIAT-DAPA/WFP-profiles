@@ -8,12 +8,12 @@ library("ecmwfr")
 
 # save key for CDS
 # use the credentials I shared
-wf_set_key(user = "UID",
-           key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+wf_set_key(user = UID,
+           key = key,
            service = "cds")
 
 
-getERA5 <- function(i, qq, year, month){
+getERA5 <- function(i, qq, year, month, datadir){
   q <- qq[i,]
   format <- "zip"
   ofile <- paste0(paste(q$variable, q$statistics, year, month, sep = "-"), ".",format)
@@ -27,7 +27,7 @@ getERA5 <- function(i, qq, year, month){
   
   request <- list("dataset_short_name" = "sis-agrometeorological-indicators",
                   "variable" = q$variable,
-                  "statistics" = q$statistics,
+                  "statistic" = q$statistics,
                   "year" = year,
                   "month" = month,
                   "day" = ndays,
@@ -48,7 +48,7 @@ getERA5 <- function(i, qq, year, month){
 
 ########################################################################################################
 # TODO: change data directory
-datadir <- "~/data/input/climate/era5/"
+datadir <- "~/data/input/climate/AgERA5/"
 dir.create(datadir, FALSE, TRUE)
 
 # combinations to download
@@ -73,8 +73,26 @@ for (i in 1:nrow(qq)){
 }
 
 
+
+for (year in as.character(1999:2001)){
+    for (month in months){
+      getERA5(i=5, qq, year, month, datadir)
+  }
+}
+
+
 # unzip example
 # unzip(file.path(datadir, ofile), exdir = datadir)
+
+# check download status
+eraDownload <- function(i, qq, ff){
+  var <- paste0(qq$variable[i], "-", qq$statistics[i])
+  f <- grep(var, ff, val = T)
+  yr <- sapply(strsplit(f, "-"), "[[", 3)
+  return(list(var, table(yr)))
+}
+ff <- list.files(datadir, pattern=".zip$")
+lapply(1:nrow(qq), eraDownload, qq, ff)
 
 ############################################################################################
 # unsuccessful attempts

@@ -13,8 +13,8 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_gcm_bc.R'
 
 OSys <- Sys.info()[1]
 root <<- switch(OSys,
-                'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+                'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
+                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr')
 
 iso     <- 'TZA'
 model   <- 'INM-CM5-0'

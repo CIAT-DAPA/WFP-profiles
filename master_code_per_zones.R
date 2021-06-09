@@ -18,7 +18,10 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/elv_map.R'
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/summary.R')                 # summary indices (mean, median...)
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/migration/_get_climate4regions_districts.R') # Filter climate for districts of interest
 
-root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+OSys <<- Sys.info()[1]
+root <<- switch(OSys,
+                'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
+                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr')
 
 ## Defining country parameters
 # Country
@@ -219,7 +222,7 @@ index <- tibble(Zone = c('all', regions_all$region) ) %>%
   tidyr::unnest() %>% 
   dplyr::select(-cod_name )
 
-write_csv(x = index, file = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/sesons_ind.csv') )
+write_csv(x = index, file = glue::glue('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/7.Results/{country}/sesons_ind.csv') )
 
 # 6. PPT slides
 # Run it local. 

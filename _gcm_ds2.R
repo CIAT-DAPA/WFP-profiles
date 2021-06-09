@@ -288,7 +288,7 @@ setup <- setup[setup$var != 'tas',]
 #######################################################################################################
 # cloud setup
 # Input parameters
-root <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/climate"
+root <- "//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/climate"
 gcmdir <- paste0(root,"/interim/rotated/CMIP6/daily")
 ff     <- list.files(gcmdir, pattern = ".tif$", full.names = TRUE)
 

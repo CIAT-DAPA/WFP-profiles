@@ -55,10 +55,10 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   
   # =--- water sources. 
-  glwd1 <- raster::shapefile('{root}/1.Data/shps/GLWD/glwd_1_fix.shp' ) 
+  glwd1 <- raster::shapefile(glue::glue('{root}/1.Data/shps/GLWD/glwd_1_fixed.shp' ) )
   crs(glwd1) <- crs(shp)
   
-  glwd2 <- raster::shapefile('{root}/1.Data/shps/GLWD/glwd_2_fix.shp' ) 
+  glwd2 <- raster::shapefile(glue::glue('{root}/1.Data/shps/GLWD/glwd_2_fixed.shp' ) )
   crs(glwd2) <- crs(shp)
   
   # if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){
@@ -70,15 +70,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
     sf::st_as_sf()
   
-  # }else{   
-  #   glwd1 <-  rgeos::gSimplify(glwd1, tol = 0.05, topologyPreserve = TRUE) %>%
-  #     sf::st_as_sf()
-  #   
-  #   glwd2 <- rgeos::gSimplify(glwd2, tol = 0.05, topologyPreserve = TRUE) %>%
-  #     sf::st_as_sf()
-  # }
   
-  glwd1 <<-  glwd1
+  glwd1 <<- glwd1
   glwd2 <<- glwd2
   # =--- 
   

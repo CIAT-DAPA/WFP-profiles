@@ -55,10 +55,10 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   
   # =--- water sources. 
-  glwd1 <- raster::shapefile('{root}/1.Data/shps/GLWD/glwd_1_fix.shp' ) 
+  glwd1 <- raster::shapefile('{root}/1.Data/shps/GLWD/glwd_1_fixed.shp' ) 
   crs(glwd1) <- crs(shp)
   
-  glwd2 <- raster::shapefile('{root}/1.Data/shps/GLWD/glwd_2_fix.shp' ) 
+  glwd2 <- raster::shapefile('{root}/1.Data/shps/GLWD/glwd_2_fixed.shp' ) 
   crs(glwd2) <- crs(shp)
   
   # if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){

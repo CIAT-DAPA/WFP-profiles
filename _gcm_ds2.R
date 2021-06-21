@@ -309,7 +309,7 @@ country <- 'Tanzania'
 iso     <- 'TZA'
 setupx  <- setup[setup$iso == iso,]
 rownames(setupx) <- 1:nrow(setupx)
-rgn_shp <- paste0('//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp')
+rgn_shp <- paste0('//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp')
 
 library(future.apply)
 availableCores()

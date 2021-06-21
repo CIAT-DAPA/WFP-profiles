@@ -204,21 +204,21 @@ BC_Qmap <- function(his_obs = his_obs,
   
 }
 
-iso     <- 'TZA'
-model   <- 'INM-CM5-0'
-his_obs <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
-his_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/1995-2014/",iso,".fst")
-his_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/1995-2014/",iso,".fst")
-c('2021-2040','2041-2060') %>%
-  purrr::map(.f = function(period){
-    period  <<- period
-    fut_gcm <<- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/",period,"/",iso,".fst")
-    fut_bc  <<- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
-    BC_Qmap(his_obs = his_obs,
-            his_gcm = his_gcm,
-            fut_gcm = fut_gcm,
-            his_bc  = his_bc,
-            fut_bc  = fut_bc,
-            period  = period,
-            ncores  = 1)
-  })
+# iso     <- 'TZA'
+# model   <- 'INM-CM5-0'
+# his_obs <- paste0(root,"/1.Data/observed_data/",iso,"/",iso,".fst")
+# his_gcm <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/1995-2014/",iso,".fst")
+# his_bc  <- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/1995-2014/",iso,".fst")
+# c('2021-2040','2041-2060') %>%
+#   purrr::map(.f = function(period){
+#     period  <<- period
+#     fut_gcm <<- paste0(root,"/1.Data/future_data/",model,"/",iso,"/downscale/",period,"/",iso,".fst")
+#     fut_bc  <<- paste0(root,"/1.Data/future_data/",model,"/",iso,"/bias_corrected/",period,"/",iso,".fst")
+#     BC_Qmap(his_obs = his_obs,
+#             his_gcm = his_gcm,
+#             fut_gcm = fut_gcm,
+#             his_bc  = his_bc,
+#             fut_bc  = fut_bc,
+#             period  = period,
+#             ncores  = 1)
+#   })

@@ -6,7 +6,7 @@
 bar_graphs <- function(country, iso, region = 'all'){
   
   path_save <- glue::glue('{root}/7.Results/{country}/results/monthly_g/')
-  dir.create(path_save)
+  dir.create(path_save, recursive = TRUE)
   
   
   # Historic indices

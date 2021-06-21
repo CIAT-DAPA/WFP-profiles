@@ -4,7 +4,7 @@ library(raster)
 library(tidyverse)
 # =---
 
-root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+root <- '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr'
 
 ## Defining country parameters
 # Country
@@ -16,7 +16,7 @@ iso3     <- 'PAK'     # 'TZA'
 
 location_map <- function(R_zone, iso3, country){
   # Reading the tables of future indices. 
-  to_do <<- readxl::read_excel('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>% 
+  to_do <<- readxl::read_excel('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>% 
     dplyr::filter(ISO3 == iso3) %>% 
     dplyr::rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X")
   # =----------------------------------------------
@@ -38,7 +38,7 @@ location_map <- function(R_zone, iso3, country){
   
   
   # =--- World boundaries.
-  map_world <- raster::shapefile(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/all_country/all_countries.shp')) %>% 
+  map_world <- raster::shapefile(glue::glue('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/shps/all_country/all_countries.shp')) %>% 
     sf::st_as_sf()
   map_world <<- map_world
   
@@ -49,10 +49,10 @@ location_map <- function(R_zone, iso3, country){
   
   
   # =--- water sources. 
-  glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_1.shp' ) 
+  glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_1.shp' ) 
   crs(glwd1) <- crs(shp)
   
-  glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2.shp' ) 
+  glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2.shp' ) 
   crs(glwd2) <- crs(shp)
   
   if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){
@@ -78,7 +78,7 @@ location_map <- function(R_zone, iso3, country){
   
   
   # =-----
-  path <- glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/results/')
+  path <- glue::glue('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/7.Results/{country}/results/')
   dir.create(path,recursive = TRUE)  
   
   

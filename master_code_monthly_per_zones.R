@@ -19,8 +19,8 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/migration/
 
 OSys <<- Sys.info()[1]
 root <<- switch(OSys,
-                'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+                'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
+                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr')
 
 ## Defining country parameters
 # Country
@@ -216,7 +216,7 @@ index_mod <- tibble(Zone = c('all', regions_all$region) ) %>%
 
 tictoc::toc() # 40 min 
 
-write_csv(x = index_mod, file = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/monthly_ind.csv'))
+write_csv(x = index_mod, file = glue::glue('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/7.Results/{country}/monthly_ind.csv'))
 
 # 4. Julian tables order. 
 

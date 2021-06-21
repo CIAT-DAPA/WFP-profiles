@@ -5,10 +5,10 @@
 # =----------------------
 
 # Paths
-# OSys <- Sys.info()[1]
-# root <<- switch(OSys,
-#                 'Linux'   = '/home/jovyan/work/cglabs',
-#                 'Windows' = '//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr')
+OSys <- Sys.info()[1]
+root <<- switch(OSys,
+                'Linux'   = '/home/jovyan/work/cglabs',
+                'Windows' = '//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr')
 
 # =-------------------------------------
 # Parameters 

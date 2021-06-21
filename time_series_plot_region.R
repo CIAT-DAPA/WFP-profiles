@@ -98,7 +98,7 @@ time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
         
         if(length(models) > 1){
           
-          to_do <- readxl::read_excel('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>%
+          to_do <- readxl::read_excel('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>%
             dplyr::filter(ISO3 == iso) %>%
             dplyr::rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X")
           

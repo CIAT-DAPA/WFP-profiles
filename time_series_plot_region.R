@@ -11,7 +11,7 @@ time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,fst))
   
-  # root   <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+  root   <- '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr'
   outdir <- paste0(root,'/7.Results/',country,'/results/time_series')
   if(!dir.exists(outdir)){ dir.create(outdir, F, T) }
   

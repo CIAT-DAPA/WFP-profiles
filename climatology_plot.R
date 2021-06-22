@@ -16,26 +16,27 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,lubridate,fst,tidyft))
   
-  # OSys <- Sys.info()[1]
-  # root <<- switch(OSys,
-  #                 'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-  #                 'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
-  
+  # 1. Revisar que funcione esta parte, el if, deberia estar en este punto. 
   fut <- paste0(root,'/7.Results/',country,'/future') %>%
     list.files(., pattern = paste0(iso,'_indices.fst'), full.names = T, recursive  = T)
   
-  if(length(fut) > 0){
+  ff <- list.files(path = paste0(root,'/1.Data/future_data'), pattern = '.fst$', full.names = T, recursive = T) %>%
+    grep(pattern = 'bias_corrected', x = ., value = T) %>%
+    grep(pattern = iso, x = ., value = T)
+  
+  if((length(fut) > 0) | (length(ff) > 0)){
     px_past <- paste0(root,'/7.Results/', country, '/past/', iso,'_indices.fst') %>% 
       tidyft::parse_fst() %>% tidyft::select_fst(id) %>% dplyr::pull() %>% unique()
     
-    fut_id <- 1:length(fut) %>% as.list()  %>% 
-      purrr::map(.f = function(i){
-        df <- fut %>% tidyft::parse_fst() %>% tidyft::select_fst(id) %>% 
-          dplyr::pull() %>% unique()
-      })  %>% unlist() %>% unique()
     
-    # Identify pixels intersection
-    px <- base::intersect(px_past, fut_id)
+    if(length(fut) > 0){
+      fut_id <- 1:length(fut) %>% as.list()  %>% 
+        purrr::map(.f = function(i){
+          df <- fut %>% tidyft::parse_fst() %>% tidyft::select_fst(id) %>% 
+            dplyr::pull() %>% unique()
+        })  %>% unlist() %>% unique()
+      # Identify pixels intersection
+      px <- base::intersect(px_past, fut_id)} else{px <- px_past}
     
     # Generate a random sample of 100 pixels
     if(length(px) > 100){
@@ -45,12 +46,7 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
     
     pft <<- smpl
     
-    # tictoc::tic()
     # List and load future climate
-    ff <- list.files(path = paste0(root,'/1.Data/future_data'), pattern = '.fst$', full.names = T, recursive = T) %>%
-      grep(pattern = 'bias_corrected', x = ., value = T) %>%
-      grep(pattern = iso, x = ., value = T)
-    
     ncores <- 5
     plan(cluster, workers = ncores, gc = TRUE)
     
@@ -82,7 +78,6 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
     }
     future:::ClusterRegistry("stop")
     gc(reset = T)
-    # tictoc::toc()
     
   } else {
     px <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst') %>% 
@@ -129,8 +124,9 @@ climatology_plot <- function(country = 'Haiti', iso = 'HTI', output = output){
       dplyr::select(id, dplyr::everything(.))
     
     # Identify intersected pixels
-    px <- base::intersect(h0$id, as.numeric(names(which(table(f1$id) == 5))))
-    px <- base::intersect(px, as.numeric(names(which(table(f2$id) == 5))))
+    total_models <- sum(unique(f1$model) == unique(f2$model) )
+    px <- base::intersect(h0$id, as.numeric(names(which(table(f1$id) == total_models))))
+    px <- base::intersect(px, as.numeric(names(which(table(f2$id) == total_models))))
     h0 <- h0[h0$id %in% px,]
     f1 <- f1[f1$id %in% px,]
     f2 <- f2[f2$id %in% px,]

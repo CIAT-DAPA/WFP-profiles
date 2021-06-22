@@ -401,62 +401,42 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     # =-------------------------------------
     # Anomaly Maps 
-    if(length(unique(to_graph$time)) == 3){
-      F2030 <- to_graph %>% dplyr::filter(time == '2021-2040') %>% 
-        dplyr::select(-x, -y, -time,-time1)
-      F2050 <- to_graph %>% dplyr::filter(time == '2041-2060') %>%
-        dplyr::select(-x, -y, -time,-time1) 
-      HT <- to_graph %>% dplyr::filter(time == 'Historic') %>% 
-        dplyr::select(-x, -y, -time,-time1) 
+    if(length(unique(to_graph$time)) > 1){
+      to_process <- unique(to_graph$time)[unique(to_graph$time) !=  "Historic" ]
       
-      # =---
-      px1 <- dplyr::intersect(unique(HT$id), unique(F2030$id))
-      px2 <- dplyr::intersect(unique(HT$id), unique(F2050$id))
-      px <- dplyr::intersect(px1, px2)
+      # This function organize 
+      anom_table <- function(data_to, pro_time){
+        less_var <- names(data_to)[names(data_to) %in% c('x', 'y', 'time', 'time1')]
+        
+        Fdata <- dplyr::filter(data_to, time == pro_time) %>%
+          dplyr::select(-less_var)
+        
+        HT <- dplyr::filter(data_to,time == 'Historic') %>% 
+          dplyr::select(-less_var) 
+        
+        px <- dplyr::intersect(unique(HT$id), unique(Fdata$id))
+        
+        Fdata <- dplyr::filter(Fdata, id %in% px)
+        HT <- dplyr::filter(HT, id %in% px)
+        
+        for(i in 2:ncol(HT)){Fdata[,i] <- Fdata[,i] - HT[,i]}
+        
+        Fdata$ATR <- (Fdata$ATR/HT$ATR)*100  
+        return(Fdata)}
       
-      HT <- dplyr::filter(HT, id %in% px)
-      F2030 <- dplyr::filter(F2030, id %in% px)
-      F2050 <- dplyr::filter(F2050, id %in% px)
+      # =----
+      anomalies <- tibble::tibble(time1 = to_process) %>% 
+        dplyr::mutate(data = purrr::map(.x = time1, .f = anom_table, data_to = to_graph)) %>% 
+        tidyr::unnest(data) %>% 
+        dplyr::inner_join(dplyr::select(dplyr::filter(to_graph, time1 == 2), id, x, y), .) 
       
-      rm(px1, px2)
-      # =---
       
-      for(i in 2:ncol(HT)){F2030[,i] <- F2030[,i] - HT[,i]
-      F2050[,i] <- F2050[,i] - HT[,i]}
-      
-      F2030$ATR <- (F2030$ATR/HT$ATR)*100
-      F2050$ATR <- (F2050$ATR/HT$ATR)*100
-      
-      anomalies <- dplyr::bind_rows(dplyr::mutate(F2030, time1 = '2021-2040'), dplyr::mutate(F2050, time1 = '2041-2060')) %>%
-        dplyr::inner_join(  dplyr::select(dplyr::filter(to_graph, time1 == 2), id, x, y), .)
-      
-      # =---------
-      # Explicar ---- 
-      F2030_1 <- special_base %>% dplyr::filter(time == '2021-2040') %>% 
-        dplyr::select(-time,-time1)
-      F2050_1 <- special_base %>% dplyr::filter(time == '2041-2060') %>%
-        dplyr::select(-time,-time1) 
-      HT_1 <- special_base %>% dplyr::filter(time == 'Historic') %>% 
-        dplyr::select(-time,-time1) 
-      
-      px1 <- dplyr::intersect(unique(HT_1$id), unique(F2030_1$id))
-      px2 <- dplyr::intersect(unique(HT_1$id), unique(F2050_1$id))
-      px <- dplyr::intersect(px1, px2)
-      
-      HT_1 <- dplyr::filter(HT_1, id %in% px)
-      F2030_1 <- dplyr::filter(F2030_1, id %in% px)
-      F2050_1 <- dplyr::filter(F2050_1, id %in% px)
-      
-      rm(px1, px2)
-      
-      for(i in 2:ncol(HT_1)){F2030_1[,i] <- F2030_1[,i] - HT_1[,i]
-      F2050_1[,i] <- F2050_1[,i] - HT_1[,i]}
-      
-      F2030_1$ATR <- (F2030_1$ATR/HT_1$ATR)*100
-      F2050_1$ATR <- (F2050_1$ATR/HT_1$ATR)*100
-      
-      sp_anom_l <- dplyr::bind_rows(dplyr::mutate(F2030_1, time1 = '2021-2040'), dplyr::mutate(F2050_1, time1 = '2041-2060')) %>% dplyr::select(ATR, AMT) %>% 
+      # =-- This part is for run with the complete data base. 
+      sp_anom_l <- tibble::tibble(time1 = to_process) %>% 
+        dplyr::mutate(data = purrr::map(.x = time1, .f = anom_table, data_to = special_base)) %>% 
+        tidyr::unnest(data) %>% dplyr::select(ATR, AMT) %>% 
         dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE)
+      
       # =---------
       
       max_lt <- anomalies %>% dplyr::select(contains('_max')) %>% 
@@ -479,37 +459,18 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
           my_breaks <- c(-1, -0.5, 0, 0.5, 1)
         }
         
-        pattern <- case_when(
-          var_toG[i] == "ATR" ~ 'ATR\n(%)',
-          var_toG[i] == "AMT" ~ 'AMT\n(\u00B0C)' ,
-          var_toG[i] == "TAI" ~ 'TAI\nAridity',
-          var_toG[i] == "SLGP" ~ 'SLGP\n(Day of\nthe year)', 
-          var_toG[i] == "LGP" ~ 'LGP\n(days)', 
-          var_toG[i] == 'NDD' ~ 'NDD\n(days/month)', 
-          var_toG[i] == 'NDWS' ~ 'NDWS\n(days/month)', 
-          var_toG[i] == 'NT_X' ~ 'NT_X\n(days/month)', 
-          var_toG[i] == 'NWLD' ~ 'NWLD\n(days/month)', 
-          var_toG[i] == 'NWLD50' ~ 'NWLD50\n(days/month)', 
-          var_toG[i] == 'NWLD90' ~ 'NWLD90\n(days/month)', 
-          var_toG[i] == 'P5D' ~ 'P5D\n(mm/5 days)', 
-          var_toG[i] == 'P95' ~ 'P95\n(mm/day)',
-          var_toG[i] == 'IRR' ~ 'IRR', 
-          var_toG[i] == 'SHI' ~ 'SHI\n(prob)',
-          var_toG[i] == 'HSI_0' ~ 'HSI_0\n(prob)', 
-          var_toG[i] == 'HSI_1' ~ 'HSI_1\n(prob)',
-          var_toG[i] == 'HSI_2' ~ 'HSI_2\n(prob)', 
-          var_toG[i] == 'HSI_3' ~ 'HSI_3\n(prob)',
-          var_toG[i] == 'HSI_23' ~ 'HSI_23\n(prob)',
-          var_toG[i] == 'THI_0' ~ 'THI_0\n(prob)', 
-          var_toG[i] == 'THI_1' ~ 'THI_1\n(prob)',
-          var_toG[i] == 'THI_2' ~ 'THI_2\n(prob)', 
-          var_toG[i] == 'THI_3' ~ 'THI_3\n(prob)',
-          var_toG[i] == 'THI_23' ~ 'THI_23\n(prob)',
-          var_toG[i] == 'SPI' ~ 'SPI\n(% area)',
-          var_toG[i] == 'NWLD_max' ~ 'NWLD_max\n(days/month)', 
-          var_toG[i] == 'NWLD50_max' ~ 'NWLD50_max\n(days/month)', 
-          var_toG[i] == 'NWLD90_max' ~ 'NWLD90_max\n(days/month)',
-          TRUE ~ var_toG[i])
+        # labels...
+        if(var_toG[i] == 'AMT'){ pattern <- 'AMT\n(\u00B0C)' }
+        if(var_toG[i] == 'ATR'){ pattern <- 'ATR\n(%)' }
+        if(var_toG[i] == 'TAI'){ pattern <- 'TAI\nAridity' }
+        if(var_toG[i] == 'SLGP'){ pattern <- 'SLGP\n(Day of\nthe year)' } 
+        if(var_toG[i] == 'LGP'){ pattern <- 'LGP\n(days)' } 
+        if(var_toG[i] %in% c('NDD', 'NDWS', 'NT_X', 'NWLD', 'NWLD50', 'NWLD90', 'NWLD_max', 'NWLD50_max', 'NWLD90_max')){ pattern <- glue::glue('{var_toG[i]}\n(days/month)') } 
+        if(var_toG[i] == 'P5D'){ pattern <- 'P5D\n(mm/5 days)' } 
+        if(var_toG[i] %in% c('SHI', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'HSI_23', 'THI_0', 'THI_1', 'THI_2', 'THI_3', 'THI_23')){ pattern <- glue::glue('{var_toG[i]}\n(prob)') } 
+        if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
+        if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
+        if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
         
         
         mop <- scale_fill_gradient2(
@@ -551,8 +512,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                 legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
         
         ggsave(glue::glue('{path}/Anom_{var_toG[i]}.png') , width = 15, height = 10, dpi = 300)
-      }
-      
+      }    
     }
     # =-------------------------------------
     
@@ -570,7 +530,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                      x > Q_clas[3] ~ 4, TRUE ~ x) 
       return(x)}
     
-    # names(to_do)
     # "SPI"  "NDWS"  "NWLD" "NT_X"    
     class_1 <- to_graph %>%
       dplyr::mutate_at(.vars = vars(var_toG), .funs = transform_q) 
@@ -1157,3 +1116,4 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   }
   
 }
+

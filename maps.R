@@ -498,10 +498,12 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # =-------------------------------------
     
     ###### Categorization... 
+    # Labels for graph
     labels <- function(x){
       Q_clas <- quantile(x, c(0.25, 0.5, 0.75), na.rm =TRUE)
       return(Q_clas)}
     
+    # Clasification 
     transform_q <- function(x){
       Q_clas <- quantile(x, c(0.25, 0.5, 0.75), na.rm =TRUE)
       
@@ -515,7 +517,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     class_1 <- to_graph %>%
       dplyr::mutate_at(.vars = vars(var_toG), .funs = transform_q) 
     
-    # =---------------
+    # =--------------- Cambios de Julian. 
     ATR_class <- function(x){
       Q_clas <- quantile(special_base$ATR, c(0.25, 0.5, 0.75), na.rm =TRUE)
       x <- case_when(x <= Q_clas[1] ~ 1, 
@@ -585,7 +587,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
         # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
         geom_sf(data = zone, fill = NA, color = 'black') +
-        scale_fill_manual(values = c( '1' = "#A7D96A", '2' = "#FFFFC1", '3' = "#FDAE61", '4' = '#D7191B', '5' = "#533104"), 
+        scale_fill_manual(values = c( '1' = "#A7D96A", '2' = "#FFFFC1", '3' = "#FDAE61", '4' = '#D7191B', '5' = "#533104"),
                           breaks = c('1', '2', '3', '4'), labels = labs_qq) +
         labs(fill = pattern, x = NULL, y = NULL, title = title) +
         scale_y_continuous(breaks = round(ylims, 2), n.breaks = 3) +
@@ -736,15 +738,15 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       
       
-      if(var_toG[i] == 'TAI'){ pattern <- 'TAI\nAridity' }
-      if(var_toG[i] == 'LGP'){ pattern <- 'LGP\n(days)' } 
-      if(var_toG[i] %in% c('NDD', 'NDWS', 'NT_X', 'NWLD', 'NWLD50', 'NWLD90', 'NWLD_max', 'NWLD50_max', 'NWLD90_max')){ pattern <- glue::glue('{var_toG[i]}\n(days/month)') } 
-      if(var_toG[i] == 'P5D'){ pattern <- 'P5D\n(mm/5 days)' } 
-      if(var_toG[i] %in% c('SHI', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'THI_0', 'THI_1', 'THI_2', 'THI_3')){pattern <- glue::glue('{var_toG[i]}\n(prob)') } 
-      if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
-      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' } 
-      if(var_toG[i] == 'THI_23'){ pattern <- 'THI_2 + THI_3\n(prob)' } 
-      if(var_toG[i] == 'HSI_23'){ pattern <- 'HSI_2 + HSI_3\n(prob)' } 
+      if(fix_Vars[i] == 'TAI'){ pattern <- 'TAI\nAridity' }
+      if(fix_Vars[i] == 'LGP'){ pattern <- 'LGP\n(days)' } 
+      if(fix_Vars[i] %in% c('NDD', 'NDWS', 'NT_X', 'NWLD', 'NWLD50', 'NWLD90', 'NWLD_max', 'NWLD50_max', 'NWLD90_max')){ pattern <- glue::glue('{var_toG[i]}\n(days/month)') } 
+      if(fix_Vars[i] == 'P5D'){ pattern <- 'P5D\n(mm/5 days)' } 
+      if(fix_Vars[i] %in% c('SHI', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'THI_0', 'THI_1', 'THI_2', 'THI_3')){pattern <- glue::glue('{var_toG[i]}\n(prob)') } 
+      if(fix_Vars[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
+      if(fix_Vars[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' } 
+      if(fix_Vars[i] == 'THI_23'){ pattern <- 'THI_2 + THI_3\n(prob)' } 
+      if(fix_Vars[i] == 'HSI_23'){ pattern <- 'HSI_2 + HSI_3\n(prob)' } 
       
       
       ggplot() +
@@ -856,6 +858,13 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                     Dr_Wa = glue::glue('{Drought}-{Waterlogging }'), 
                     Ha_Wa = glue::glue('{Heat}-{Waterlogging}'))
     
+    
+    # if(sum(names(all_Hz) == 'Agricultural') == 1){
+    #   all_Hz <- all_Hz %>%
+    #   dplyr::mutate(Dr_Ag = glue::glue('{Drought}-{Agricultural }'), 
+    #                 Ag_Wa = glue::glue('{Agricultural }-{Waterlogging }'), 
+    #                 Ha_Ag = glue::glue('{Heat}-{Agricultural }'))}
+    
     path_raster <- glue::glue('{root}/7.Results/{country}/results/maps/{R_zone}_{season}/tif')
     dir.create(path_raster,recursive = TRUE) 
     write_fst(all_Hz ,  glue::glue('{path_raster}/Final.fst'))
@@ -868,6 +877,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       raster::writeRaster(dfr, filename = glue::glue('{path_raster}/{ind}_{time_t}.tif'))
     }
     
+    # If you need Agricultural, add in ind, and change all 3 to 4. 
     tibble::tibble(ind = rep(c('Drought','Heat', 'Waterlogging'), each = 3), 
                    time_t = rep(1:3, times = 3) ) %>% 
       dplyr::mutate(raster = purrr::map2(.x = ind, .y = time_t, .f = rasterize_mod,  all_Hz = all_Hz))
@@ -914,7 +924,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     
     # =-------------------------------
-    colmat<-  function(nquantiles=10, upperleft=rgb(0,150,235, maxColorValue=255), upperright=rgb(130,0,80, maxColorValue=255), bottomleft="grey", bottomright=rgb(255,230,15, maxColorValue=255), xlab="x label", ylab="y label"){
+    # This funcion is built a bibariate scale colours. 
+    colmat <-  function(nquantiles=10, upperleft=rgb(0,150,235, maxColorValue=255), upperright=rgb(130,0,80, maxColorValue=255), bottomleft="grey", bottomright=rgb(255,230,15, maxColorValue=255), xlab="x label", ylab="y label"){
       
       my.data<-seq(0,1,.01)
       my.class<-classInt::classIntervals(my.data,n=nquantiles,style="quantile")
@@ -946,8 +957,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       tbl <- all_Hz %>% dplyr::select(id, x, y, time1, lab_t) %>% 
         setNames(c('id', 'x', 'y', 'time1', 'var'))
       
-      tst <- data.frame(var = sort( unique(st_hz) ))
-      
+      # This built a bivariate legend and colours (please don't modify!!!!!!!!!). 
+      tst <- data.frame(var = sort(unique(st_hz) ))
       mx_lvl <- base::strsplit(tst$var, '-') %>% unlist %>% as.numeric() %>% max()
       
       col.matrix<- colmat(nquantiles = mx_lvl +1 , upperleft="#64ACBE", upperright="#574249", bottomleft="#F5EEF8", bottomright="#C85A5A", xlab='', ylab = '') 
@@ -969,7 +980,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
         # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
-        geom_sf(data = zone, fill = NA, color = 'black') +      ggplot2::scale_fill_brewer(palette = 'PuRd') +
+        geom_sf(data = zone, fill = NA, color = 'black') +      
+        ggplot2::scale_fill_brewer(palette = 'PuRd') +
         coord_sf(xlim = xlims, ylim = ylims) +
         ggplot2::theme_bw() +
         ggplot2::xlab('') +

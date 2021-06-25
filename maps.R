@@ -169,7 +169,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     zone_bufer <- sf::st_buffer(zone, dist = 0.05) %>% 
       sf::st_union(.) %>% sf::as_Spatial()
     
-    
     # =--------------------------------------------
     # Limits 
     xlims <<- sf::st_bbox(zone_bufer)[c(1, 3)]
@@ -284,8 +283,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::summarise_all(.funs = mean, na.rm = TRUE) %>% 
       dplyr::ungroup()
     
-    Special_limits <- special_base %>% 
-      dplyr::select(ATR, AMT) %>% 
+    Special_limits <- special_base %>% dplyr::select(ATR, AMT) %>% 
       dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE)
     # =----------------------------------------------------
     
@@ -318,37 +316,19 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         my_breaks <- c(0, 10, 20, 31)
       } 
       
-      pattern <- case_when(
-        var_toG[i] == "ATR" ~ 'ATR\n(mm/season)',
-        var_toG[i] == "AMT" ~ 'AMT\n(\u00B0C)' ,
-        var_toG[i] == "TAI" ~ 'TAI\nAridity',
-        var_toG[i] == "SLGP" ~ 'SLGP\n(Day of\nthe year)', 
-        var_toG[i] == "LGP" ~ 'LGP\n(days)', 
-        var_toG[i] == 'NDD' ~ 'NDD\n(days/month)', 
-        var_toG[i] == 'NDWS' ~ 'NDWS\n(days/month)', 
-        var_toG[i] == 'NT_X' ~ 'NT_X\n(days/month)', 
-        var_toG[i] == 'NWLD' ~ 'NWLD\n(days/month)', 
-        var_toG[i] == 'NWLD50' ~ 'NWLD50\n(days/month)', 
-        var_toG[i] == 'NWLD90' ~ 'NWLD90\n(days/month)', 
-        var_toG[i] == 'P5D' ~ 'P5D\n(mm/5 days)', 
-        var_toG[i] == 'P95' ~ 'P95\n(mm/day)',
-        var_toG[i] == 'IRR' ~ 'IRR', 
-        var_toG[i] == 'SHI' ~ 'SHI\n(prob)',
-        var_toG[i] == 'HSI_0' ~ 'HSI_0\n(prob)', 
-        var_toG[i] == 'HSI_1' ~ 'HSI_1\n(prob)',
-        var_toG[i] == 'HSI_2' ~ 'HSI_2\n(prob)', 
-        var_toG[i] == 'HSI_3' ~ 'HSI_3\n(prob)',
-        var_toG[i] == 'HSI_23' ~ 'HSI_23\n(prob)',
-        var_toG[i] == 'THI_0' ~ 'THI_0\n(prob)', 
-        var_toG[i] == 'THI_1' ~ 'THI_1\n(prob)',
-        var_toG[i] == 'THI_2' ~ 'THI_2\n(prob)', 
-        var_toG[i] == 'THI_3' ~ 'THI_3\n(prob)',
-        var_toG[i] == 'THI_23' ~ 'THI_23\n(prob)',
-        var_toG[i] == 'SPI' ~ 'SPI\n(% area)',
-        var_toG[i] == 'NWLD_max' ~ 'NWLD_max\n(days/month)', 
-        var_toG[i] == 'NWLD50_max' ~ 'NWLD50_max\n(days/month)', 
-        var_toG[i] == 'NWLD90_max' ~ 'NWLD90_max\n(days/month)',
-        TRUE ~ var_toG[i])
+      # Pattern. 
+      if(var_toG[i] == 'AMT'){ pattern <- 'AMT\n(\u00B0C)' }
+      if(var_toG[i] == 'ATR'){ pattern <- 'ATR\n(mm/season)' }
+      if(var_toG[i] == 'TAI'){ pattern <- 'TAI\nAridity' }
+      if(var_toG[i] == 'SLGP'){ pattern <- 'SLGP\n(Day of\nthe year)' } 
+      if(var_toG[i] == 'LGP'){ pattern <- 'LGP\n(days)' } 
+      if(var_toG[i] %in% c('NDD', 'NDWS', 'NT_X', 'NWLD', 'NWLD50', 'NWLD90', 'NWLD_max', 'NWLD50_max', 'NWLD90_max')){ pattern <- glue::glue('{var_toG[i]}\n(days/month)') } 
+      if(var_toG[i] == 'P5D'){ pattern <- 'P5D\n(mm/5 days)' } 
+      if(var_toG[i] %in% c('SHI', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'HSI_23', 'THI_0', 'THI_1', 'THI_2', 'THI_3', 'THI_23')){ pattern <- glue::glue('{var_toG[i]}\n(prob)') } 
+      if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
+      if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
+      if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
+      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' } 
       
       
       if(var_toG[i] == 'ATR'){
@@ -471,6 +451,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
         if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
         if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
+        if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' } 
         
         
         mop <- scale_fill_gradient2(
@@ -552,8 +533,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       return(x)}
     
     class_1 <- to_graph %>% dplyr::select(id, time, time1, ATR, AMT) %>%
-      dplyr::mutate(ATR = ATR_class(ATR),
-                    AMT = AMT_class(AMT)) %>% 
+      dplyr::mutate(ATR = ATR_class(ATR), AMT = AMT_class(AMT)) %>% 
       dplyr::left_join( . ,  dplyr::select(class_1,  -AMT, -ATR)) %>% 
       dplyr::select(id,x,y,time,time1, everything(.))
     # =---------------
@@ -585,27 +565,18 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                    '3' = glue::glue('{Q_q[2]} < {var_Q[i]} <= {Q_q[3]}'), 
                    '4' = glue::glue('{var_Q[i]} > {Q_q[3]}'))
       
-      pattern <- case_when(
-        var_Q[i] == "ATR" ~ '(mm/season)',
-        var_Q[i] == "AMT" ~ '(\u00B0C)' ,
-        var_Q[i] == "TAI" ~ 'Aridity',
-        var_Q[i] == "SLGP" ~ '(Day of\nthe year)', 
-        var_Q[i] == "LGP" ~ '(days)', 
-        var_Q[i] == 'NDD' ~ '(days/month)', 
-        var_Q[i] == 'NDWS' ~ '(days/month)', 
-        var_Q[i] == 'NT_X' ~ '(days/month)', 
-        var_Q[i] == 'NWLD' ~ '(days/month)', 
-        var_Q[i] == 'NWLD50' ~ '(days/month)', 
-        var_Q[i] == 'NWLD90' ~ '(days/month)', 
-        var_Q[i] == 'P5D' ~ '(mm/5 days)', 
-        var_Q[i] == 'P95' ~ '(mm/day)',
-        var_Q[i] == 'IRR' ~ 'IRR', 
-        var_toG[i] == 'SPI' ~ '(% area)',
-        var_toG[i] == 'NWLD_max' ~ 'NWLD_max\n(days/month)', 
-        var_toG[i] == 'NWLD50_max' ~ 'NWLD50_max\n(days/month)', 
-        var_toG[i] == 'NWLD90_max' ~ 'NWLD90_max\n(days/month)',
-        TRUE ~ var_Q[i])
-      
+      if(var_toG[i] == 'AMT'){ pattern <- 'AMT\n(\u00B0C)' }
+      if(var_toG[i] == 'ATR'){ pattern <- 'ATR\n(mm/season)' }
+      if(var_toG[i] == 'TAI'){ pattern <- 'TAI\nAridity' }
+      if(var_toG[i] == 'SLGP'){ pattern <- 'SLGP\n(Day of\nthe year)' } 
+      if(var_toG[i] == 'LGP'){ pattern <- 'LGP\n(days)' } 
+      if(var_toG[i] %in% c('NDD', 'NDWS', 'NT_X', 'NWLD', 'NWLD50', 'NWLD90', 'NWLD_max', 'NWLD50_max', 'NWLD90_max')){ pattern <- glue::glue('{var_toG[i]}\n(days/month)') } 
+      if(var_toG[i] == 'P5D'){ pattern <- 'P5D\n(mm/5 days)' } 
+      if(var_toG[i] %in% c('SHI', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'HSI_23', 'THI_0', 'THI_1', 'THI_2', 'THI_3', 'THI_23')){ pattern <- glue::glue('{var_toG[i]}\n(prob)') } 
+      if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
+      if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
+      if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
+      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' } 
       
       ggplot() +
         geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(var_Q[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_Q[i]) %>% as.factor(.) )) +
@@ -765,32 +736,16 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       
       
-      pattern <- case_when(
-        fix_Vars[i] == "TAI" ~ 'TAI\nAridity',
-        fix_Vars[i] == "LGP" ~ 'LGP\n(days)', 
-        fix_Vars[i] == 'NDD' ~ 'NDD\n(days/month)', 
-        fix_Vars[i] == 'NDWS' ~ 'NDWS\n(days/month)', 
-        fix_Vars[i] == 'NT_X' ~ 'NT_X\n(days/month)', 
-        fix_Vars[i] == 'NWLD' ~ 'NWLD\n(days/month)', 
-        fix_Vars[i] == 'NWLD50' ~ 'NWLD50\n(days/month)', 
-        fix_Vars[i] == 'NWLD90' ~ 'NWLD90\n(days/month)', 
-        fix_Vars[i] == 'SHI' ~ 'SHI\n(prob)',
-        fix_Vars[i] == 'HSI_0' ~ 'HSI_0\n(prob)', 
-        fix_Vars[i] == 'HSI_1' ~ 'HSI_1\n(prob)',
-        fix_Vars[i] == 'HSI_2' ~ 'HSI_2\n(prob)', 
-        fix_Vars[i] == 'HSI_3' ~ 'HSI_3\n(prob)',
-        fix_Vars[i] == 'THI_0' ~ 'THI_0\n(prob)', 
-        fix_Vars[i] == 'THI_1' ~ 'THI_1\n(prob)',
-        fix_Vars[i] == 'THI_2' ~ 'THI_2\n(prob)', 
-        fix_Vars[i] == 'THI_3' ~ 'THI_3\n(prob)',
-        fix_Vars[i] == 'SLGP_CV' ~ 'SLGP_CV\n(%)',
-        var_toG[i] == 'SPI' ~ 'SPI\n(% area)',
-        fix_Vars[i] == 'THI_23' ~ 'THI_2 + THI_3\n(prob)',
-        fix_Vars[i] == 'HSI_23' ~ 'HSI_2 + HSI_3\n(prob)',
-        var_toG[i] == 'NWLD_max' ~ 'NWLD_max\n(days/month)', 
-        var_toG[i] == 'NWLD50_max' ~ 'NWLD50_max\n(days/month)', 
-        var_toG[i] == 'NWLD90_max' ~ 'NWLD90_max\n(days/month)',
-        TRUE ~ fix_Vars[i])
+      if(var_toG[i] == 'TAI'){ pattern <- 'TAI\nAridity' }
+      if(var_toG[i] == 'LGP'){ pattern <- 'LGP\n(days)' } 
+      if(var_toG[i] %in% c('NDD', 'NDWS', 'NT_X', 'NWLD', 'NWLD50', 'NWLD90', 'NWLD_max', 'NWLD50_max', 'NWLD90_max')){ pattern <- glue::glue('{var_toG[i]}\n(days/month)') } 
+      if(var_toG[i] == 'P5D'){ pattern <- 'P5D\n(mm/5 days)' } 
+      if(var_toG[i] %in% c('SHI', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'THI_0', 'THI_1', 'THI_2', 'THI_3')){pattern <- glue::glue('{var_toG[i]}\n(prob)') } 
+      if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
+      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' } 
+      if(var_toG[i] == 'THI_23'){ pattern <- 'THI_2 + THI_3\n(prob)' } 
+      if(var_toG[i] == 'HSI_23'){ pattern <- 'HSI_2 + HSI_3\n(prob)' } 
+      
       
       ggplot() +
         geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(fix_Vars[i]) ), aes(x = x, y = y, fill = !!rlang::sym(fix_Vars[i]) %>% as.factor(.) )) +
@@ -896,7 +851,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     
     # Drought - Heat - Waterlogging - Agricultural 
-    
     all_Hz <- all_Hz %>%
       dplyr::mutate(Dr_Ha = glue::glue('{Drought}-{Heat}'), 
                     Dr_Wa = glue::glue('{Drought}-{Waterlogging }'), 
@@ -908,8 +862,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     rasterize_mod <- function(ind, time_t, all_Hz = all_Hz){
       
-      df <- all_Hz %>% dplyr::filter(time1 == time_t) %>%
-        dplyr::select(x, y, ind)
+      df <- all_Hz %>% dplyr::filter(time1 == time_t) %>% dplyr::select(x, y, ind)
       
       dfr <- raster::rasterFromXYZ(df)
       raster::writeRaster(dfr, filename = glue::glue('{path_raster}/{ind}_{time_t}.tif'))
@@ -1065,12 +1018,10 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
           ggplot2::ylab(expression('Waterlogging / flooding' %->% ''))
       }
       
-      
       png(filename = glue::glue('{path}/Bi_{lab_t}.png'), width=28,height=10,units="in", res = 300)
       print(gridExtra::grid.arrange(leg, dat, nrow = 2, layout_matrix = rbind(c(NA,2, 2, 2, 2, 2),
                                                                               c(1,2, 2, 2, 2, 2))) )
       dev.off()
-      
     }
     
     # tictoc::tic()
@@ -1082,8 +1033,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     # =---------------------------------
     # Location 
-    
-    # =--------------------------------------------
     # Limits 
     xlims <<- sf::st_bbox(shp_sf)[c(1, 3)]
     ylims <<- sf::st_bbox(shp_sf)[c(2, 4)]

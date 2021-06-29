@@ -111,9 +111,6 @@ bar_graphs <- function(country, iso, region = 'all'){
   
   # =-------------------------
   
-  
-  
-  
   all_data <- dplyr::bind_rows(tsth,tstf) %>%
     as.tibble() %>% 
     dplyr::mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) %>% 
@@ -198,7 +195,7 @@ bar_graphs <- function(country, iso, region = 'all'){
   shp$Short_Name <- to_do$Short_Name
   ref <- terra::rast(paste0(root,"/1.Data/chirps-v2.0.2020.01.01.tif")) %>%
     terra::crop(., terra::ext(shp))
-  shr <- terra::rasterize(x = shp, y = ref)
+  shr <- terra::rasterize(x = shp, y = ref, field= 'region') %>% setNames(c('value'))
   
   allhr <- cbind(terra::extract(x = shr, y = allh[,c('x','y')]),allh)
   allfr <- cbind(terra::extract(x = shr, y = allf[,c('x','y')]),allf)
@@ -211,13 +208,13 @@ bar_graphs <- function(country, iso, region = 'all'){
     as.tibble() %>% dplyr::mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) 
   
   tsth$value <- factor(tsth$value)
-  levels(tsth$value) <- shp$region
+  levels(tsth$value) <- sort(unique(shp$region))
   
   tstf <- allfr2 %>% dplyr::select(value,season,period,ATR:THI_3) %>%
     dplyr::distinct() %>% as.tibble() %>% 
     dplyr::mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) 
   tstf$value <- factor(tstf$value)
-  levels(tstf$value) <- shp$region
+  levels(tstf$value) <- sort(unique(shp$region))
   
   # Guardados... 
   region_mean <- dplyr::bind_rows(tsth,tstf) %>%
@@ -246,7 +243,7 @@ bar_graphs <- function(country, iso, region = 'all'){
       mande <- str_replace(mande, '-', '\n') 
       mande <- str_replace(mande, ':', '\n') 
       mande <- str_replace(mande, '/', '\n')
-      mande <- str_replace(mande, '[[:punct:]]', '\n')
+      # mande <- str_replace(mande, '[[:punct:]]', '\n')
       names(mande) <- to_do$Regions 
       mande_label <- labeller(value = mande)
       

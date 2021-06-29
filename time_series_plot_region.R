@@ -11,14 +11,14 @@ time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,fst))
   
-  root   <- '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr'
+  # root   <- '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr'
   outdir <- paste0(root,'/7.Results/',country,'/results/time_series')
   if(!dir.exists(outdir)){ dir.create(outdir, F, T) }
   
   shp <- terra::vect(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp'))
   ref <- terra::rast(paste0(root,"/1.Data/chirps-v2.0.2020.01.01.tif")) %>%
     terra::crop(., terra::ext(shp))
-  shr <- terra::rasterize(x = shp, y = ref)
+  shr <- terra::rasterize(x = shp, y = ref, field= 'region') %>% setNames(c('value'))
   
   # Load historical time series
   pst <- paste0(root,"/7.Results/",country,"/past/",iso,"_indices.fst") %>%
@@ -55,7 +55,7 @@ time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
   ifelse(exists('fut_smm'), tbl <- dplyr::bind_rows(pst_smm,fut_smm), tbl <- pst_smm)
   tbl <- tbl %>% tidyr::drop_na()
   tbl$value <- factor(tbl$value)
-  levels(tbl$value) <- shp$region
+  levels(tsth$value) <- sort(unique(shp$region))
   
   ss <- sort(unique(tbl$season))
   for(s in ss){
@@ -98,7 +98,7 @@ time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
         
         if(length(models) > 1){
           
-          to_do <- readxl::read_excel('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>%
+          to_do <- readxl::read_excel(glue::glue('{root}/1.Data/regions_ind.xlsx')) %>%
             dplyr::filter(ISO3 == iso) %>%
             dplyr::rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X")
           
@@ -107,7 +107,7 @@ time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
           mande <- str_replace(mande, '-', '\n')
           mande <- str_replace(mande, ':', '\n')
           mande <- str_replace(mande, '/', '\n')
-          mande <- str_replace(mande, '[[:punct:]]', '\n')
+          # mande <- str_replace(mande, '[[:punct:]]', '\n')
           names(mande) <- to_do$Regions
           mande_label <- labeller(value = mande)
           
@@ -123,9 +123,8 @@ time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
             ggplot2::ggtitle(paste0(vr,': ',seasons[i])) +
             ggplot2::xlab('Year') +
             ggplot2::ylab(ylb) +
-            ggplot2::theme_bw() +
             ggplot2::geom_vline(xintercept = 2020, size = 1, linetype = "dashed", color = "red") +
-            ggplot2::facet_grid(Indices~value,  labeller = mande_label,scales = 'free') +
+            ggplot2::facet_grid(Indices~value, labeller = mande_label,scales = 'free') +
             ggplot2::theme(axis.text       = element_text(size = 16),
                            axis.title      = element_text(size = 20),
                            legend.text     = element_text(size = 15),
@@ -139,7 +138,7 @@ time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
             ggplot2::ggsave(paste0(outdir,'/all_s',i,'_lz/',vr,'_lz.jpeg'), device = 'jpeg', width = 21, height = 8, units = 'in', dpi = 350)
         } else {
           df %>%
-            ggplot2::ggplot(aes(x = year, y = Value, group = id)) +
+            ggplot2::ggplot(aes(x = year, y = Value, group = model)) +
             ggplot2::geom_line(alpha = .05, colour = 'gray') +
             ggplot2::theme_bw() +
             ggplot2::stat_summary(fun = median, geom = "line", lwd = 1.2, colour = 'black', aes(group=1)) +

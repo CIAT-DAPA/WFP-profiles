@@ -10,14 +10,12 @@ Elv_map <- function(iso3, country){
   ext.files <- ls() 
   
   
-  # if(sum(ext.files %in% c('shp', 'shp_sf')) < 2){
   # Read GDAM's shp at administrative level 1. 
   shp <<- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_gadm/",country,"_GADM1.shp"))
   shp_sf <-  shp %>%  sf::st_as_sf() %>% 
     dplyr::group_by(NAME_0) %>% dplyr::summarise() %>% sf::st_as_sf(shp_sf)  
   
   shp_sf <<- shp_sf
-  # }
   
   if(sum(ext.files %in% c('regions_all')) == 0){
     # Regions shp
@@ -35,7 +33,7 @@ Elv_map <- function(iso3, country){
     glwd2 <- raster::shapefile(glue::glue('{root}/1.Data/shps/GLWD/glwd_2_fixed.shp' ) )
     crs(glwd2) <- crs(shp)
     
-    # if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){
+    # c('NPL', 'PAK', 'NER')
     ext.sp <- raster::crop(glwd1, raster::extent(shp))
     glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
       sf::st_as_sf()
@@ -44,22 +42,14 @@ Elv_map <- function(iso3, country){
     glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
       sf::st_as_sf()
     
-    # }else{   
-    #   glwd1 <-  rgeos::gSimplify(glwd1, tol = 0.05, topologyPreserve = TRUE) %>%
-    #     sf::st_as_sf()
-    #   
-    #   glwd2 <- rgeos::gSimplify(glwd2, tol = 0.05, topologyPreserve = TRUE) %>%
-    #     sf::st_as_sf()
-    # }
-    
-    glwd1 <<-  glwd1
-    glwd2 <<- glwd2
+    glwd1 <<-  glwd1; glwd2 <<- glwd2
   }
   
   # =----
   getAltitude <- function(iso3 = 'HTI', country = 'Haiti', Zone = 'all'){
     
-    adm_c <- regions_all 
+    adm_c <- regions_all
+    # adm_c <- regions_all[regions_all$region == 'region_4', ] 
     alt_c <- alt %>% raster::crop(., adm_c) %>% raster::mask(., adm_c)
     
     alt_c <- alt_c %>% raster::rasterToPoints() %>% as_tibble() 

@@ -106,7 +106,7 @@ location_map <- function(R_zone, iso3, country){
   ylims <<- sf::st_bbox(shp_sf)[c(2, 4)]
   
   b <- ggplot() +
-    geom_sf(data = ctn,  fill = '#AEB6BF', color = gray(.1)) +
+    geom_sf(data = ctn,  fill = '#AEB6BF', color = gray(.1)) +  # fill = '#AEB6BF' for different color to the continent and country
     geom_sf(data = shp_sf,  fill = '#D5DBDB', color = gray(.1)) +
     geom_sf(data = zone, aes(fill = Short_Name), color = gray(.1)) +
     geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +

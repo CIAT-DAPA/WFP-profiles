@@ -285,7 +285,8 @@ calc_indices <- function(climate = infile,
                                       IRR  = sum(df$IRR, na.rm = T),
                                       SHI  = calc_SHIMP(tmax = df$tmax, RH = df$rh),
                                       calc_HSIMP(tmax = df$tmax, RH = df$rh),
-                                      calc_THIMP(tmax = df$tmax, RH = df$rh))
+                                      calc_THIMP(tmax = df$tmax, RH = df$rh),
+                                      CSDI= calc_csdiMP(TMIN = df$tmin))
                 return(idx)
               })
             idx <- dplyr::bind_rows(idx)
@@ -347,6 +348,7 @@ calc_indices <- function(climate = infile,
                       IRR,SHI,
                       HSI_0,HSI_1,HSI_2,HSI_3,
                       THI_0,THI_1,THI_2,THI_3,
+                      CSDI,
                       gSeason,SLGP,LGP)
       index_by_pixel <- dplyr::left_join(x = clim_data_flt[,c('id','x','y')], y = index_by_pixel, by = 'id')
       index_by_pixel$NWLD[index_by_pixel$NWLD == -Inf] <- 0
@@ -360,6 +362,7 @@ calc_indices <- function(climate = infile,
       index_by_pixel$THI_1[is.na(index_by_pixel$THI_1)] <- 0
       index_by_pixel$THI_2[is.na(index_by_pixel$THI_2)] <- 0
       index_by_pixel$THI_3[is.na(index_by_pixel$THI_3)] <- 0
+      index_by_pixel$CSDI[is.na(index_by_pixel$CSDI)] <- 0
       
       # Interpolate the 70% of the pixels
       cat('>>> Obtain raster for all coordinates of big county\n')
@@ -544,6 +547,7 @@ calc_indices <- function(climate = infile,
                       IRR,SHI,
                       HSI_0,HSI_1,HSI_2,HSI_3,
                       THI_0,THI_1,THI_2,THI_3,
+                      CSDI,
                       gSeason,SLGP,LGP)
       index_by_pixel <- dplyr::left_join(x = clim_data[,c('id','x','y')], y = index_by_pixel, by = 'id')
       index_by_pixel$NWLD[index_by_pixel$NWLD == -Inf] <- 0
@@ -557,6 +561,7 @@ calc_indices <- function(climate = infile,
       index_by_pixel$THI_1[is.na(index_by_pixel$THI_1)] <- 0
       index_by_pixel$THI_2[is.na(index_by_pixel$THI_2)] <- 0
       index_by_pixel$THI_3[is.na(index_by_pixel$THI_3)] <- 0
+      index_by_pixel$CSDI[is.na(index_by_pixel$CSDI)] <- 0
       index_by_pixel$NDD  <- round(index_by_pixel$NDD)
       index_by_pixel$NT_X <- round(index_by_pixel$NT_X)
       index_by_pixel$NDWS <- round(index_by_pixel$NDWS)
@@ -566,6 +571,7 @@ calc_indices <- function(climate = infile,
       index_by_pixel$SHI <- round(index_by_pixel$SHI)
       index_by_pixel$SLGP <- round(index_by_pixel$SLGP)
       index_by_pixel$LGP  <- round(index_by_pixel$LGP)
+      index_by_pixel$CSDI  <- round(index_by_pixel$CSDI)
     }
     
     index_by_pixel <- dplyr::full_join(x = tai %>%

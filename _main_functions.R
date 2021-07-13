@@ -671,3 +671,13 @@ calc_THI <- function(tmax, RH){
   return(THI)
 }
 calc_THIMP <- compiler::cmpfun(calc_THI)
+
+## CSDI
+calc_csdi <- function(TMIN){
+  per_10 <- quantile(TMIN, 0.10, na.rm = T)
+  runs <- rle(TMIN < per_10)
+  cons_days <- max(runs$lengths[runs$value==1], na.rm=T)
+  cons_days <- ifelse(cons_days<6,0,cons_days)
+  return(cons_days)
+}
+calc_csdiMP <- compiler::cmpfun(calc_csdi)

@@ -82,7 +82,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   future  <- future %>% dplyr::select(-gcm) %>% 
     dplyr::group_by(time,id,x,y,season,year) %>%
     dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
-    dplyr::mutate_at(.vars = c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP', 'CSDI'), 
+    dplyr::mutate_at(.vars = c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP'), 
                      .funs = ~round(. , 0))
   
   data_cons <- dplyr::bind_rows(past, future)  %>% 

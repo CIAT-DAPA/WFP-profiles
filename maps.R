@@ -82,7 +82,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   future  <- future %>% dplyr::select(-gcm) %>% 
     dplyr::group_by(time,id,x,y,season,year) %>%
     dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
-    dplyr::mutate_at(.vars = c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP'), 
+    dplyr::mutate_at(.vars = c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP', 'CSDI'), 
                      .funs = ~round(. , 0))
   
   data_cons <- dplyr::bind_rows(past, future)  %>% 
@@ -213,7 +213,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::select(time, time1, id, basic_vars) %>%
       dplyr::group_by(time, time1, id) %>% 
       dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
-      dplyr::mutate_at(.vars = basic_vars[basic_vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')], 
+      dplyr::mutate_at(.vars = basic_vars[basic_vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'CSDI')], 
                        .funs = ~round(. , 0)) %>%
       dplyr::ungroup() %>%  base::unique() %>% 
       dplyr::full_join(coord_zone, . )
@@ -328,7 +328,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
       if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
       if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
-      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' } 
+      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' }
+      if(var_toG[i] == 'CSDI'){ pattern <- glue::glue('{var_toG[i]}\n(days)') }
       
       
       if(var_toG[i] == 'ATR'){

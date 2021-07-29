@@ -152,7 +152,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     if(R_zone == 'all'){
       zone <- regions_all # %>% sf::as_Spatial() 
       var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
-        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+        dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
         dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
         dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
       
@@ -160,7 +160,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     }else{
       zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
       var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
-        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
+        dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
       
       title = dplyr::filter(to_do, Regions  == R_zone)$Short_Name   
     }

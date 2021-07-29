@@ -329,7 +329,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
       if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
       if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' }
-      if(var_toG[i] == 'CSDI'){ pattern <- glue::glue('{var_toG[i]}\n(days)') }
+      if(var_toG[i] == 'CSDI'){ pattern <- 'CSDI\n(days)' }
       
       
       if(var_toG[i] == 'ATR'){

@@ -213,7 +213,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::select(time, time1, id, basic_vars) %>%
       dplyr::group_by(time, time1, id) %>% 
       dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
-      dplyr::mutate_at(.vars = basic_vars[basic_vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'CSDI')], 
+      dplyr::mutate_at(.vars = basic_vars[basic_vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')], 
                        .funs = ~round(. , 0)) %>%
       dplyr::ungroup() %>%  base::unique() %>% 
       dplyr::full_join(coord_zone, . )

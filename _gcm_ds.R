@@ -368,8 +368,9 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
 # To execute tables merge
 OSys <<- Sys.info()[1]
 root <<- switch(OSys,
-                'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
-                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr')
+                'Linux'   = '/CATALOGUE/Workspace14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
+
 iso          <- 'NER'
 models       <- c('MPI-ESM1-2-HR','MRI-ESM2-0') # 'ACCESS-ESM1-5','EC-Earth3-Veg','INM-CM5-0'
 for(model in models){

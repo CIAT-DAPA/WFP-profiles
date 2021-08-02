@@ -4,7 +4,10 @@ library(raster)
 library(tidyverse)
 # =---
 
-root <- '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr'
+OSys <<- Sys.info()[1]
+root <<- switch(OSys,
+                'Linux'   = '/CATALOGUE/Workspace14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
 
 ## Defining country parameters
 # Country

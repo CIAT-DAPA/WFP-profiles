@@ -14,8 +14,8 @@ suppressMessages(pacman::p_load(qmap, future.apply, furrr, future, ncdf4, raster
 
 OSys <<- Sys.info()[1]
 root <<- switch(OSys,
-                'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
-                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr')
+                'Linux'   = '/CATALOGUE/Workspace14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
 
 # Quantile-mapping bias correction function for available pixels with solar radiation from NASA within a country
 BC_Qmap <- function(his_obs = his_obs,

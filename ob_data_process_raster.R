@@ -17,10 +17,10 @@ ISO3 <- 'TZA'
 country <- 'Tanzania'
 
 # Paths
-OSys <- Sys.info()[1]
+OSys <<- Sys.info()[1]
 root <<- switch(OSys,
-                'Linux'   = '/home/jovyan/work/cglabs',
-                'Windows' = '//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr')
+                'Linux'   = '/CATALOGUE/Workspace14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
 
 # =---------------------------------------------------
 # Creando el CRD 

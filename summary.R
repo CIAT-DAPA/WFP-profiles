@@ -40,10 +40,16 @@ read_data_seasons <- function(country, iso3) {
     dplyr::select(gcm, time, data) %>% 
     tidyr::unnest()
   
+  if('CSDI' %in% names(future)) {
+    indices <- c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP', 'CSDI') 
+  } else {
+    indices <- c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP')
+  }
+  
   future  <- future %>% dplyr::select(-gcm) %>% 
     dplyr::group_by(time,id,x,y,season,year) %>%
     dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
-    dplyr::mutate_at(.vars = c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP'), 
+    dplyr::mutate_at(.vars = indices, 
                      .funs = ~round(. , 0))
   
   data_cons <- dplyr::bind_rows(past, future)  %>% 
@@ -97,18 +103,31 @@ summary_index <- function(Zone, data_init = data_cons, Period){
   # =--------------
   
   if(Zone == 'all'){
+    if('CSDI' %in% names(future)){
     zone <- regions_all # %>% sf::as_Spatial() 
     var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
-      dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+      dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
       dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
       dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
+    } else {
+      zone <- regions_all # %>% sf::as_Spatial() 
+      var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
+        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+        dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
+        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
+    }
     
     Name = 'General'
   }else{
+    if('CSDI' %in% names(future)){
     zone <- dplyr::filter(regions_all, region == Zone) # %>% sf::as_Spatial() 
     var_s <- to_do %>% dplyr::filter(Regions == Zone) %>%
-      dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
-    
+      dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
+    } else {
+      zone <- dplyr::filter(regions_all, region == Zone) # %>% sf::as_Spatial() 
+      var_s <- to_do %>% dplyr::filter(Regions == Zone) %>%
+        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
+    }
     Name = dplyr::filter(to_do, Regions  == Zone)$Short_Name   
   }
   
@@ -267,18 +286,30 @@ summary_monthly <- function(Zone, data_init = data_cons, Period){
   data <-  data_init %>% dplyr::filter(season == names(Period)) 
   # =--------------
   if(Zone == 'all'){
+    if('CSDI' %in% names(future)){
     zone <- regions_all # %>% sf::as_Spatial() 
     var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
-      dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+      dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
       dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
       dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
-    
+    } else {
+      zone <- regions_all # %>% sf::as_Spatial() 
+      var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
+        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+        dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
+        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup() 
+    }
     Name = 'General'
   }else{
+    if('CSDI' %in% names(future)){
     zone <- dplyr::filter(regions_all, region == Zone) # %>% sf::as_Spatial() 
     var_s <- to_do %>% dplyr::filter(Regions == Zone) %>%
-      dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
-    
+      dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
+   } else{
+     zone <- dplyr::filter(regions_all, region == Zone) # %>% sf::as_Spatial() 
+     var_s <- to_do %>% dplyr::filter(Regions == Zone) %>%
+       dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
+   }
     Name = dplyr::filter(to_do, Regions  == Zone)$Short_Name   
   }
   

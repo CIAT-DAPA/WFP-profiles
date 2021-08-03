@@ -20,7 +20,7 @@ source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/migration/
 
 OSys <<- Sys.info()[1]
 root <<- switch(OSys,
-                'Linux'   = '/CATALOGUE/Workspace14/WFP_ClimateRiskPr',
+                'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
                 'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
 
 ## Defining country parameters

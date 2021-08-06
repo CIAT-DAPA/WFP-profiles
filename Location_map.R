@@ -110,7 +110,7 @@ location_map <- function(R_zone, iso3, country){
   
   b <- ggplot() +
     geom_sf(data = ctn,  fill = '#AEB6BF', color = gray(.1)) +  # fill = '#AEB6BF' for different color to the continent and country
-    geom_sf(data = shp_sf,  fill = '#D5DBDB', color = gray(.1)) +
+    geom_sf(data = shp_sf,  fill = '#AEB6BF', color = gray(.1)) +
     geom_sf(data = zone, aes(fill = Short_Name), color = gray(.1)) +
     geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
     geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +

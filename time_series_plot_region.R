@@ -54,7 +54,8 @@ time_series_region <- function(country = 'Haiti', iso = 'HTI', seasons){
   ifelse(exists('fut_smm'), tbl <- dplyr::bind_rows(pst_smm,fut_smm), tbl <- pst_smm)
   tbl <- tbl %>% tidyr::drop_na()
   tbl$value <- factor(tbl$value)
-  levels(tsth$value) <- sort(unique(shp$region))
+  #levels(tsth$value) <- sort(unique(shp$region))
+  levels(tbl$value) <- sort(unique(shp$region))
   
   ss <- sort(unique(tbl$season))
   for(s in ss){

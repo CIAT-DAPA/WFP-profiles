@@ -16,10 +16,10 @@ flt_clm_subunits <- function(iso = 'SOM', country = 'Somalia', district = 'Caabu
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   suppressMessages(pacman::p_load(tidyverse,raster,terra,tidyft,tidyfst,sf))
   
-  # OSys <<- Sys.info()[1]
-  # root <<- switch(OSys,
-  #                 'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-  #                 'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+  OSys <<- Sys.info()[1]
+  root <<- switch(OSys,
+                  'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
+                  'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
   
   cat('>>> Load all coords\n')
   crd <- paste0(root,'/1.Data/observed_data/',iso,'/year/climate_1981_mod.fst')

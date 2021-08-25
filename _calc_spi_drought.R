@@ -21,7 +21,7 @@ calc_spi_drought <- function(spi_data = infile, output = outfile, country = coun
   OSys <<- Sys.info()[1]
   root <<- switch(OSys,
                   'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
-                  'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr')
+                  'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
   
   if(!file.exists(outfile)){
     # Load municipalities/districts shapefile

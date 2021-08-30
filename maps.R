@@ -243,11 +243,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::ungroup() %>%  base::unique() %>% 
       dplyr::full_join(coord_zone, . )
     
-    
     # Lenght_season
     to_graph <- dplyr::mutate_at(to_graph, .vars = basic_vars[basic_vars %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X')],
                                  .funs = ~(./length_season) %>% round(. ,0) )
-    
     
     # Transform variables. 
     if(sum(basic_vars == 'SHI') == 1){
@@ -356,7 +354,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' }
       if(var_toG[i] == 'CSDI'){ pattern <- 'CSDI\n(days)' }
       
-      
       if(var_toG[i] == 'ATR'){
         
         mop <- scale_fill_gradientn(limits =  my_limits, 
@@ -382,7 +379,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                                             label.theme = element_text(angle = 25, size = 35))) 
       }    
       
-      ggplot() +
+      gg <- ggplot() +
         geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -401,7 +398,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               legend.spacing = unit(5, units = 'cm'),
               legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
       
-      ggsave(glue::glue('{path}/C_{var_toG[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/C_{var_toG[i]}.jpeg'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
       
     }
     
@@ -497,7 +494,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
             guide = guide_colourbar(barwidth = 20, label.theme = element_text(angle = 25, size = 35))) 
         }
         
-        ggplot() +
+        gg <- ggplot() +
           geom_tile(data = tidyr::drop_na(anomalies, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
           geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
           geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -519,7 +516,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                 legend.spacing = unit(5, units = 'cm'),
                 legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
         
-        ggsave(glue::glue('{path}/Anom_{var_toG[i]}.png') , width = 15, height = 10, dpi = 300)
+        ggplot2::ggsave(filename = glue::glue('{path}/Anom_{var_toG[i]}.jpeg'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
       }    
     }
     # =-------------------------------------
@@ -567,8 +564,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::select(id,x,y,time,time1, everything(.))
     # =---------------
     
-    
-    
     # =--------------------------------------------------
     if(sum(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI', 'HSI_23', 'THI_23') ) > 0 ){
       var_Q <- var_toG[-which(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI', 'HSI_23', 'THI_23'))]
@@ -608,7 +603,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' }
       if(var_toG[i] == 'CSDI'){ pattern <- 'CSDI\n(days)' }
       
-      ggplot() +
+      gg <- ggplot() +
         geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(var_Q[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_Q[i]) %>% as.factor(.) )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -631,9 +626,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               legend.spacing = unit(5, units = 'cm'),
               legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
       
-      ggsave(glue::glue('{path}/Q_{var_Q[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/Q_{var_Q[i]}.jpeg'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
-    
     
     # =------------------------------------------
     # Only graphs with special cat.
@@ -754,7 +748,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # =----- 
     fix_Vars <- var_toG[var_toG %in% c('SPI','TAI', 'NDWS', 'NDD', 'NT_X', 'NWLD','NWLD50','NWLD90', 'LGP', 'THI_0', 'THI_1', 'THI_2', 'THI_3', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'SHI', 'SLGP_CV', 'THI_23', 'HSI_23', 'NWLD_max','NWLD50_max','NWLD90_max')]
     
-    
     # fixed categorical class maps. 
     for(i in 1:length(fix_Vars)){
       
@@ -763,8 +756,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                            '3' = fix_Vars[i] %in% c('SLGP_CV') ~ c('Low','Moderate','High','Extreme'),
                            '4' = fix_Vars[i] %in% c('THI_0', 'THI_1', 'THI_2', 'THI_3', 'THI_23', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'HSI_23', 'SHI') ~ c('Low','Moderate','High','Very high'), 
                            '5' = fix_Vars[i] == 'SPI' ~ c('Limited','Significant','Substantial','Very large'))
-      
-      
       
       if(fix_Vars[i] == 'TAI'){ pattern <- 'TAI\nAridity' }
       if(fix_Vars[i] == 'LGP'){ pattern <- 'LGP\n(days)' } 
@@ -776,8 +767,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(fix_Vars[i] == 'THI_23'){ pattern <- 'THI_2 + THI_3\n(prob)' } 
       if(fix_Vars[i] == 'HSI_23'){ pattern <- 'HSI_2 + HSI_3\n(prob)' } 
       
-      
-      ggplot() +
+      gg <- ggplot() +
         geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(fix_Vars[i]) ), aes(x = x, y = y, fill = !!rlang::sym(fix_Vars[i]) %>% as.factor(.) )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -800,9 +790,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               legend.spacing = unit(5, units = 'cm'),
               legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
       
-      ggsave(glue::glue('{path}/Fix_{fix_Vars[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/Fix_{fix_Vars[i]}.jpeg'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
-    
     
     # =--------------------------------------------------
     # Overlays variables. 
@@ -842,7 +831,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     }
     
     # =-----
-    
     
     # =- Low level var reclassify
     vars_lvl <- names(class_1)[names(class_1) %in% low_lvl] 
@@ -926,7 +914,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       unv <- all_Hz %>% dplyr::select(x, y, time1, uni_vars[i]) %>% 
         dplyr::rename(ind = uni_vars[i]) %>% dplyr::mutate(ind = as.factor(ind))
       
-      ggplot2::ggplot() +
+      gg <- ggplot2::ggplot() +
         ggplot2::geom_tile(data = unv, aes(x = x, y = y, fill = ind) ) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -946,10 +934,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                        strip.text.x     = element_text(size = 35),
                        strip.background = element_rect(colour = "black", fill = "white"))
       
-      ggsave(glue::glue('{path}/Uni_{uni_vars[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/Uni_{uni_vars[i]}.jpeg'), width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
-    
-    
     
     # =-------------------------------
     # This funcion is built a bibariate scale colours. 
@@ -975,7 +961,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       col.matrix<-col.matrix[c(seqs), c(seqs)]}
     
     # =-------------------------------
-    
     
     # =----------------
     # Bivariate maps. 
@@ -1028,7 +1013,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       col.matrix$x <- as.factor(substr(x = oth_tst, start=1, stop=1))
       col.matrix$y <- as.factor(substr(x = oth_tst, start=3, stop=3))
       
-      
       leg <-  col.matrix %>% ggplot2::ggplot(aes(x = x, y = y)) +
         ggplot2::geom_tile(fill = col.matrix$col) +
         ggplot2::coord_equal() +
@@ -1043,7 +1027,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                        strip.text.x    = element_text(size = 17),
                        plot.caption    = element_text(size = 15, hjust = 0),
                        legend.position = "bottom") 
-      
       
       if(lab_t == 'Dr_Ha'){
         leg <- leg + ggplot2::xlab(expression('Drought' %->% '')) +
@@ -1070,7 +1053,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     final_map(lab_t = 'Ha_Wa', all_Hz = all_Hz)
     # tictoc::toc()
     
-    
     # =---------------------------------
     # Location 
     # Limits 
@@ -1094,11 +1076,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
             legend.title=element_text(size=18))  +  
       guides(fill = guide_legend(ncol = 1))
     
-    ggsave(glue::glue('{path}/Location.png') , width = 8, height = 5.5, dpi = 300)
-    
+    ggplot2::ggsave(filename = glue::glue('{path}/Location.jpeg'), plot = b, width = 8, height = 5.5, dpi = 300, device = 'jpeg', units = 'in')
     
   }
-  
   
   for(i in 1:length(seasons)){
     mapping_g(R_zone = Zone, iso3 =  iso3, country = country, Period = seasons[i], data_cons = data_cons, coord = coord)

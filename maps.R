@@ -6,7 +6,7 @@
 map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
   # Reading the tables of future indices. 
-  to_do <<- readxl::read_excel(glue::glue('{root}/1.Data/regions_index.xlsx')) %>% 
+  to_do <<- readxl::read_excel(glue::glue('{root}/1.Data/regions_ind.xlsx')) %>% 
     dplyr::filter(ISO3 == iso3) %>% 
     dplyr::rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X")
   # =----------------------------------------------

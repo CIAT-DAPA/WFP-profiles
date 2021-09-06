@@ -243,63 +243,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::ungroup() %>%  base::unique() %>% 
       dplyr::full_join(coord_zone, . )
     
-    # Lenght_season
-    to_graph <- dplyr::mutate_at(to_graph, .vars = basic_vars[basic_vars %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X')],
-                                 .funs = ~(./length_season) %>% round(. ,0) )
-    
-    # Transform variables. 
-    if(sum(basic_vars == 'SHI') == 1){
-      to_graph <- to_graph %>% dplyr::mutate(SHI = (SHI/days) )
-    }
-    
-    # Voy a explicar esta parte...
-    if(sum(vars %in% c("SLGP", "LGP")) > 0 ){
-      
-      if(sum(vars == 'SLGP') > 0){vars <- c(vars, 'SLGP_CV')}
-      vars_s <- vars[vars %in% c("SLGP", "LGP", 'SLGP_CV')]
-      
-      peta <- data_cons %>% 
-        dplyr::filter(id %in% id_f) %>%
-        dplyr::select(time, time1, id, year, gSeason, SLGP, LGP) 
-      peta$date <- as.Date(peta$SLGP, origin = "2001-01-01") %>% lubridate::month()
-      
-      peta <- peta %>% 
-        dplyr::filter(date %in% Period[[1]]) %>% 
-        dplyr::group_by(time, time1, id, gSeason) %>%
-        dplyr::summarise_all(list(mean, sd), na.rm =  TRUE ) %>%
-        dplyr::ungroup() %>%
-        dplyr::mutate_at(.vars = c('SLGP_fn1', 'LGP_fn1'), .funs = ~round(. , 0)) %>%
-        dplyr::select(-LGP_fn2) %>%
-        dplyr::rename(SLGP = 'SLGP_fn1', LGP = 'LGP_fn1', SLGP_CV = 'SLGP_fn2') %>%
-        dplyr::mutate(SLGP_CV = (SLGP_CV/SLGP) * 100) %>% 
-        dplyr::filter(gSeason == str_remove(season, 's') %>% as.numeric()) %>% 
-        dplyr::select(id, time, time1, vars_s)
-      
-      to_graph <- dplyr::full_join(to_graph, peta)
-    }
-    
     # =----------------------------------------------------
-    # MAX section ---- Explicar idea de Julian. 
-    if(sum(vars == 'NWLD') > 0){
-      max_add <- data_cons %>% dplyr::filter(id %in% id_f) %>%
-        dplyr::select(time, time1, id,  'NWLD', 'NWLD50', 'NWLD90') %>%
-        dplyr::group_by(time, time1, id) %>% tidyr::drop_na() %>% 
-        dplyr::summarise_all(~max(. , na.rm =  TRUE)) %>%
-        dplyr::mutate_at(.vars =  c('NWLD', 'NWLD50', 'NWLD90'), 
-                         .funs = ~round(. , 0)) %>%
-        dplyr::mutate_at(.vars =  c('NWLD', 'NWLD50', 'NWLD90'), 
-                         .funs = ~(./length_season) %>% round(. ,0) ) %>% # Here
-        dplyr::ungroup() %>%  unique() %>% 
-        setNames(c('time','time1','id','NWLD_max', 'NWLD50_max', 'NWLD90_max'))
-      
-      vars <- c(vars, 'NWLD_max', 'NWLD50_max', 'NWLD90_max')
-      
-      
-      to_graph <- to_graph %>% dplyr::full_join(. , max_add)
-    }
-    # # =----------------------------------------------------
-    # # Tabla interpolada
-    # # =----------------------
+    # Tabla interpolada
+    # =----------------------
     if(country == 'Niger'){
       # tabla de indices
       tbl <- to_graph
@@ -320,7 +266,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
           # indices
           indices <- c("ATR","AMT","SPI","TAI","NDD","NDWS","P5D","P95","NWLD",
                        "NT_X","SHI","THI_0","THI_1","THI_2","THI_3","THI_23")
-
+          
           # uso rasterize para crear el raster con la tabla indices.fst
           rd_data <- rasterize(x=tbl_flt[, c('x','y')], # lon-lat(x,y) de indices.fst
                                y=alt, # raster rd_obj
@@ -375,7 +321,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       fut1_intp <- as.data.frame(tbl_it[[1]])
       fut2_intp <- as.data.frame(tbl_it[[2]])
       his_intp <- as.data.frame(tbl_it[[3]])
-
+      
       tbl_intp <- rbind(his_intp,fut1_intp,fut2_intp)
       tbl_intp$time1 <- as.character(tbl_intp$time1)
       tbl_intp <- tbl_intp %>% dplyr::mutate(time = dplyr::case_when(time1 %in%  "1" ~ 'Historic',
@@ -391,9 +337,65 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       tbl_intp <- subset(tbl_intp, tbl_intp$id %in% px_n==T)
       # join table of real and interpolated index
       to_graph <- rbind(to_graph, tbl_intp)
-
+      
     }else{
       to_graph
+    }
+    
+    #=-----------------------------------------------------------------------------------
+    # Lenght_season
+    to_graph <- dplyr::mutate_at(to_graph, .vars = basic_vars[basic_vars %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X')],
+                                 .funs = ~(./length_season) %>% round(. ,0) )
+    
+    # Transform variables. 
+    if(sum(basic_vars == 'SHI') == 1){
+      to_graph <- to_graph %>% dplyr::mutate(SHI = (SHI/days) )
+    }
+    
+    # Voy a explicar esta parte...
+    if(sum(vars %in% c("SLGP", "LGP")) > 0 ){
+      
+      if(sum(vars == 'SLGP') > 0){vars <- c(vars, 'SLGP_CV')}
+      vars_s <- vars[vars %in% c("SLGP", "LGP", 'SLGP_CV')]
+      
+      peta <- data_cons %>% 
+        dplyr::filter(id %in% id_f) %>%
+        dplyr::select(time, time1, id, year, gSeason, SLGP, LGP) 
+      peta$date <- as.Date(peta$SLGP, origin = "2001-01-01") %>% lubridate::month()
+      
+      peta <- peta %>% 
+        dplyr::filter(date %in% Period[[1]]) %>% 
+        dplyr::group_by(time, time1, id, gSeason) %>%
+        dplyr::summarise_all(list(mean, sd), na.rm =  TRUE ) %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate_at(.vars = c('SLGP_fn1', 'LGP_fn1'), .funs = ~round(. , 0)) %>%
+        dplyr::select(-LGP_fn2) %>%
+        dplyr::rename(SLGP = 'SLGP_fn1', LGP = 'LGP_fn1', SLGP_CV = 'SLGP_fn2') %>%
+        dplyr::mutate(SLGP_CV = (SLGP_CV/SLGP) * 100) %>% 
+        dplyr::filter(gSeason == str_remove(season, 's') %>% as.numeric()) %>% 
+        dplyr::select(id, time, time1, vars_s)
+      
+      to_graph <- dplyr::full_join(to_graph, peta)
+    }
+    
+    # =----------------------------------------------------
+    # MAX section ---- Explicar idea de Julian. 
+    if(sum(vars == 'NWLD') > 0){
+      max_add <- data_cons %>% dplyr::filter(id %in% id_f) %>%
+        dplyr::select(time, time1, id,  'NWLD', 'NWLD50', 'NWLD90') %>%
+        dplyr::group_by(time, time1, id) %>% tidyr::drop_na() %>% 
+        dplyr::summarise_all(~max(. , na.rm =  TRUE)) %>%
+        dplyr::mutate_at(.vars =  c('NWLD', 'NWLD50', 'NWLD90'), 
+                         .funs = ~round(. , 0)) %>%
+        dplyr::mutate_at(.vars =  c('NWLD', 'NWLD50', 'NWLD90'), 
+                         .funs = ~(./length_season) %>% round(. ,0) ) %>% # Here
+        dplyr::ungroup() %>%  unique() %>% 
+        setNames(c('time','time1','id','NWLD_max', 'NWLD50_max', 'NWLD90_max'))
+      
+      vars <- c(vars, 'NWLD_max', 'NWLD50_max', 'NWLD90_max')
+      
+      
+      to_graph <- to_graph %>% dplyr::full_join(. , max_add)
     }
     # =----------------------------------------------------
     # Tabla completa... explicar esta parte. 

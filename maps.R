@@ -497,7 +497,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               legend.spacing = unit(5, units = 'cm'),
               legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
       
-      ggplot2::ggsave(filename = glue::glue('{path}/C_{var_toG[i]}.jpeg'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
+      ggplot2::ggsave(filename = glue::glue('{path}/C_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
       
     }
     
@@ -615,7 +615,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                 legend.spacing = unit(5, units = 'cm'),
                 legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
         
-        ggplot2::ggsave(filename = glue::glue('{path}/Anom_{var_toG[i]}.jpeg'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
+        ggplot2::ggsave(filename = glue::glue('{path}/Anom_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
       }    
     }
     # =-------------------------------------
@@ -725,7 +725,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               legend.spacing = unit(5, units = 'cm'),
               legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
       
-      ggplot2::ggsave(filename = glue::glue('{path}/Q_{var_Q[i]}.jpeg'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
+      ggplot2::ggsave(filename = glue::glue('{path}/Q_{var_Q[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
     
     # =------------------------------------------
@@ -889,7 +889,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               legend.spacing = unit(5, units = 'cm'),
               legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
       
-      ggplot2::ggsave(filename = glue::glue('{path}/Fix_{fix_Vars[i]}.jpeg'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
+      ggplot2::ggsave(filename = glue::glue('{path}/Fix_{fix_Vars[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
     
     # =--------------------------------------------------
@@ -1033,7 +1033,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                        strip.text.x     = element_text(size = 35),
                        strip.background = element_rect(colour = "black", fill = "white"))
       
-      ggplot2::ggsave(filename = glue::glue('{path}/Uni_{uni_vars[i]}.jpeg'), width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
+      ggplot2::ggsave(filename = glue::glue('{path}/Uni_{uni_vars[i]}.png'), width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
     
     # =-------------------------------
@@ -1175,7 +1175,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
             legend.title=element_text(size=18))  +  
       guides(fill = guide_legend(ncol = 1))
     
-    ggplot2::ggsave(filename = glue::glue('{path}/Location.jpeg'), plot = b, width = 8, height = 5.5, dpi = 300, device = 'jpeg', units = 'in')
+    ggplot2::ggsave(filename = glue::glue('{path}/Location.png'), plot = b, width = 8, height = 5.5, dpi = 300, device = 'jpeg', units = 'in')
     
   }
   

@@ -19,8 +19,8 @@ country <- 'Guinee'
 # Paths
 OSys <<- Sys.info()[1]
 root <<- switch(OSys,
-                'Linux'   = '/home/anighosh/data/WFP_ClimateRiskPr',
-                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+                'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
 
 # =---------------------------------------------------
 # Creando el CRD 

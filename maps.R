@@ -1,7 +1,7 @@
 # WFP Climate Risk Project
 # =----------------------
 # Graphs.  
-# A. Esquivel - H. Achicanoy - C.Saavedra 
+# A. Esquivel - H. Achicanoy - C.Saavedra
 # =----------------------
 map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   
@@ -155,31 +155,17 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     dir.create(path,recursive = TRUE)  
     # =--------------
     
-    if(R_zone == 'all'){ 
-      if('CSDI' %in% names(future)){
-        zone <- regions_all # %>% sf::as_Spatial() 
-        var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
-          dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
-          dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
-          dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
-      } else {
-        zone <- regions_all # %>% sf::as_Spatial() 
-        var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
-          dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
-          dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
-          dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
-      }
+    if(R_zone == 'all'){
+      zone <- regions_all # %>% sf::as_Spatial() 
+      var_s <- to_do %>% dplyr::mutate(Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>%
+        dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+        dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
+        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
       title = 'Country'
-    }else{
-      if('CSDI' %in% names(future)){
-        zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
-        var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
-          dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) 
-      } else{
-        zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
-        var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
-          dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
-      }
+    } else {
+      zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
+      var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
+        dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
       title = dplyr::filter(to_do, Regions  == R_zone)$Short_Name   
     }
     
@@ -222,7 +208,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     crd <- crd[pnt,]
     id_f <- unique(crd$id)
     
-    coord_zone <- coord %>% dplyr::filter(id %in% id_f )
+    coord_zone <- coord %>% dplyr::filter(id %in% id_f)
     
     # =----------------------------------------------------
     # Basic vars. 
@@ -241,7 +227,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::mutate_at(.vars = basic_vars[basic_vars %in% indices], 
                        .funs = ~round(. , 0)) %>%
       dplyr::ungroup() %>%  base::unique() %>% 
-      dplyr::full_join(coord_zone, . )
+      dplyr::full_join(coord_zone, .)
     
     # # =----------------------------------------------------
     # # Tabla interpolada
@@ -265,15 +251,15 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
           tbl_flt <- tbl %>% dplyr::filter(time1==list_time[i])
           # indices
           indices <- c("ATR","AMT","SPI","TAI","NDD","NDWS","P5D","P95","NWLD",
-                       "NT_X","SHI","THI_0","THI_1","THI_2","THI_3","THI_23")
-
+                       "NT_X","SHI","NWLD50","NWLD90","THI_0","THI_1","THI_2","THI_3","THI_23")
+          
           # uso rasterize para crear el raster con la tabla indices.fst
           rd_data <- rasterize(x=tbl_flt[, c('x','y')], # lon-lat(x,y) de indices.fst
                                y=alt, # raster rd_obj
                                field= tbl_flt[,indices], # agregar variables al raster
                                fun=mean) # aggregate function
           # =----------------------
-          # función de interpolación
+          # Interpolation function
           fill.interpolate <- function(rd_data, alt){
             # coordenadas
             xy <- data.frame(xyFromCell(rd_data, 1:ncell(rd_data)))
@@ -321,7 +307,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       fut1_intp <- as.data.frame(tbl_it[[1]])
       fut2_intp <- as.data.frame(tbl_it[[2]])
       his_intp <- as.data.frame(tbl_it[[3]])
-
+      
       tbl_intp <- rbind(his_intp,fut1_intp,fut2_intp)
       tbl_intp$time1 <- as.character(tbl_intp$time1)
       tbl_intp <- tbl_intp %>% dplyr::mutate(time = dplyr::case_when(time1 %in%  "1" ~ 'Historic',
@@ -337,17 +323,31 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       tbl_intp <- subset(tbl_intp, tbl_intp$id %in% px_n==T)
       # join table of real and interpolated index
       to_graph <- rbind(to_graph, tbl_intp)
-
-    }else{
-      to_graph
     }
-
+    
     #=-----------------------------------------------------------------------------------
     # Lenght_season
     to_graph <- dplyr::mutate_at(to_graph, .vars = basic_vars[basic_vars %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X')],
                                  .funs = ~(./length_season) %>% round(. ,0) )
+    to_graph$ATR[which(to_graph$ATR < 0)] <- 0
+    to_graph$SPI[which(to_graph$SPI < 0)] <- 0
+    to_graph$TAI[which(to_graph$TAI < 0)] <- 0
+    to_graph$NDD[which(to_graph$NDD < 0)] <- 0
+    to_graph$NDWS[which(to_graph$NDWS < 0)] <- 0
+    to_graph$P5D[which(to_graph$P5D < 0)] <- 0
+    to_graph$P95[which(to_graph$P95 < 0)] <- 0
+    to_graph$NWLD[which(to_graph$NWLD < 0)] <- 0
+    to_graph$NT_X[which(to_graph$NT_X < 0)] <- 0
+    to_graph$SHI[which(to_graph$SHI < 0)] <- 0
+    to_graph$NWLD50[which(to_graph$NWLD50 < 0)] <- 0
+    to_graph$NWLD90[which(to_graph$NWLD90 < 0)] <- 0
+    to_graph$THI_0[which(to_graph$THI_0 < 0)] <- 0
+    to_graph$THI_1[which(to_graph$THI_1 < 0)] <- 0
+    to_graph$THI_2[which(to_graph$THI_2 < 0)] <- 0
+    to_graph$THI_3[which(to_graph$THI_3 < 0)] <- 0
+    to_graph$THI_23[which(to_graph$THI_23 < 0)] <- 0
     
-    # Transform variables. 
+    # Transform variables.
     if(sum(basic_vars == 'SHI') == 1){
       to_graph <- to_graph %>% dplyr::mutate(SHI = (SHI/days) )
     }
@@ -389,11 +389,10 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                          .funs = ~round(. , 0)) %>%
         dplyr::mutate_at(.vars =  c('NWLD', 'NWLD50', 'NWLD90'), 
                          .funs = ~(./length_season) %>% round(. ,0) ) %>% # Here
-        dplyr::ungroup() %>%  unique() %>% 
+        dplyr::ungroup() %>%  unique() %>%
         setNames(c('time','time1','id','NWLD_max', 'NWLD50_max', 'NWLD90_max'))
       
       vars <- c(vars, 'NWLD_max', 'NWLD50_max', 'NWLD90_max')
-      
       
       to_graph <- to_graph %>% dplyr::full_join(. , max_add)
     }
@@ -405,7 +404,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::summarise_all(.funs = mean, na.rm = TRUE) %>% 
       dplyr::ungroup()
     
-    Special_limits <- special_base %>% dplyr::select(ATR, AMT) %>% 
+    Special_limits <- to_graph %>% dplyr::select(ATR, AMT) %>% # special_base 
       dplyr::summarise_all(.funs = c('min', 'max'), na.rm = TRUE)
     # =----------------------------------------------------
     
@@ -436,7 +435,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X', 'NWLD_max','NWLD50_max', 'NWLD90_max')){
         my_limits <- c(0, 31)
         my_breaks <- c(0, 10, 20, 31)
-      } 
+      }
       
       # Pattern. 
       if(var_toG[i] == 'AMT'){ pattern <- 'AMT\n(\u00B0C)' }
@@ -478,8 +477,12 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                                             label.theme = element_text(angle = 25, size = 35))) 
       }    
       
+      to_graph$cellID <- raster::cellFromXY(object = tmp, xy = base::as.data.frame(to_graph[,c('x','y')]))
+      to_graph$x <- to_graph$y <- NULL
+      to_graph <- cbind(to_graph, base::as.data.frame(raster::xyFromCell(object = tmp, cell = to_graph$cellID)))
+      
       gg <- ggplot() +
-        geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
+        geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i])), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i]))) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
@@ -495,7 +498,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               axis.text.x=element_blank(), axis.text.y=element_blank(),
               legend.title=element_text(size=35), 
               legend.spacing = unit(5, units = 'cm'),
-              legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
+              legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
       
       ggplot2::ggsave(filename = glue::glue('{path}/C_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
       
@@ -504,7 +507,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # =-------------------------------------
     # Anomaly Maps 
     if(length(unique(to_graph$time)) > 1){
-      to_process <- unique(to_graph$time)[unique(to_graph$time) !=  "Historic" ]
+      to_process <- unique(to_graph$time)[unique(to_graph$time) !=  "Historic"]
       
       # This function organize 
       anom_table <- function(data_to, pro_time){

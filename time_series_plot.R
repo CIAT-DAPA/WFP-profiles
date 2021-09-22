@@ -117,7 +117,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
                            strip.text.x    = element_text(size = 17),
                            plot.caption    = element_text(size = 15, hjust = 0),
                            legend.position = "bottom")
-          ggplot2::ggsave(filename = paste0(outdir,'/all_s',i,'/',vr,'.jpeg'), plot = gg, device = 'jpeg', width = 10, height = 8, units = 'in', dpi = 350)
+          ggplot2::ggsave(filename = paste0(outdir,'/all_s',i,'/',vr,'.png'), plot = gg, device = 'jpeg', width = 10, height = 8, units = 'in', dpi = 350)
         } else {
           gg <- df %>%
             ggplot2::ggplot(aes(x = year, y = Value, group = model)) +
@@ -137,7 +137,7 @@ time_series_plot <- function(country = 'Haiti', iso = 'HTI', seasons){
                            strip.text.x    = element_text(size = 17),
                            plot.caption    = element_text(size = 15, hjust = 0),
                            legend.position = "bottom")
-          ggplot2::ggsave(filename = paste0(outdir,'/all_s',i,'/',vr,'.jpeg'), plot = gg, device = 'jpeg', width = 10, height = 8, units = 'in', dpi = 350)
+          ggplot2::ggsave(filename = paste0(outdir,'/all_s',i,'/',vr,'.png'), plot = gg, device = 'jpeg', width = 10, height = 8, units = 'in', dpi = 350)
         }
         
       })

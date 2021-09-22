@@ -396,6 +396,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       to_graph <- to_graph %>% dplyr::full_join(. , max_add)
     }
+    
     # =----------------------------------------------------
     # Tabla completa... explicar esta parte. 
     special_base <- dplyr::select(pet, id, time, time1, season, ATR, AMT) %>%
@@ -480,6 +481,10 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       to_graph$cellID <- raster::cellFromXY(object = tmp, xy = base::as.data.frame(to_graph[,c('x','y')]))
       to_graph$x <- to_graph$y <- NULL
       to_graph <- cbind(to_graph, base::as.data.frame(raster::xyFromCell(object = tmp, cell = to_graph$cellID)))
+      
+      if('NDWS' %in% names(to_graph)){
+        to_graph$NDWS[to_graph$NDWS > 31] <- 31
+      }
       
       gg <- ggplot() +
         geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i])), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i]))) +
@@ -619,7 +624,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                 legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
         
         ggplot2::ggsave(filename = glue::glue('{path}/Anom_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
-      }    
+      }
     }
     # =-------------------------------------
     
@@ -675,8 +680,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # Quantile maps. 
     for(i in 1:length(var_Q)){
       
-      Q_q <- round(labels(dplyr::pull(to_graph[, var_Q[i]])), 0)
-      
+      Q_q <- round(quantile(to_graph[, var_Q[i]], c(0.25, 0.5, 0.75), na.rm = T), 0)
+      # Q_q <- round(labels(dplyr::pull(to_graph[, var_Q[i]])), 0)
       
       if(var_Q[i] == 'ATR'){
         Q_q <-  round(quantile(special_base$ATR, c(0.25, 0.5, 0.75), na.rm =TRUE), 0)

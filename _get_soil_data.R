@@ -27,7 +27,7 @@ get_soil <- function(crd = crd, root_depth = 60, outfile = './soilcp_data.fst'){
                                crs = raster::crs(tmp))
     
     # Soil data repository. ISRIC soil data 250 m
-    soils_root <- '//catalogue/BaseLineData_cluster04/GLOBAL/Biofisico/SoilGrids250m'
+    soils_root <- '//192.168.20.97/data_cluster17/GLOBAL/Biofisico/SoilGrids250m'
     # Soil organic carbon content
     orc <- raster::stack(list.files(paste0(soils_root,'/Chemical soil properties/Soil organic carbon content'), pattern = '.tif$', full.names = T) %>% sort())
     # Cation exchange capacity

@@ -2,20 +2,28 @@ Elv_map <- function(iso3, country){
   
   # Country...
   if(country == 'Guinee'){
-    alt <- raster::raster('{root}/1.Data/shps/guinee/GIN_alt/GIN_alt.gri')
+    alt <- raster::raster('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/guinee/GIN_alt/GIN_alt.gri')
   }else{
     alt <- raster::getData('alt', country = iso3, path = paste0(root,'/1.Data/shps/',country))
   }
   
   ext.files <- ls() 
   
+  if(sum(ext.files %in% c('adm_lvl2')) < 2){
+    adm_lvl2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/guinea-bissau/request/GNB_adm2.shp')
+    adm_lvl2 <- adm_lvl2 %>%  sf::st_as_sf()
+    adm_lvl2 <<- adm_lvl2
+  }
   
-  # Read GDAM's shp at administrative level 1. 
-  shp <<- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_gadm/",country,"_GADM1.shp"))
-  shp_sf <-  shp %>%  sf::st_as_sf() %>% 
-    dplyr::group_by(NAME_0) %>% dplyr::summarise() %>% sf::st_as_sf(shp_sf)  
   
-  shp_sf <<- shp_sf
+  if(sum(ext.files %in% c('shp', 'shp_sf')) < 2){
+    # Read GDAM's shp at administrative level 1. 
+    shp <<- raster::shapefile(paste0(root , "/1.Data/shps/", tolower(country), "/",tolower(iso3),"_gadm/",country,"_GADM1.shp"))
+    shp_sf <-  shp %>%  sf::st_as_sf() %>% 
+      dplyr::group_by(NAME_0) %>% dplyr::summarise() %>% sf::as_Spatial()
+    
+    shp_sf <<- shp_sf
+  }
   
   if(sum(ext.files %in% c('regions_all')) == 0){
     # Regions shp
@@ -26,30 +34,36 @@ Elv_map <- function(iso3, country){
   }
   
   if(sum(ext.files %in% c('glwd1', 'glwd2')) < 2){
-    # =--- water sources. 
-    glwd1 <- raster::shapefile(glue::glue('{root}/1.Data/shps/GLWD/glwd_1_fixed.shp' ) )
+    glwd1 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_1.shp' ) 
     crs(glwd1) <- crs(shp)
     
-    glwd2 <- raster::shapefile(glue::glue('{root}/1.Data/shps/GLWD/glwd_2_fixed.shp' ) )
+    glwd2 <- raster::shapefile('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/GLWD/glwd_2.shp' ) 
     crs(glwd2) <- crs(shp)
     
-    # c('NPL', 'PAK', 'NER')
-    ext.sp <- raster::crop(glwd1, raster::extent(shp))
-    glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
-      sf::st_as_sf()
+    if(!(iso3  %in% c('NPL', 'PAK', 'NER')) ){
+      ext.sp <- raster::crop(glwd1, raster::extent(shp))
+      glwd1 <-  rgeos::gSimplify(ext.sp, tol = 0.05, topologyPreserve = TRUE) %>%
+        sf::st_as_sf()
+      
+      ext.sp2 <- raster::crop(glwd2, raster::extent(shp))
+      glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
+        sf::st_as_sf()
+    }else{   
+      glwd1 <-  rgeos::gSimplify(glwd1, tol = 0.05, topologyPreserve = TRUE) %>%
+        sf::st_as_sf()
+      
+      glwd2 <- rgeos::gSimplify(glwd2, tol = 0.05, topologyPreserve = TRUE) %>%
+        sf::st_as_sf()
+    }
     
-    ext.sp2 <- raster::crop(glwd2, raster::extent(shp))
-    glwd2 <- rgeos::gSimplify(ext.sp2, tol = 0.05, topologyPreserve = TRUE) %>%
-      sf::st_as_sf()
-    
-    glwd1 <<-  glwd1; glwd2 <<- glwd2
+    glwd1 <<-  glwd1
+    glwd2 <<- glwd2
   }
   
   # =----
   getAltitude <- function(iso3 = 'HTI', country = 'Haiti', Zone = 'all'){
     
-    adm_c <- regions_all
-    # adm_c <- regions_all[regions_all$region == 'region_4', ] 
+    adm_c <- regions_all 
     alt_c <- alt %>% raster::crop(., adm_c) %>% raster::mask(., adm_c)
     
     alt_c <- alt_c %>% raster::rasterToPoints() %>% as_tibble() 
@@ -64,8 +78,9 @@ Elv_map <- function(iso3, country){
     
     pp <- ggplot() +
       geom_tile(data = alt_c %>% setNames(c('x', 'y', 'alt')), aes(x = x, y = y, fill =  alt)) +
-      geom_sf(data = shp_sf, fill = NA, color = gray(.5)) +
       geom_sf(data = adm_c, fill = NA, color = gray(.2)) +
+      geom_sf(data = adm_lvl2, fill = NA, color = gray(.2)) +
+      geom_sf(data = zone, fill = NA, color = 'black', size = 0.8) +
       geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
       geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
       coord_sf(xlim = round(xlims, 2), ylim = round(ylims, 2)) +
@@ -74,14 +89,14 @@ Elv_map <- function(iso3, country){
                                                    barwidth = 2, label.theme = element_text(size = 35))) +
       scale_y_continuous(breaks = round(ylims, 2), n.breaks = 3) +
       scale_x_continuous(breaks = round(xlims, 2), n.breaks = 3) +
-      labs(fill = glue::glue('Elevation (m)'), x = NULL, y = NULL) + # title = county ,
+      labs(fill = glue::glue('Elevação (m)'), x = NULL, y = NULL) + # title = county ,
       theme_bw() + theme(text = element_text(size=35), 
                          legend.title=element_text(size=35), 
                          legend.spacing = unit(5, units = 'cm'),
                          legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
     
     
-    path <- glue::glue('{root}/7.Results/{country}/results/')
+    path <- glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/results/')
     dir.create(path,recursive = TRUE)  
     
     ggsave(glue::glue('{path}/Elevation.png'), width = 12, height = 12,  dpi = 300)

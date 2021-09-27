@@ -2,12 +2,15 @@ options(warn = -1, scipen = 999)
 suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(tidyverse, raster))
 
-country <- 'Niger'
-iso     <- 'NER'
+country <- 'Kenya'
+iso     <- 'KEN'
 
-root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+OSys <<- Sys.info()[1]
+root <<- switch(OSys,
+                'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
 
-adm <- raster::shapefile(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_gadm/',country,'_GADM2.shp'))
+adm <- raster::shapefile(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_gadm/',country,'_GADM1.shp'))
 zns <- raster::shapefile(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp'))
 
 if(iso == 'NER'){zns <- spTransform(zns, raster::crs("+proj=longlat +datum=WGS84"))}
@@ -18,7 +21,7 @@ shp$key <- paste0('zone_',1:nrow(shp@data))
 zones <- paste0('zone_',1:nrow(shp@data))
 
 for(zone in zones){
-  out <- paste0("//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/",tolower(country),"/",tolower(iso),"_zones/",tolower(zone),".shp")
+  out <- paste0(root,"/1.Data/shps/",tolower(country),"/",tolower(iso),"_zones/",tolower(zone),".shp")
   if(!dir.exists(dirname(out))){dir.create(path = dirname(out),F,T)}
   if(!file.exists(out)){
     shp2 <- shp[shp$key == zone,]

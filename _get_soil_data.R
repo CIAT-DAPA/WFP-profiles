@@ -18,7 +18,8 @@ get_soil <- function(crd = crd, root_depth = 60, outfile = './soilcp_data.fst'){
     suppressMessages(pacman::p_load(raster, tidyverse, fst, GSIF, vroom))
     
     # Load CHIRPS template
-    tmp <- raster::raster("//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/daily/chirps-v2.0.2020.01.01.tif")
+                           #//catalogue/BaseLineDataCluster01/observed/gridded_products/chirps/daily/chirps-v2.0.2020.01.01.tif
+    tmp <- raster::raster("//CATALOGUE/Workspace14/WFP_ClimateRiskPr/1.Data/chirps-v2.0.2020.01.01.tif")
     
     # Transform crd to raster study area
     r <- raster::rasterFromXYZ(xyz = crd[,c('x','y')] %>% unique %>% dplyr::mutate(vals = 1),
@@ -26,7 +27,7 @@ get_soil <- function(crd = crd, root_depth = 60, outfile = './soilcp_data.fst'){
                                crs = raster::crs(tmp))
     
     # Soil data repository. ISRIC soil data 250 m
-    soils_root <- '//catalogue/BaseLineData_cluster04/GLOBAL/Biofisico/SoilGrids250m'
+    soils_root <- '//192.168.20.97/data_cluster17/GLOBAL/Biofisico/SoilGrids250m'
     # Soil organic carbon content
     orc <- raster::stack(list.files(paste0(soils_root,'/Chemical soil properties/Soil organic carbon content'), pattern = '.tif$', full.names = T) %>% sort())
     # Cation exchange capacity

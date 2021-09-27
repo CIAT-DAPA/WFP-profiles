@@ -17,10 +17,10 @@ ISO3 <- 'TZA'
 country <- 'Tanzania'
 
 # Paths
-OSys <- Sys.info()[1]
+OSys <<- Sys.info()[1]
 root <<- switch(OSys,
-                'Linux'   = '/home/jovyan/work/cglabs',
-                'Windows' = '//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr')
+                'Linux'   = '/CATALOGUE/Workspace14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
 
 # =---------------------------------------------------
 # Creando el CRD 
@@ -60,7 +60,7 @@ root <<- switch(OSys,
 #   coord_fixed() +  theme_bw()
 # =---------------------------------------------------
 # Reading id for all world. 
-tabla_final <- read_csv("//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/crd_world.csv")
+tabla_final <- read_csv("//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/crd_world.csv")
 tabla_final <<- tabla_final
 
 spg <- tabla_final %>% dplyr::select(id, x, y)
@@ -205,7 +205,7 @@ observed_data <- function(tab){
   climate_t <- full_join(ERA5_final, raw_ly) %>% drop_na(prec)
   
   # Where save the file. 
-  foder_save <- glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/{iso3}/year')
+  foder_save <- glue::glue('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/observed_data/{iso3}/year')
   if(dir.exists(foder_save) == FALSE){dir.create(foder_save, recursive = TRUE)}else{print('ok')}
   # Save a file by one year
   fst::write_fst(x = climate_t, path = glue::glue('{foder_save}/climate_{year}_mod.fst'))
@@ -246,5 +246,5 @@ observed_data <- function(tab){
 #     return(cl_d)}))
 
 ob_run_f <- dplyr::select(ob_run, - row) %>% unnest() 
-fst::write_fst(x = ob_run_f, path = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/observed_data/{ISO3}/{ISO3}.fst') )
+fst::write_fst(x = ob_run_f, path = glue::glue('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/observed_data/{ISO3}/{ISO3}.fst') )
 

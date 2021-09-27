@@ -6,7 +6,7 @@
 
 changes_paths <- function(country, iso){
   # Read all data complete. 
-  past <- fst::fst( glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/past/{iso}_indices_monthly.fst') )%>% 
+  past <- fst::fst( glue::glue('{root}/7.Results/{country}/past/{iso}_indices_monthly.fst') )%>% 
     tibble::as_tibble() %>% 
     dplyr::mutate(time = 'Historic')
   
@@ -18,8 +18,8 @@ changes_paths <- function(country, iso){
   ncores <- 5
   plan(cluster, workers = ncores, gc = TRUE)
   
-  future <- tibble( file = list.files(glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = paste0(iso, '_indices_monthly')) ) %>%
-    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/7.Results/{country}/future/'))) %>% 
+  future <- tibble( file = list.files(glue::glue('{root}/7.Results/{country}/future/{gcm}/'), full.names =  TRUE, recursive = TRUE, pattern = paste0(iso, '_indices_monthly')) ) %>%
+    dplyr::mutate(shot_file = str_remove(file, pattern = glue::glue('{root}/7.Results/{country}/future/'))) %>% 
     dplyr::mutate(data = furrr::future_map(.x = file, .f = function(x){x <- fst::fst(x) %>% tibble::as_tibble()})) %>%
     dplyr::select(-file) %>%
     dplyr::mutate(str_split(shot_file, '/') %>% 

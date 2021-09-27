@@ -17,7 +17,11 @@ calc_spi_drought <- function(spi_data = infile, output = outfile, country = coun
   if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
   pacman::p_load(tidyverse, tidyft, fst, raster, terra, sf)
   
-  root <<- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+  # root <<- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+  OSys <<- Sys.info()[1]
+  root <<- switch(OSys,
+                  'Linux'   = '/dapadfs/workspace_cluster_14/WFP_ClimateRiskPr',
+                  'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
   
   if(!file.exists(outfile)){
     # Load municipalities/districts shapefile

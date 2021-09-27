@@ -17,7 +17,7 @@ country <- 'Burundi'
 
 create_slides <- function(country = 'Burundi', iso3 = iso3, season = season, region = region){
 
-  to_do <- readxl::read_excel('//dapadfs/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>%
+  to_do <- readxl::read_excel('//dapadfs/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/regions_ind.xlsx') %>%
     filter(ISO3 == iso3) %>%
     rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X") %>% 
     dplyr::select(-Short_Name)

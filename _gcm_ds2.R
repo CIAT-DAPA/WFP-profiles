@@ -288,7 +288,12 @@ setup <- setup[setup$var != 'tas',]
 #######################################################################################################
 # cloud setup
 # Input parameters
-root <- "//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/climate"
+#root <- "//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr/1.Data/climate"
+OSys <<- Sys.info()[1]
+root <<- switch(OSys,
+                'Linux'   = '/CATALOGUE/Workspace14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
+
 gcmdir <- paste0(root,"/interim/rotated/CMIP6/daily")
 ff     <- list.files(gcmdir, pattern = ".tif$", full.names = TRUE)
 
@@ -309,7 +314,7 @@ country <- 'Tanzania'
 iso     <- 'TZA'
 setupx  <- setup[setup$iso == iso,]
 rownames(setupx) <- 1:nrow(setupx)
-rgn_shp <- paste0('//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp')
+rgn_shp <- paste0('//CATALOGUE/Workspace14/WFP_ClimateRiskPr/1.Data/shps/',tolower(country),'/',tolower(iso),'_regions/',tolower(iso),'_regions.shp')
 
 library(future.apply)
 availableCores()

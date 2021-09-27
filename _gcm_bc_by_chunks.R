@@ -11,10 +11,10 @@ suppressMessages(pacman::p_load(tidyverse,tidyft))
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_main_functions.R') # Main functions
 source('https://raw.githubusercontent.com/CIAT-DAPA/WFP-profiles/main/_gcm_bc.R')         # GCMs bias-correction
 
-OSys <- Sys.info()[1]
+OSys <<- Sys.info()[1]
 root <<- switch(OSys,
-                'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+                'Linux'   = '/CATALOGUE/Workspace14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
 
 iso     <- 'TZA'
 model   <- 'INM-CM5-0'

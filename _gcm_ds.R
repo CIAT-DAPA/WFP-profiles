@@ -223,7 +223,11 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
       })
   } else {
     d  <- grep(paste(model,experiment,sep = ".*"), dd, value = TRUE)
-    if(length(grep(pattern = '_tas_', x = d, fixed = T)) > 0){d <- d[-grep(pattern = '_tas_', x = d, fixed = T)]}
+    
+    # no need if(length(grep(pattern = '_tas_', x = d, fixed = T)) > 0){d <- d[-grep(pattern = '_tas_', x = d, fixed = T)]}
+    # drop avergae
+    d <- grep(pattern = '_tas_', x = d, fixed = T, invert = T, value = T)
+    
     df <- lapply(d, function(x){
       tb <- data.table(read_fst(x))
       if(length(grep(pattern = 'cell', x = names(tb))) > 0){names(tb)[grep(pattern = 'cell', x = names(tb))] <- 'id'}
@@ -259,7 +263,12 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
     #     return(tbl)
     #   })
     # merge list of dataframes
+
+    # dff <- Reduce(function(...) dplyr::inner_join(..., by = c("id","date")), df)
+    # dff <- Reduce(function(...) merge(..., all=T,  by = c("x","y","id","date")), df)
+
     df <- Reduce(function(...) merge(..., all=T,  by = c("x","y","id","date")), df)
+
     # convert to epoch time
     # df$date <- as.POSIXct(as.numeric(as.character(df$date)), origin="1970-01-01")
     df$date <- as.Date(df$date)
@@ -359,8 +368,9 @@ mergeGCMdailyTable <- function(iso, model, experiment, gcmdir, outdir, rref){
 # To execute tables merge
 OSys <<- Sys.info()[1]
 root <<- switch(OSys,
-                'Linux'   = '/dapadfs/workspace_cluster_13/WFP_ClimateRiskPr',
-                'Windows' = '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr')
+                'Linux'   = '/CATALOGUE/Workspace14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
+
 iso          <- 'NER'
 models       <- c('MPI-ESM1-2-HR','MRI-ESM2-0') # 'ACCESS-ESM1-5','EC-Earth3-Veg','INM-CM5-0'
 for(model in models){

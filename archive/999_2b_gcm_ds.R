@@ -203,13 +203,13 @@ if(!file.exists(ref)){
 # need to move to future apply
 
 # prioritize HTI and BDI
-
 # setupx <- setup[setup$iso == "NER",]
+setupx <- setup[setup$iso == "PAK",]
 
-setupx <- setup[setup$iso %in% c("PAK", "TZA", "SOM", "MMR"),]
+# setupx <- setup[setup$iso %in% c("PAK", "TZA", "SOM", "MMR"),]
 
 rr <- parallel::mclapply(1:nrow(setupx), getGCMdailyTable, setupx, root, ref, ff, overwrite = FALSE,
-                          mc.preschedule = FALSE, mc.cores = 20)
+                          mc.preschedule = FALSE, mc.cores = 10)
 
 # getGCMdailyTable(1, setupx, root, ref, ff, overwrite = FALSE)
 
@@ -268,6 +268,34 @@ table(basename(dirname(ff)))
 fs <- gsub(".tif", ".fst", f)
 x <- fs[!file.exists(fs)]
 x <- gsub(".fst", ".tif", x)
+
+
+# clean up corrupted files
+
+checkCorruptFiles <- function(f){
+  
+  file_damage <- FALSE
+  
+  tryCatch({ result <- fst::read_fst(f) }, error = function(e) {file_damage <<- TRUE})
+  # expand for other kind type of files
+  
+  if(file_damage){
+    cat("deleting", basename(f), "\n")
+    unlink(f)
+    flush.console()
+  }
+}
+
+odir <- "~/data/output/downscale/CMIP6/daily"
+ff <- list.files(odir, pattern = ".fst$", recursive = TRUE, full.names = TRUE)
+
+iso <- "PAK"
+ff <- grep(iso, ff, value = TRUE)
+lapply(ff, checkCorruptFiles)
+# parallel::mclapply(ff, checkCorruptFiles, mc.cores = 10, mc.preschedule = F)
+
+  
+
 
 ###################################################################################################################
 # Merge output tables

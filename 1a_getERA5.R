@@ -8,7 +8,7 @@ library("ecmwfr")
 
 # save key for CDS
 # use the credentials I shared
-wf_set_key(user = uid,
+wf_set_key(user = UID,
            key = key,
            service = "cds")
 
@@ -46,15 +46,15 @@ getERA5 <- function(i, qq, year, month, datadir){
   } else {
     cat("Already exists", q[!is.na(q)], "for", year, month, "\n"); flush.console();
   }
-      
   return(NULL)
 }
 
 
 ########################################################################################################
 # TODO: change data directory
-datadir <- "~/data/input/climate/era5/"
+# datadir <- "~/data/input/climate/era5/"
 datadir <- "/cluster01/workspace/ONECGIAR/Data/climate/era5/sis-agromet/zip"
+# datadir <- "~/data/input/climate/AgERA5/"
 dir.create(datadir, FALSE, TRUE)
   
 # combinations to download
@@ -79,6 +79,14 @@ for (i in 1:nrow(qq)){
 }
 
 
+
+for (year in as.character(1999:2001)){
+    for (month in months){
+      getERA5(i=5, qq, year, month, datadir)
+  }
+}
+
+
 # unzip example
 # unzip(file.path(datadir, ofile), exdir = datadir)
 datadir <- "/cluster01/workspace/ONECGIAR/Data/climate/era5/sis-agromet/zip"
@@ -97,6 +105,16 @@ extractNC <- function(var, zz, datadir, ncores = 10){
 for (var in vars){
   extractNC(var, zz, datadir, ncores = 40)
 }
+
+# check download status
+eraDownload <- function(i, qq, ff){
+  var <- paste0(qq$variable[i], "-", qq$statistics[i])
+  f <- grep(var, ff, val = T)
+  yr <- sapply(strsplit(f, "-"), "[[", 3)
+  return(list(var, table(yr)))
+}
+ff <- list.files(datadir, pattern=".zip$")
+lapply(1:nrow(qq), eraDownload, qq, ff)
 
 ############################################################################################
 # unsuccessful attempts

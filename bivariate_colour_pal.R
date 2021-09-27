@@ -8,7 +8,11 @@ options(warn = -1, scipen = 999)
 if(!require(pacman)){install.packages('pacman'); library(pacman)} else {suppressMessages(library(pacman))}
 suppressMessages(pacman::p_load(tidyverse,pals,fst,raster,terra,RColorBrewer))
 
-root <- '//dapadfs.cgiarad.org/workspace_cluster_13/WFP_ClimateRiskPr'
+#root <- '//dapadfs.cgiarad.org/workspace_cluster_14/WFP_ClimateRiskPr'
+OSys <<- Sys.info()[1]
+root <<- switch(OSys,
+                'Linux'   = '/CATALOGUE/Workspace14/WFP_ClimateRiskPr',
+                'Windows' = '//CATALOGUE/Workspace14/WFP_ClimateRiskPr')
 iso     <- 'HTI'
 country <- 'Haiti'
 

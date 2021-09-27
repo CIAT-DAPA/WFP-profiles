@@ -182,7 +182,7 @@ makeChartByProvince <- function(s, vr, brs, suitcat, fills, xlabs){
 
 #############################################################################################
 
-makePlotSingle <- function(f,vr,pdir){
+makePlotSingle <- function(f,vs,pdir){
   
   # cat("processing ", unique(v$iso3), "\n")
   
@@ -209,8 +209,14 @@ makePlotSingle <- function(f,vr,pdir){
   
   # border of the focus province
   # pnames <- get('vr')[[paste0('NAME_',level)]]
-  vr$pnames <- substr(vr$LZNAMEF, 1, 15)
-  border <- tm_shape(vr) + tm_borders(lwd=2, col=gray(0.1)) + tm_text("pnames", size = 1)
+  vs <- aggregate(vs, "zone")
+  vs$pnames <- substr(vs$zone, 1, 15)
+  
+  rc <- CRS("+init=epsg:4326")
+  if(!compareCRS(vs, rc)){
+    vs <- spTransform(vs, rc)
+  }
+  border <- tm_shape(vs) + tm_borders(lwd=2, col=gray(0.1)) # + tm_text("pnames", size = 1)
   # all border
   # allborder <- tm_shape(v) + tm_borders(lwd=1.25, col=gray(0.3), lty = "dashed")
   
@@ -244,8 +250,8 @@ makePlotSingle <- function(f,vr,pdir){
   
   ############################# chart #################################################
   
-  if (nrow(vr)>1){
-    plotbarlist <- lapply(1:nrow(vr), makeChartByProvince, vr, brs, suitcat, fills,
+  if (nrow(vs)>1){
+    plotbarlist <- lapply(1:nrow(vs), makeChartByProvince, vs, brs, suitcat, fills,
                           xlabs = c("hist", "2030", "2050"))
     # remove y label from all plots, except the left most
     plotbarlist[-1] <- lapply(plotbarlist[-1], 
@@ -268,7 +274,7 @@ makePlotSingle <- function(f,vr,pdir){
     dev.off()
     
   } else {
-    plotbarlist <- makeChartByProvince(nrow(vr),vr,brs, suitcat, fills, xlabs = c("hist", "2030", "2050"))
+    plotbarlist <- makeChartByProvince(nrow(vr),vs,brs, suitcat, fills, xlabs = c("hist", "2030", "2050"))
     
     # for single polygon, keep legend in portrait
     plg2 <- makeSuitGroupLegend(brs[[1]],suitcat,fills, TRUE)
@@ -303,8 +309,8 @@ makePlotSingle <- function(f,vr,pdir){
   
   cname3 <- file.path(pdir, paste0(onames, "_suitability_change_analysis_", gsub(".tif",".png",basename(f))))
   
-  if (nrow(vr)>1){
-    chgbarlist <- lapply(1:nrow(vr), makeChartByProvince, vr, cgrs, chgcat, fillc,
+  if (nrow(vs)>1){
+    chgbarlist <- lapply(1:nrow(vs), makeChartByProvince, vs, cgrs, chgcat, fillc,
                          xlabs = c("2030", "2050"))
     
     # remove y label from all plots, except the left most
@@ -327,7 +333,7 @@ makePlotSingle <- function(f,vr,pdir){
     dev.off()
     
   } else {
-    chgbarlist <- makeChartByProvince(nrow(vr),vr,cgrs, chgcat, fillc, 
+    chgbarlist <- makeChartByProvince(nrow(vs), vs,cgrs, chgcat, fillc, 
                                       xlabs = c("2030", "2050"))
     
     # for single polygon, keep legend in portrait
@@ -351,7 +357,7 @@ makePlots <- function(i, eco, vs, dir, outdir){
   # if(ecos$dissolve){next}
   
   # country name
-  iso <- unique(eco$ISO)
+  iso <- unique(eco$iso3)
   
   cat("processing ", iso, "\n")
   
@@ -365,20 +371,24 @@ makePlots <- function(i, eco, vs, dir, outdir){
   dir.create(pdir, showWarnings = FALSE, recursive = TRUE) 
   
   # LZ boundary
-  roi <- vs$LZNAMEF
+  roi <- unique(vs$zone)
   
   # list of crops
-  crp <- unique(eco$value_chain)
+  crp <- unique(eco$cropname)
   
   datadir <- file.path(dir, "result/2_5min")
   # list all crop tif files
   ff <- list.files(datadir, pattern = glob2rx(paste0(iso, "*.tif$")), full.names = TRUE, recursive = TRUE)
   
+  testPlotFun <- function(f,vs,pdir) {
+    return(tryCatch(makePlotSingle(f,vs,pdir), error=function(e) NULL))
+  }
+  
   # will go to another function
   # read one crop
   for (f in ff){
     cat("processing ", f, "\n")
-    lapply(f,makePlotSingle,vr,pdir)
+    lapply(f, testPlotFun, vs , pdir)
   }
 }
 
@@ -389,35 +399,20 @@ makePlots <- function(i, eco, vs, dir, outdir){
 # prepare the zones first
 
 library(raster)
-vdir <- "G:\\.shortcut-targets-by-id\\1zTxTZGK0LOQdQnN8N2TGWOP0PBUY-aMy\\shps"
-v <- list.files(vdir, pattern = glob2rx("*livelihoodzones_geonode*.shp$"), recursive = TRUE, full.names = TRUE)
-iso3 <- "BDI"
-v1 <- grep(tolower(iso3), v, value = TRUE)
-v1 <- shapefile(v1)
+v <- shapefile("data/all_zones_countries.shp")
+dir <- "G:\\My Drive\\work\\ciat\\ecocrop"
+outdir <- "G:\\My Drive\\work\\ciat\\wfp"
+ecos <- readxl::read_excel("suitability/ecocrop_runs.xlsx", sheet = 4)
 
-# we will work at the adm 1 level
-z1 <- v1[v1$LZ_Name %in% "Plaine Imbo", ]
-z1$LZNAMEF <- "Plaine Imbo"
-
-z2 <- v1[v1$LZ_Name %in% "Depression de l'Est", ]
-z2$LZNAMEF <- "Depression de l'Est"
-
-z3 <- v1[v1$LZ_Name %in% "Depression du Nord", ]
-z3$LZNAMEF <- "Depression du Nord"
-
-z4 <- v1[v1$LZ_Name %in% "Plateaux Secs de l'Est", ]
-z4$LZNAMEF <- "Plateaux Secs de l'Est"
-
-# combine all
-bdi <- bind(z1, z2, z3, z4)
-vs <- bdi
+isol <- unique(ecos$iso3)
 
 #####################################################################################
-dir <- "G:\\My Drive\\work\\ciat\\ecocrop"
-eco <- readxl::read_excel("suitability/ecocrop_runs.xlsx", sheet = 3)
-eco <- eco[eco$ISO == "BDI",]
+for (iso3 in isol){
+  vs <- v[v$iso3 == iso3,]
+  eco <- ecos[ecos$iso3 == iso3,]
+  lapply(1:nrow(eco), makePlots, eco, vs, dir, outdir)
+}
+
+# NER not working???
 
 
-outdir <- "G:\\My Drive\\work\\ciat\\wfp"
-
-lapply(1:nrow(eco), makePlots, eco, vs, dir, outdir)

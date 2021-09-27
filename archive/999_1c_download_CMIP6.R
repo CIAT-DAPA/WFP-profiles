@@ -57,6 +57,10 @@ dfut <- data.table::rbindlist(dfc, fill = TRUE)
 dd <- rbind(dhist, dfut)
 data.table::fwrite(dd, paste0("data/cmip6_filter_index_", Sys.Date(), ".csv"), row.names = FALSE)
 
+# datadir <- "/cluster01/workspace/AICCRA/Data/climate/cmip6"
+# dir.create(datadir, F, T)
+# data.table::fwrite(dd, file.path(datadir, paste0("cmip6_filter_index_", Sys.Date(), ".csv")), row.names = FALSE)
+
 ############################################################################################
 # now download
 options(timeout=3600)
@@ -86,8 +90,12 @@ getDataCMIP6 <- function(i, idx, downdir, silent=FALSE){
 ##########################################################################################
 # change the data directory as needed
 downdir <- "~/data/input/climate/CMIP6/daily"
-
 idx <- read.csv("data/cmip6_filter_index_2021-03-24.csv", stringsAsFactors = FALSE)
+
+# downdir <- file.path(datadir, "daily")
+f <- list.files(datadir, ".csv$", full.names = TRUE)
+idx <- read.csv(f, stringsAsFactors = FALSE)
+
 
 downloadParallel <- FALSE
 

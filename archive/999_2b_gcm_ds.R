@@ -94,12 +94,7 @@ getGCMdailyTable <- function(i, setup, root, ref, ff, overwrite = FALSE){
   dir.create(vdir, FALSE, TRUE)
   
   # Country/zone boundary
-  if(iso=="NER"){
-    cmask <- file.path(vdir, paste0(iso, "_lz_mask_chirps.tif"))
-  } else {
-    cmask <- file.path(vdir, paste0(iso, "_mask_chirps.tif"))
-  }
-  
+  cmask <- file.path(vdir, paste0(iso, "_lz_mask_chirps.tif"))
   
   if(!file.exists(cmask)){
     bfile <- "~/code/WFP-profiles/data/all_zones_countries.shp"
@@ -209,7 +204,7 @@ if(!file.exists(ref)){
 
 # prioritize HTI and BDI
 
-setupx <- setup[setup$iso == "NER",]
+# setupx <- setup[setup$iso == "NER",]
 
 setupx <- setup[setup$iso %in% c("PAK", "TZA", "SOM", "MMR"),]
 

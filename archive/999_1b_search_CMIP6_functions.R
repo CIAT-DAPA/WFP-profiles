@@ -134,7 +134,7 @@ getAccess <- function(nd, pattern = ".nc$"){
     dataset <- xml2::xml_attr(nd, "name")
     if (grepl(pattern, dataset)){
       xd <- xml_contents(nd)
-      xdd <- bind_rows(lapply(xml_attrs(xd), function(x) data.frame(as.list(x), stringsAsFactors=FALSE)))
+      xdd <- dplyr::bind_rows(lapply(xml_attrs(xd), function(x) data.frame(as.list(x), stringsAsFactors=FALSE)))
       xdd <- xdd[,c("name", "value")]
       xdd <- xdd[complete.cases(xdd),]
       d <- data.frame(t(xdd$value))

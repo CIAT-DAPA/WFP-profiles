@@ -62,7 +62,7 @@ cropRas <- function(iso, ifile, rr, outdir, res){
 
 #############################################################################################################
 # country-crop combination
-eco <- readxl::read_excel("suitability/ecocrop_runs.xlsx", sheet = 3)
+eco <- readxl::read_excel("suitability/ecocrop_runs.xlsx", sheet = 4)
 
 # create a database of crop-country
 # read and process every crop raster for once, and crop all the countries that has the crops
@@ -70,19 +70,18 @@ dd <- list()
 for (i in 1:nrow(eco)){
   ecos <- eco[i,]
   # cleanup crop name
-  crops <- trimws(unlist(strsplit(ecos$value_chain, '\",\"|\", \"|\" ,\"|\" , \"')))
-  crops <- gsub('\"|\"', '', crops)
-  
+  crops <- trimws(unlist(strsplit(ecos$cropname, ",")))
+
   # remove poultry, milk
   crops <- crops[!crops %in% c("poultry", "ship/goat", "fish", "cattle", "salt")]
-  iso <- ecos$ISO
+  iso <- ecos$iso3
   dd[[i]] <- data.frame(ISO=iso, crops = crops, stringsAsFactors = FALSE)
 }
 
 dd <- do.call(rbind, dd)
 dd <- unique(dd[,1:2])
-
-# list of unique crops
+# 
+# # list of unique crops
 ucrp <- unique(dd$crops)
 
 # final call

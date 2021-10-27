@@ -243,70 +243,51 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       alt <- raster::resample(x = alt, y = tmp_c)
       alt <- raster::crop(alt, raster::extent(regions_all)) %>% raster::mask(., regions_all)
       # list of periods
-      list_time <- unique(tbl$time1)
+      list_time <- sort(unique(tbl$time1))
       tbl_it <- list_time %>%
-        purrr::map(.f=function(i){
-          # tabla filtrada por periodo de tiempo
-          #i=1
-          tbl_flt <- tbl %>% dplyr::filter(time1==list_time[i])
-          # indices
+        purrr::map(.f = function(i){ # Filter table by time period
+          
+          tbl_flt <- tbl %>% dplyr::filter(time1 == i)
+          tbl_flt$SPI[is.na(tbl_flt$SPI)] <- 0
           indices <- c("ATR","AMT","SPI","TAI","NDD","NDWS","P5D","P95","NWLD",
                        "NT_X","SHI","NWLD50","NWLD90","THI_0","THI_1","THI_2","THI_3","THI_23")
           
-          # uso rasterize para crear el raster con la tabla indices.fst
-          rd_data <- rasterize(x=tbl_flt[, c('x','y')], # lon-lat(x,y) de indices.fst
-                               y=alt, # raster rd_obj
-                               field= tbl_flt[,indices], # agregar variables al raster
-                               fun=mean) # aggregate function
-          # =----------------------
-          # Interpolation function
-          fill.interpolate <- function(rd_data, alt){
-            # coordenadas
-            xy <- data.frame(xyFromCell(rd_data, 1:ncell(rd_data)))
-            # valores de Y
-            vals <- raster::getValues(rd_data)
-            # add elevation
-            p <- raster::aggregate(alt, res(rd_data)/res(alt))
-            # remove NAs
-            set.seed(1)
-            #i <- !is.na(vals)
-            i <- complete.cases(vals)
-            # filtro para coordenadas sin NA
-            xy <- xy[i,]
-            # filtra para la variable de respuesta (sin NA)
-            vals <- vals[i,]
-            # Muestreo del 20% de pixels
-            k <- sample(1:nrow(xy), nrow(xy)*0.2)
-            # filtr pixels de la muestra
-            xy <- xy[k,]
-            vals <- (vals[k,])
-            vals <- round(vals)
-            r1 <- alt
-            r1[] <- NA
-            # Thin plate spline model
-            interpolations <- lapply(X = 1:ncol(vals), FUN = function(j){
-              tps <- fields::Tps(xy, vals[,j])
-              # use model to predict values at all locations
-              p <- raster::interpolate(r1, tps, ext = extent(regions_all))
-              p <- raster::mask(p, alt)
-              return(p)
+          # Create spatial data.frame object
+          spdf <<- sp::SpatialPointsDataFrame(coords      = tbl_flt[, c('x','y')] %>% base::as.data.frame(),
+                                             data        = tbl_flt %>% base::as.data.frame(),
+                                             proj4string = sp::CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+          
+          # Empty template
+          tmp   <- alt
+          tmp[] <- NA
+          raster::crs(tmp) <- raster::crs(spdf)
+          
+          # Interpolate by index
+          interpolations <- 1:length(indices) %>%
+            purrr::map(.f = function(j){
+              
+              cat(paste0(' --- Fit inverse distance weighted interpolation for: ',indices[j],'\n'))
+              glue::glue('idw_fit <- gstat::gstat(formula = {indices[j]} ~ 1, locations = spdf)') %>%
+                as.character %>%
+                parse(text = .) %>%
+                eval(expr = ., envir = .GlobalEnv)
+              idw_int <- raster::interpolate(r1, idw_fit)
+              idw_msk <- raster::mask(idw_int, alt)
+              return(idw_msk)
+              
             })
-          }
-          interpolations <- fill.interpolate(rd_data,alt)
-          # transform in raster stack
           interpolations <- raster::stack(interpolations)
-          #add indices names
           names(interpolations) <- indices
           tbl_it <- base::data.frame(raster::rasterToPoints(interpolations))
-          tbl_it$id <- as.numeric(raster::cellFromXY(object = tmp, xy = tbl_it[,c('x','y')]))
+          tbl_it$id <- base::as.numeric(raster::cellFromXY(object = tmp, xy = tbl_it[,c('x','y')]))
           tbl_it$time1 <- i
           return(tbl_it)
         })
       tbl_it
       # extract indices for periods of time
-      fut1_intp <- as.data.frame(tbl_it[[1]])
-      fut2_intp <- as.data.frame(tbl_it[[2]])
-      his_intp <- as.data.frame(tbl_it[[3]])
+      his_intp  <- base::as.data.frame(tbl_it[[1]])
+      fut1_intp <- base::as.data.frame(tbl_it[[2]])
+      fut2_intp <- base::as.data.frame(tbl_it[[3]])
       
       tbl_intp <- rbind(his_intp,fut1_intp,fut2_intp)
       tbl_intp$time1 <- as.character(tbl_intp$time1)
@@ -320,7 +301,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       # filter new id
       px_n <- base::setdiff(x=tbl_intp$id, y=to_graph$id)
       # table with only new id's
-      tbl_intp <- subset(tbl_intp, tbl_intp$id %in% px_n==T)
+      tbl_intp <- subset(tbl_intp, tbl_intp$id %in% px_n == T)
       # join table of real and interpolated index
       to_graph <- rbind(to_graph, tbl_intp)
     }

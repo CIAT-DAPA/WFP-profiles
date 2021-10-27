@@ -271,7 +271,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                 as.character %>%
                 parse(text = .) %>%
                 eval(expr = ., envir = .GlobalEnv)
-              idw_int <- raster::interpolate(r1, idw_fit)
+              idw_int <- raster::interpolate(tmp, idw_fit)
               idw_msk <- raster::mask(idw_int, alt)
               return(idw_msk)
               

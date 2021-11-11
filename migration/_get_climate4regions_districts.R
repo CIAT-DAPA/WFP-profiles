@@ -40,7 +40,7 @@ flt_clm_subunits <- function(iso = 'SOM', country = 'Somalia', district = 'Caabu
   if(packageVersion('terra') == '1.1.0' | packageVersion('terra') == '1.1.4'){
     crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% unlist() %>% as.numeric()
   } else {
-    if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
+    if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7' | packageVersion('terra') == '1.4.11'){
       crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% dplyr::pull('V2') %>% unlist() %>% as.numeric()
     }
   }
@@ -85,10 +85,10 @@ flt_clm_subunits2 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   rst <- terra::rasterize(x = shp, y = ref)
   
   cat('>>> Filter coords in regions of interest\n')
-  if(packageVersion('terra') == '1.1.0' | packageVersion('terra') == '1.1.4'){
+  if(packageVersion('terra') == '1.1.0' | packageVersion('terra') == '1.1.4' | packageVersion('terra') == '1.4.11'){
     crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% unlist() %>% as.numeric()
   } else {
-    if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7' | packageVersion('terra') == '1.4.11'){
+    if(packageVersion('terra') == '1.1.17' | packageVersion('terra') == '1.2.7'){
       crd$sl <- terra::extract(x = rst, y = crd[,c('x','y')]) %>% dplyr::pull('V2') %>% unlist() %>% as.numeric()
     }
   }

@@ -78,13 +78,12 @@ flt_clm_subunits2 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
     base::as.data.frame()
   
   cat('>>> Regions shape and add a buffer of 5 km\n')
-  # shp <- sf::read_sf(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_zones/',tolower(district),'.shp'))
-  # shp <- sf::st_buffer(shp, dist = 0.05) %>% sf::st_union(.) %>% sf::as_Spatial() %>% terra::vect()
-  shp <- terra::vect(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_zones/',tolower(district),'.shp'))
-  shp <- terra::buffer(shp, width = 5000)
+  shp <- sf::read_sf(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_zones/',tolower(district),'.shp'))
+  shp <- sf::st_buffer(shp, dist = 0.05) %>% sf::st_union(.) %>% sf::as_Spatial() %>% terra::vect()
+  #shp <- terra::vect(paste0(root,'/1.Data/shps/',tolower(country),'/',tolower(iso),'_zones/',tolower(district),'.shp'))
+  # shp <- terra::buffer(shp, width = 5000)
   ref <- terra::rast(paste0(root,'/1.Data/chirps-v2.0.2020.01.01.tif'))
   ref <- terra::crop(ref, terra::ext(shp))
-  terra::crs(ref) <- terra::crs(shp)
   rst <- terra::rasterize(x = shp, y = ref)
   
   cat('>>> Filter coords in regions of interest\n')

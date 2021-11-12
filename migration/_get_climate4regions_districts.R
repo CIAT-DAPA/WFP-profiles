@@ -84,6 +84,7 @@ flt_clm_subunits2 <- function(iso = 'SOM', country = 'Somalia', district = 'Caab
   shp <- terra::buffer(shp, width = 5000)
   ref <- terra::rast(paste0(root,'/1.Data/chirps-v2.0.2020.01.01.tif'))
   ref <- terra::crop(ref, terra::ext(shp))
+  terra::crs(ref) <- terra::crs(shp)
   rst <- terra::rasterize(x = shp, y = ref)
   
   cat('>>> Filter coords in regions of interest\n')

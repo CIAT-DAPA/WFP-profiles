@@ -63,33 +63,31 @@ bar_graphs <- function(country, iso, region = 'all'){
     dplyr::filter(ISO3 == iso) %>%
     dplyr::rename('Livehood_z' = 'Livelihood zones', 'NT_X'= "NT-X")
   
+  # region <- to_do$Regions[1]
   
-  if(R_zone == 'all'){ 
-    if('CSDI' %in% names(future)){
-      zone <- regions_all # %>% sf::as_Spatial() 
-      var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
-        dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
-        dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
-        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
+  if(region == 'all'){
+    if('CSDI' %in% names(all)){
+    var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
+      dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+      dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
+      dplyr::summarise_all(. , sum, na.rm = TRUE) %>% ungroup()
     } else {
-      zone <- regions_all # %>% sf::as_Spatial() 
       var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
         dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
         dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
-        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
+        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% ungroup()
     }
+    
     title = 'Country'
   }else{
-    if('CSDI' %in% names(future)){
-      zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
-      var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
-        dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) 
+    if('CSDI' %in% names(all)){
+    var_s <- to_do %>% dplyr::filter(Regions == region) %>%
+      dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
     } else{
-      zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
-      var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
+      var_s <- to_do %>% dplyr::filter(Regions == region) %>%
         dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
     }
-    title = dplyr::filter(to_do, Regions  == R_zone)$Short_Name   
+    title = dplyr::filter(to_do, Regions  == region)$Short_Name   
   }
   
   vars <- dplyr::select(var_s, -ISO3, -Country, -Regions, -Livehood_z, -Short_Name) %>% 

@@ -314,7 +314,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X', 'NWLD_max','NWLD50_max', 'NWLD90_max')){
         my_limits <- c(0, 31)
         my_breaks <- c(0, 10, 20, 31)
-      }
+      } 
       
       # Pattern. 
       if(var_toG[i] == 'AMT'){ pattern <- 'AMT\n(\u00B0C)' }
@@ -328,7 +328,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
       if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
       if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
-      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' }
+      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' } 
+      
       
       if(var_toG[i] == 'ATR'){
         
@@ -355,16 +356,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                                             label.theme = element_text(angle = 25, size = 35))) 
       }    
       
-      to_graph$cellID <- raster::cellFromXY(object = tmp, xy = base::as.data.frame(to_graph[,c('x','y')]))
-      to_graph$x <- to_graph$y <- NULL
-      to_graph <- cbind(to_graph, base::as.data.frame(raster::xyFromCell(object = tmp, cell = to_graph$cellID)))
-      
-      if('NDWS' %in% names(to_graph)){
-        to_graph$NDWS[to_graph$NDWS > 31] <- 31
-      }
-      
-      gg <- ggplot() +
-        geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i])), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i]))) +
+      ggplot() +
+        geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
@@ -380,9 +373,9 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               axis.text.x=element_blank(), axis.text.y=element_blank(),
               legend.title=element_text(size=35), 
               legend.spacing = unit(5, units = 'cm'),
-              legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
+              legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
       
-      ggplot2::ggsave(filename = glue::glue('{path}/C_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
+      ggsave(glue::glue('{path}/C_{var_toG[i]}.png') , width = 15, height = 10, dpi = 300)
       
     }
     
@@ -459,6 +452,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
         if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
         if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' } 
+        if(var_toG[i] == 'CSDI'){ pattern <- 'CSDI\n(days)' } 
         
         
         mop <- scale_fill_gradient2(
@@ -584,6 +578,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
       if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
       if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' }
+      if(var_toG[i] == 'CSDI'){ pattern <- 'CSDI\n(days)' }
       
       gg <- ggplot() +
         geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(var_Q[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_Q[i]) %>% as.factor(.) )) +

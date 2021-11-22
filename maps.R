@@ -727,7 +727,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # =----- 
     fix_Vars <- var_toG[var_toG %in% c('SPI','TAI', 'NDWS', 'NDD', 'NT_X', 'NWLD','NWLD50','NWLD90', 'LGP', 'THI_0', 'THI_1', 'THI_2', 'THI_3', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'SHI', 'SLGP_CV', 'THI_23', 'HSI_23', 'NWLD_max','NWLD50_max','NWLD90_max')]
     
-    
     # fixed categorical class maps. 
     for(i in 1:length(fix_Vars)){
       
@@ -747,8 +746,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(fix_Vars[i] == 'THI_23'){ pattern <- 'THI_2 + THI_3\n(prob)' } 
       if(fix_Vars[i] == 'HSI_23'){ pattern <- 'HSI_2 + HSI_3\n(prob)' } 
       
-      
-      ggplot() +
+      gg <- ggplot() +
         geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(fix_Vars[i]) ), aes(x = x, y = y, fill = !!rlang::sym(fix_Vars[i]) %>% as.factor(.) )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -771,9 +769,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               legend.spacing = unit(5, units = 'cm'),
               legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
       
-      ggsave(glue::glue('{path}/Fix_{fix_Vars[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/Fix_{fix_Vars[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
-    
     
     # =--------------------------------------------------
     # Overlays variables. 
@@ -814,7 +811,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     # =-----
     
-    
     # =- Low level var reclassify
     vars_lvl <- names(class_1)[names(class_1) %in% low_lvl] 
     if(length(low_lvl) > 0){
@@ -853,14 +849,14 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     # Drought - Heat - Waterlogging - Agricultural 
     all_Hz <- all_Hz %>%
-      dplyr::mutate(Ha = glue::glue('{Drought}-{Heat}'), 
-                    Wa = glue::glue('{Drought}-{Waterlogging }'), 
+      dplyr::mutate(Dr_Ha = glue::glue('{Drought}-{Heat}'), 
+                    Dr_Wa = glue::glue('{Drought}-{Waterlogging }'), 
                     Ha_Wa = glue::glue('{Heat}-{Waterlogging}'))
     
     
     # if(sum(names(all_Hz) == 'Agricultural') == 1){
     #   all_Hz <- all_Hz %>%
-    #   dplyr::mutate(Ag = glue::glue('{Drought}-{Agricultural }'), 
+    #   dplyr::mutate(Dr_Ag = glue::glue('{Drought}-{Agricultural }'), 
     #                 Ag_Wa = glue::glue('{Agricultural }-{Waterlogging }'), 
     #                 Ha_Ag = glue::glue('{Heat}-{Agricultural }'))}
     
@@ -897,7 +893,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       unv <- all_Hz %>% dplyr::select(x, y, time1, uni_vars[i]) %>% 
         dplyr::rename(ind = uni_vars[i]) %>% dplyr::mutate(ind = as.factor(ind))
       
-      ggplot2::ggplot() +
+      gg <- ggplot2::ggplot() +
         ggplot2::geom_tile(data = unv, aes(x = x, y = y, fill = ind) ) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -917,38 +913,35 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                        strip.text.x     = element_text(size = 35),
                        strip.background = element_rect(colour = "black", fill = "white"))
       
-      ggsave(glue::glue('{path}/Uni_{uni_vars[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/Uni_{uni_vars[i]}.png'), width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
     
-    
+    # =-------------------------------
+    # This funcion is built a bibariate scale colours. 
+    colmat <-  function(nquantiles=10, upperleft=rgb(0,150,235, maxColorValue=255), upperright=rgb(130,0,80, maxColorValue=255), bottomleft="grey", bottomright=rgb(255,230,15, maxColorValue=255), xlab="x label", ylab="y label"){
+      
+      my.data<-seq(0,1,.01)
+      my.class<-classInt::classIntervals(my.data,n=nquantiles,style="quantile")
+      my.pal.1<-classInt::findColours(my.class,c(upperleft,bottomleft))
+      my.pal.2<-classInt::findColours(my.class,c(upperright, bottomright))
+      col.matrix<-matrix(nrow = 101, ncol = 101, NA)
+      
+      for(i in 1:101){
+        my.col<-c(paste(my.pal.1[i]),paste(my.pal.2[i]))
+        col.matrix[102-i,]<-classInt::findColours(my.class,my.col)}
+      plot(c(1,1),pch=19,col=my.pal.1, cex=0.5,xlim=c(0,1),ylim=c(0,1),frame.plot=F, xlab=xlab, ylab=ylab,cex.lab=1.3)
+      
+      for(i in 1:101){
+        col.temp<-col.matrix[i-1,]
+        points(my.data,rep((i-1)/100,101),pch=15,col=col.temp, cex=1)}
+      
+      seqs<-seq(0,100,(100/nquantiles))
+      seqs[1]<-1
+      col.matrix<-col.matrix[c(seqs), c(seqs)]}
     
     # =-------------------------------
-      # This funcion is built a bibariate scale colours. 
-      colmat <-  function(nquantiles=10, upperleft=rgb(0,150,235, maxColorValue=255), upperright=rgb(130,0,80, maxColorValue=255), bottomleft="grey", bottomright=rgb(255,230,15, maxColorValue=255), xlab="x label", ylab="y label"){
-        
-        my.data<-seq(0,1,.01)
-        my.class<-classInt::classIntervals(my.data,n=nquantiles,style="quantile")
-        my.pal.1<-classInt::findColours(my.class,c(upperleft,bottomleft))
-        my.pal.2<-classInt::findColours(my.class,c(upperright, bottomright))
-        col.matrix<-matrix(nrow = 101, ncol = 101, NA)
-        
-        for(i in 1:101){
-          my.col<-c(paste(my.pal.1[i]),paste(my.pal.2[i]))
-          col.matrix[102-i,]<-classInt::findColours(my.class,my.col)}
-        plot(c(1,1),pch=19,col=my.pal.1, cex=0.5,xlim=c(0,1),ylim=c(0,1),frame.plot=F, xlab=xlab, ylab=ylab,cex.lab=1.3)
-        
-        for(i in 1:101){
-          col.temp<-col.matrix[i-1,]
-          points(my.data,rep((i-1)/100,101),pch=15,col=col.temp, cex=1)}
-        
-        seqs<-seq(0,100,(100/nquantiles))
-        seqs[1]<-1
-        col.matrix<-col.matrix[c(seqs), c(seqs)]}
-      
-      # =-------------------------------
-      
-      
-      # =----------------
+    
+    # =----------------
     # Bivariate maps. 
     final_map <- function(lab_t, all_Hz){
       
@@ -1039,38 +1032,35 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     final_map(lab_t = 'Ha_Wa', all_Hz = all_Hz)
     # tictoc::toc()
     
-      # =---------------------------------
-      # Location 
-      # Limits 
-      xlims <<- sf::st_bbox(shp_sf)[c(1, 3)]
-      ylims <<- sf::st_bbox(shp_sf)[c(2, 4)]
-      
-      b <- ggplot() +
-        geom_sf(data = ctn,  fill = '#AEB6BF', color = gray(.1)) +
-        geom_sf(data = shp_sf,  fill = '#AEB6BF', color = gray(.1)) +
-        geom_sf(data = zone, aes(fill = Short_Name), color = gray(.1)) +
-        geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
-        geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
-        coord_sf(xlim = xlims, ylim = ylims) +
-        scale_fill_brewer(palette = "Set3") +
-        labs(x = NULL, y = NULL, fill = NULL) +
-        theme_bw() +
-        theme(legend.position = 'bottom', 
-              text = element_text(size=18), 
-              axis.text        = element_blank(),
-              legend.text = element_text(size=18),
-              legend.title=element_text(size=18))  +  
-        guides(fill = guide_legend(ncol = 1))
-      
-      ggsave(glue::glue('{path}/Location.png') , width = 8, height = 5.5, dpi = 300)
-      
-      
-    }
+    # =---------------------------------
+    # Location 
+    # Limits 
+    xlims <<- sf::st_bbox(shp_sf)[c(1, 3)]
+    ylims <<- sf::st_bbox(shp_sf)[c(2, 4)]
     
+    b <- ggplot() +
+      geom_sf(data = ctn,  fill = '#AEB6BF', color = gray(.1)) +
+      geom_sf(data = shp_sf,  fill = '#AEB6BF', color = gray(.1)) +
+      geom_sf(data = zone, aes(fill = Short_Name), color = gray(.1)) +
+      geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
+      geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
+      coord_sf(xlim = xlims, ylim = ylims) +
+      scale_fill_brewer(palette = "Set3") +
+      labs(x = NULL, y = NULL, fill = NULL) +
+      theme_bw() +
+      theme(legend.position = 'bottom', 
+            text = element_text(size=18), 
+            axis.text        = element_blank(),
+            legend.text = element_text(size=18),
+            legend.title=element_text(size=18))  +  
+      guides(fill = guide_legend(ncol = 1))
     
-    for(i in 1:length(seasons)){
-      mapping_g(R_zone = Zone, iso3 =  iso3, country = country, Period = seasons[i], data_cons = data_cons, coord = coord)
-    }
+    ggplot2::ggsave(filename = glue::glue('{path}/Location.png'), plot = b, width = 8, height = 5.5, dpi = 300, device = 'jpeg', units = 'in')
     
   }
   
+  for(i in 1:length(seasons)){
+    mapping_g(R_zone = Zone, iso3 =  iso3, country = country, Period = seasons[i], data_cons = data_cons, coord = coord)
+  }
+  
+}

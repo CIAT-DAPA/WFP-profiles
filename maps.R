@@ -853,14 +853,14 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     # Drought - Heat - Waterlogging - Agricultural 
     all_Hz <- all_Hz %>%
-      dplyr::mutate(Dr_Ha = glue::glue('{Drought}-{Heat}'), 
-                    Dr_Wa = glue::glue('{Drought}-{Waterlogging }'), 
+      dplyr::mutate(Ha = glue::glue('{Drought}-{Heat}'), 
+                    Wa = glue::glue('{Drought}-{Waterlogging }'), 
                     Ha_Wa = glue::glue('{Heat}-{Waterlogging}'))
     
     
     # if(sum(names(all_Hz) == 'Agricultural') == 1){
     #   all_Hz <- all_Hz %>%
-    #   dplyr::mutate(Dr_Ag = glue::glue('{Drought}-{Agricultural }'), 
+    #   dplyr::mutate(Ag = glue::glue('{Drought}-{Agricultural }'), 
     #                 Ag_Wa = glue::glue('{Agricultural }-{Waterlogging }'), 
     #                 Ha_Ag = glue::glue('{Heat}-{Agricultural }'))}
     
@@ -949,99 +949,96 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       
       # =----------------
-      # Bivariate maps. 
-      final_map <- function(lab_t, all_Hz){
-        
-        st_hz <- dplyr::select(all_Hz, lab_t) %>% dplyr::pull(.)
-        tbl <- all_Hz %>% dplyr::select(id, x, y, time1, lab_t) %>% 
-          setNames(c('id', 'x', 'y', 'time1', 'var'))
-        
-        # This built a bivariate legend and colours (please don't modify!!!!!!!!!). 
-        tst <- data.frame(var = sort(unique(st_hz) ))
-        mx_lvl <- base::strsplit(tst$var, '-') %>% unlist %>% as.numeric() %>% max()
-        
-        col.matrix<- colmat(nquantiles = mx_lvl +1 , upperleft="#64ACBE", upperright="#574249", bottomleft="#F5EEF8", bottomright="#C85A5A", xlab='', ylab = '') 
-        col.matrix <- col.matrix[-1, ][, -1]
-        colnames(col.matrix) = glue::glue('{0:mx_lvl}')
-        rownames(col.matrix) = glue::glue('{0:mx_lvl}')
-        
-        
-        col.matrix <- col.matrix %>% as.table() %>% as.data.frame() %>% 
-          dplyr::mutate(var = glue::glue('{Var1}-{Var2}')) %>% 
-          dplyr::rename(col = 'Freq')
-        
-        tst <- dplyr::inner_join(tst, dplyr::select(col.matrix, var, col) )
-        tbl <- dplyr::left_join(x = tbl, y = tst, by = 'var')
-        
-        dat <- ggplot2::ggplot() +
-          ggplot2::geom_tile(data = tbl, aes(x = x, y = y), fill = tbl$col, alpha = 0.8) +
-          geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
-          geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
-          geom_sf(data = ctn, fill = NA, color = gray(.5)) +
-          # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
-          geom_sf(data = zone, fill = NA, color = 'black') +      
-          ggplot2::scale_fill_brewer(palette = 'PuRd') +
-          coord_sf(xlim = xlims, ylim = ylims) +
-          ggplot2::theme_bw() +
-          ggplot2::xlab('') +
-          ggplot2::ylab('') +
-          ggplot2::facet_wrap(~time1, labeller = as_labeller( c('1' = "Historic", '2' = "2021-2040", '3' = '2041-2060')) ) +
-          ggplot2::labs(fill = 'Count') +
-          ggplot2::theme(legend.position = 'bottom',
-                         axis.text        = element_blank(),
-                         text = element_text(size=35),
-                         strip.text.x     = element_text(size = 35),
-                         strip.background = element_rect(colour = "black", fill = "white"))
-        
-        
-        # =--- 
-        oth_tst <- dplyr::select(col.matrix, var) %>% dplyr::pull()
-        col.matrix$x <- as.factor(substr(x = oth_tst, start=1, stop=1))
-        col.matrix$y <- as.factor(substr(x = oth_tst, start=3, stop=3))
-        
-        
-        leg <-  col.matrix %>% ggplot2::ggplot(aes(x = x, y = y)) +
-          ggplot2::geom_tile(fill = col.matrix$col) +
-          ggplot2::coord_equal() +
-          ggplot2::theme_minimal() +
-          # scale_x_discrete() + scale_y_discrete() +
-          ggplot2::theme(axis.text       = element_text(size = 35),
-                         axis.title      = element_text(size = 20),
-                         legend.text     = element_text(size = 17),
-                         legend.title    = element_blank(),
-                         plot.title      = element_text(size = 25),
-                         plot.subtitle   = element_text(size = 17),
-                         strip.text.x    = element_text(size = 17),
-                         plot.caption    = element_text(size = 15, hjust = 0),
-                         legend.position = "bottom") 
-        
-        
-        if(lab_t == 'Dr_Ha'){
-          leg <- leg + ggplot2::xlab(expression('Drought' %->% '')) +
-            ggplot2::ylab(expression('Heat stress' %->% ''))
-        }
-        if(lab_t == 'Dr_Wa'){
-          leg <- leg + ggplot2::xlab(expression('Drought' %->% '')) +
-            ggplot2::ylab(expression('Waterlogging / flooding' %->% ''))
-        }
-        if(lab_t == 'Ha_Wa'){
-          leg <- leg + ggplot2::xlab(expression('Heat stress' %->% '')) +
-            ggplot2::ylab(expression('Waterlogging / flooding' %->% ''))
-        }
-        
-        png(filename = glue::glue('{path}/Bi_{lab_t}.png'), width=28,height=10,units="in", res = 300)
-        print(gridExtra::grid.arrange(leg, dat, nrow = 2, layout_matrix = rbind(c(NA,2, 2, 2, 2, 2),
-                                                                                c(1,2, 2, 2, 2, 2))) )
-        dev.off()
+    # Bivariate maps. 
+    final_map <- function(lab_t, all_Hz){
+      
+      st_hz <- dplyr::select(all_Hz, lab_t) %>% dplyr::pull(.)
+      tbl <- all_Hz %>% dplyr::select(id, x, y, time1, lab_t) %>% 
+        setNames(c('id', 'x', 'y', 'time1', 'var'))
+      
+      # This built a bivariate legend and colours (please don't modify!!!!!!!!!). 
+      tst <- data.frame(var = sort(unique(st_hz) ))
+      mx_lvl <- base::strsplit(tst$var, '-') %>% unlist %>% as.numeric() %>% max()
+      
+      col.matrix<- colmat(nquantiles = mx_lvl +1 , upperleft="#64ACBE", upperright="#574249", bottomleft="#F5EEF8", bottomright="#C85A5A", xlab='', ylab = '') 
+      col.matrix <- col.matrix[-1, ][, -1]
+      colnames(col.matrix) = glue::glue('{0:mx_lvl}')
+      rownames(col.matrix) = glue::glue('{0:mx_lvl}')
+      
+      
+      col.matrix <- col.matrix %>% as.table() %>% as.data.frame() %>% 
+        dplyr::mutate(var = glue::glue('{Var1}-{Var2}')) %>% 
+        dplyr::rename(col = 'Freq')
+      
+      tst <- dplyr::inner_join(tst, dplyr::select(col.matrix, var, col) )
+      tbl <- dplyr::left_join(x = tbl, y = tst, by = 'var')
+      
+      dat <- ggplot2::ggplot() +
+        ggplot2::geom_tile(data = tbl, aes(x = x, y = y), fill = tbl$col, alpha = 0.8) +
+        geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
+        geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
+        geom_sf(data = ctn, fill = NA, color = gray(.5)) +
+        # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
+        geom_sf(data = zone, fill = NA, color = 'black') +      
+        ggplot2::scale_fill_brewer(palette = 'PuRd') +
+        coord_sf(xlim = xlims, ylim = ylims) +
+        ggplot2::theme_bw() +
+        ggplot2::xlab('') +
+        ggplot2::ylab('') +
+        ggplot2::facet_wrap(~time1, labeller = as_labeller( c('1' = "Historic", '2' = "2021-2040", '3' = '2041-2060')) ) +
+        ggplot2::labs(fill = 'Count') +
+        ggplot2::theme(legend.position = 'bottom',
+                       axis.text        = element_blank(),
+                       text = element_text(size=35),
+                       strip.text.x     = element_text(size = 35),
+                       strip.background = element_rect(colour = "black", fill = "white"))
+      
+      
+      # =--- 
+      oth_tst <- dplyr::select(col.matrix, var) %>% dplyr::pull()
+      col.matrix$x <- as.factor(substr(x = oth_tst, start=1, stop=1))
+      col.matrix$y <- as.factor(substr(x = oth_tst, start=3, stop=3))
+      
+      leg <-  col.matrix %>% ggplot2::ggplot(aes(x = x, y = y)) +
+        ggplot2::geom_tile(fill = col.matrix$col) +
+        ggplot2::coord_equal() +
+        ggplot2::theme_minimal() +
+        # scale_x_discrete() + scale_y_discrete() +
+        ggplot2::theme(axis.text       = element_text(size = 35),
+                       axis.title      = element_text(size = 20),
+                       legend.text     = element_text(size = 17),
+                       legend.title    = element_blank(),
+                       plot.title      = element_text(size = 25),
+                       plot.subtitle   = element_text(size = 17),
+                       strip.text.x    = element_text(size = 17),
+                       plot.caption    = element_text(size = 15, hjust = 0),
+                       legend.position = "bottom") 
+      
+      if(lab_t == 'Dr_Ha'){
+        leg <- leg + ggplot2::xlab(expression('Drought' %->% '')) +
+          ggplot2::ylab(expression('Heat stress' %->% ''))
+      }
+      if(lab_t == 'Dr_Wa'){
+        leg <- leg + ggplot2::xlab(expression('Drought' %->% '')) +
+          ggplot2::ylab(expression('Waterlogging / flooding' %->% ''))
+      }
+      if(lab_t == 'Ha_Wa'){
+        leg <- leg + ggplot2::xlab(expression('Heat stress' %->% '')) +
+          ggplot2::ylab(expression('Waterlogging / flooding' %->% ''))
       }
       
-      # tictoc::tic()
-      final_map(lab_t = 'Dr_Ha', all_Hz = all_Hz)
-      final_map(lab_t = 'Dr_Wa', all_Hz = all_Hz)
-      final_map(lab_t = 'Ha_Wa', all_Hz = all_Hz)
-      # tictoc::toc()
-      
-      
+      png(filename = glue::glue('{path}/Bi_{lab_t}.png'), width=28,height=10,units="in", res = 300)
+      print(gridExtra::grid.arrange(leg, dat, nrow = 2, layout_matrix = rbind(c(NA,2, 2, 2, 2, 2),
+                                                                              c(1,2, 2, 2, 2, 2))) )
+      dev.off()
+    }
+    
+    # tictoc::tic()
+    final_map(lab_t = 'Dr_Ha', all_Hz = all_Hz)
+    final_map(lab_t = 'Dr_Wa', all_Hz = all_Hz)
+    final_map(lab_t = 'Ha_Wa', all_Hz = all_Hz)
+    # tictoc::toc()
+    
       # =---------------------------------
       # Location 
       # Limits 
@@ -1050,7 +1047,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       b <- ggplot() +
         geom_sf(data = ctn,  fill = '#AEB6BF', color = gray(.1)) +
-        geom_sf(data = shp_sf,  fill = '#D5DBDB', color = gray(.1)) +
+        geom_sf(data = shp_sf,  fill = '#AEB6BF', color = gray(.1)) +
         geom_sf(data = zone, aes(fill = Short_Name), color = gray(.1)) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +

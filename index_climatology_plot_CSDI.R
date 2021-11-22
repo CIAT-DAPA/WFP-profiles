@@ -66,16 +66,27 @@ bar_graphs <- function(country, iso, region = 'all'){
   # region <- to_do$Regions[1]
   
   if(region == 'all'){
+    if('CSDI' %in% names(all)){
     var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
-      dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+      dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
       dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
       dplyr::summarise_all(. , sum, na.rm = TRUE) %>% ungroup()
+    } else {
+      var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
+        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+        dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
+        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% ungroup()
+    }
     
     title = 'Country'
   }else{
+    if('CSDI' %in% names(all)){
     var_s <- to_do %>% dplyr::filter(Regions == region) %>%
-      dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
-    
+      dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
+    } else{
+      var_s <- to_do %>% dplyr::filter(Regions == region) %>%
+        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
+    }
     title = dplyr::filter(to_do, Regions  == region)$Short_Name   
   }
   

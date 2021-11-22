@@ -79,10 +79,16 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   future:::ClusterRegistry("stop")
   gc(reset = T)
   
+  if('CSDI' %in% names(future)) {
+    indices <- c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP', 'CSDI') 
+  } else {
+    indices <- c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP')
+  }
+  
   future  <- future %>% dplyr::select(-gcm) %>% 
     dplyr::group_by(time,id,x,y,season,year) %>%
     dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
-    dplyr::mutate_at(.vars = c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP'), 
+    dplyr::mutate_at(.vars = indices, 
                      .funs = ~round(. , 0))
   
   data_cons <- dplyr::bind_rows(past, future)  %>% 
@@ -149,19 +155,31 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     dir.create(path,recursive = TRUE)  
     # =--------------
     
-    if(R_zone == 'all'){
-      zone <- regions_all # %>% sf::as_Spatial() 
-      var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
-        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
-        dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
-        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
-      
+    if(R_zone == 'all'){ 
+      if('CSDI' %in% names(future)){
+        zone <- regions_all # %>% sf::as_Spatial() 
+        var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
+          dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+          dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
+          dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
+      } else {
+        zone <- regions_all # %>% sf::as_Spatial() 
+        var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
+          dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+          dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
+          dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
+      }
       title = 'Country'
     }else{
-      zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
-      var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
-        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
-      
+      if('CSDI' %in% names(future)){
+        zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
+        var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
+          dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) 
+      } else{
+        zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
+        var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
+          dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
+      }
       title = dplyr::filter(to_do, Regions  == R_zone)$Short_Name   
     }
     
@@ -208,21 +226,28 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     # =----------------------------------------------------
     # Basic vars. 
+    
+    if('CSDI' %in% names(future)){
+      indices <- c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'CSDI')
+    } else {
+      indices <- c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')
+    }
+    
     to_graph <- data_cons %>% dplyr::filter(id %in% id_f) %>%
       dplyr::mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) %>%
       dplyr::select(time, time1, id, basic_vars) %>%
       dplyr::group_by(time, time1, id) %>% 
       dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
-      dplyr::mutate_at(.vars = basic_vars[basic_vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')], 
+      dplyr::mutate_at(.vars = basic_vars[basic_vars %in% indices], 
                        .funs = ~round(. , 0)) %>%
       dplyr::ungroup() %>%  base::unique() %>% 
       dplyr::full_join(coord_zone, . )
     
     
+    #=-----------------------------------------------------------------------------------
     # Lenght_season
     to_graph <- dplyr::mutate_at(to_graph, .vars = basic_vars[basic_vars %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X')],
                                  .funs = ~(./length_season) %>% round(. ,0) )
-    
     
     # Transform variables. 
     if(sum(basic_vars == 'SHI') == 1){
@@ -274,7 +299,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       to_graph <- to_graph %>% dplyr::full_join(. , max_add)
     }
-    
     # =----------------------------------------------------
     # Tabla completa... explicar esta parte. 
     special_base <- dplyr::select(pet, id, time, time1, season, ATR, AMT) %>%
@@ -328,8 +352,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
       if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
       if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
-      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' } 
-      
+      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' }
+      if(var_toG[i] == 'CSDI'){ pattern <- 'CSDI\n(days)' }
       
       if(var_toG[i] == 'ATR'){
         
@@ -356,7 +380,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                                             label.theme = element_text(angle = 25, size = 35))) 
       }    
       
-      ggplot() +
+      gg <- ggplot() +
         geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -375,7 +399,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               legend.spacing = unit(5, units = 'cm'),
               legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
       
-      ggsave(glue::glue('{path}/C_{var_toG[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/C_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
       
     }
     
@@ -452,6 +476,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
         if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
         if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
         if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' } 
+        if(var_toG[i] == 'CSDI'){ pattern <- 'CSDI\n(days)' } 
         
         
         mop <- scale_fill_gradient2(
@@ -470,7 +495,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
             guide = guide_colourbar(barwidth = 20, label.theme = element_text(angle = 25, size = 35))) 
         }
         
-        ggplot() +
+        gg <- ggplot() +
           geom_tile(data = tidyr::drop_na(anomalies, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
           geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
           geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -492,7 +517,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                 legend.spacing = unit(5, units = 'cm'),
                 legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
         
-        ggsave(glue::glue('{path}/Anom_{var_toG[i]}.png') , width = 15, height = 10, dpi = 300)
+        ggplot2::ggsave(filename = glue::glue('{path}/Anom_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
       }    
     }
     # =-------------------------------------
@@ -517,7 +542,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     class_1 <- to_graph %>%
       dplyr::mutate_at(.vars = vars(var_toG), .funs = transform_q) 
     
-    # =---------------
     # =--------------- Cambios de Julian. 
     ATR_class <- function(x){
       Q_clas <- quantile(special_base$ATR, c(0.25, 0.5, 0.75), na.rm =TRUE)
@@ -540,8 +564,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::left_join( . ,  dplyr::select(class_1,  -AMT, -ATR)) %>% 
       dplyr::select(id,x,y,time,time1, everything(.))
     # =---------------
-    
-    
     
     # =--------------------------------------------------
     if(sum(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI', 'HSI_23', 'THI_23') ) > 0 ){
@@ -579,34 +601,34 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
       if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
       if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
-      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' } 
+      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' }
+      if(var_toG[i] == 'CSDI'){ pattern <- 'CSDI\n(days)' }
       
-      ggplot() +
+      gg <- ggplot() +
         geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(var_Q[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_Q[i]) %>% as.factor(.) )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
         # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
         geom_sf(data = zone, fill = NA, color = 'black') +
-                          scale_fill_manual(values = c( '1' = "#A7D96A", '2' = "#FFFFC1", '3' = "#FDAE61", '4' = '#D7191B', '5' = "#533104"),
-                                            breaks = c('1', '2', '3', '4'), labels = labs_qq) +
-                            labs(fill = pattern, x = NULL, y = NULL, title = title) +
-                            scale_y_continuous(breaks = round(ylims, 2), n.breaks = 3) +
-                            scale_x_continuous(breaks = round(xlims, 2), n.breaks = 3) +
-                            coord_sf(xlim = xlims, ylim = ylims) +
-                            facet_grid(~time1, labeller = as_labeller( c('1' = "Historic", '2' = "2021-2040", '3' = '2041-2060'))) +
-                            theme_bw() + 
-                            guides(fill=guide_legend(nrow=2,byrow=TRUE)) +
-                            theme(legend.position = 'bottom', text = element_text(size=35),
-                                  axis.text.x=element_blank(), axis.text.y=element_blank(),
-                                  strip.background = element_rect(colour = "black", fill = "white"),
-                                  legend.title=element_text(size=35),
-                                  legend.spacing = unit(5, units = 'cm'),
-                                  legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
-                          
-                          ggsave(glue::glue('{path}/Q_{var_Q[i]}.png') , width = 15, height = 10, dpi = 300)
+        scale_fill_manual(values = c( '1' = "#A7D96A", '2' = "#FFFFC1", '3' = "#FDAE61", '4' = '#D7191B', '5' = "#533104"),
+                          breaks = c('1', '2', '3', '4'), labels = labs_qq) +
+        labs(fill = pattern, x = NULL, y = NULL, title = title) +
+        scale_y_continuous(breaks = round(ylims, 2), n.breaks = 3) +
+        scale_x_continuous(breaks = round(xlims, 2), n.breaks = 3) +
+        coord_sf(xlim = xlims, ylim = ylims) +
+        facet_grid(~time1, labeller = as_labeller( c('1' = "Historic", '2' = "2021-2040", '3' = '2041-2060'))) +
+        theme_bw() + 
+        guides(fill=guide_legend(nrow=2,byrow=TRUE)) +
+        theme(legend.position = 'bottom', text = element_text(size=35),
+              axis.text.x=element_blank(), axis.text.y=element_blank(),
+              strip.background = element_rect(colour = "black", fill = "white"),
+              legend.title=element_text(size=35),
+              legend.spacing = unit(5, units = 'cm'),
+              legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
+      
+      ggplot2::ggsave(filename = glue::glue('{path}/Q_{var_Q[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
-    
     
     # =------------------------------------------
     # Only graphs with special cat.
@@ -727,7 +749,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # =----- 
     fix_Vars <- var_toG[var_toG %in% c('SPI','TAI', 'NDWS', 'NDD', 'NT_X', 'NWLD','NWLD50','NWLD90', 'LGP', 'THI_0', 'THI_1', 'THI_2', 'THI_3', 'HSI_0', 'HSI_1', 'HSI_2', 'HSI_3', 'SHI', 'SLGP_CV', 'THI_23', 'HSI_23', 'NWLD_max','NWLD50_max','NWLD90_max')]
     
-    
     # fixed categorical class maps. 
     for(i in 1:length(fix_Vars)){
       
@@ -747,8 +768,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(fix_Vars[i] == 'THI_23'){ pattern <- 'THI_2 + THI_3\n(prob)' } 
       if(fix_Vars[i] == 'HSI_23'){ pattern <- 'HSI_2 + HSI_3\n(prob)' } 
       
-      
-      ggplot() +
+      gg <- ggplot() +
         geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(fix_Vars[i]) ), aes(x = x, y = y, fill = !!rlang::sym(fix_Vars[i]) %>% as.factor(.) )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -771,9 +791,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               legend.spacing = unit(5, units = 'cm'),
               legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
       
-      ggsave(glue::glue('{path}/Fix_{fix_Vars[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/Fix_{fix_Vars[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
-    
     
     # =--------------------------------------------------
     # Overlays variables. 
@@ -813,7 +832,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     }
     
     # =-----
-    
     
     # =- Low level var reclassify
     vars_lvl <- names(class_1)[names(class_1) %in% low_lvl] 
@@ -897,7 +915,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       unv <- all_Hz %>% dplyr::select(x, y, time1, uni_vars[i]) %>% 
         dplyr::rename(ind = uni_vars[i]) %>% dplyr::mutate(ind = as.factor(ind))
       
-      ggplot2::ggplot() +
+      gg <- ggplot2::ggplot() +
         ggplot2::geom_tile(data = unv, aes(x = x, y = y, fill = ind) ) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -917,163 +935,154 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                        strip.text.x     = element_text(size = 35),
                        strip.background = element_rect(colour = "black", fill = "white"))
       
-      ggsave(glue::glue('{path}/Uni_{uni_vars[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/Uni_{uni_vars[i]}.png'), width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
-    
-    
     
     # =-------------------------------
-      # This funcion is built a bibariate scale colours. 
-      colmat <-  function(nquantiles=10, upperleft=rgb(0,150,235, maxColorValue=255), upperright=rgb(130,0,80, maxColorValue=255), bottomleft="grey", bottomright=rgb(255,230,15, maxColorValue=255), xlab="x label", ylab="y label"){
-        
-        my.data<-seq(0,1,.01)
-        my.class<-classInt::classIntervals(my.data,n=nquantiles,style="quantile")
-        my.pal.1<-classInt::findColours(my.class,c(upperleft,bottomleft))
-        my.pal.2<-classInt::findColours(my.class,c(upperright, bottomright))
-        col.matrix<-matrix(nrow = 101, ncol = 101, NA)
-        
-        for(i in 1:101){
-          my.col<-c(paste(my.pal.1[i]),paste(my.pal.2[i]))
-          col.matrix[102-i,]<-classInt::findColours(my.class,my.col)}
-        plot(c(1,1),pch=19,col=my.pal.1, cex=0.5,xlim=c(0,1),ylim=c(0,1),frame.plot=F, xlab=xlab, ylab=ylab,cex.lab=1.3)
-        
-        for(i in 1:101){
-          col.temp<-col.matrix[i-1,]
-          points(my.data,rep((i-1)/100,101),pch=15,col=col.temp, cex=1)}
-        
-        seqs<-seq(0,100,(100/nquantiles))
-        seqs[1]<-1
-        col.matrix<-col.matrix[c(seqs), c(seqs)]}
+    # This funcion is built a bibariate scale colours. 
+    colmat <-  function(nquantiles=10, upperleft=rgb(0,150,235, maxColorValue=255), upperright=rgb(130,0,80, maxColorValue=255), bottomleft="grey", bottomright=rgb(255,230,15, maxColorValue=255), xlab="x label", ylab="y label"){
       
-      # =-------------------------------
+      my.data<-seq(0,1,.01)
+      my.class<-classInt::classIntervals(my.data,n=nquantiles,style="quantile")
+      my.pal.1<-classInt::findColours(my.class,c(upperleft,bottomleft))
+      my.pal.2<-classInt::findColours(my.class,c(upperright, bottomright))
+      col.matrix<-matrix(nrow = 101, ncol = 101, NA)
       
+      for(i in 1:101){
+        my.col<-c(paste(my.pal.1[i]),paste(my.pal.2[i]))
+        col.matrix[102-i,]<-classInt::findColours(my.class,my.col)}
+      plot(c(1,1),pch=19,col=my.pal.1, cex=0.5,xlim=c(0,1),ylim=c(0,1),frame.plot=F, xlab=xlab, ylab=ylab,cex.lab=1.3)
       
-      # =----------------
-      # Bivariate maps. 
-      final_map <- function(lab_t, all_Hz){
-        
-        st_hz <- dplyr::select(all_Hz, lab_t) %>% dplyr::pull(.)
-        tbl <- all_Hz %>% dplyr::select(id, x, y, time1, lab_t) %>% 
-          setNames(c('id', 'x', 'y', 'time1', 'var'))
-        
-        # This built a bivariate legend and colours (please don't modify!!!!!!!!!). 
-        tst <- data.frame(var = sort(unique(st_hz) ))
-        mx_lvl <- base::strsplit(tst$var, '-') %>% unlist %>% as.numeric() %>% max()
-        
-        col.matrix<- colmat(nquantiles = mx_lvl +1 , upperleft="#64ACBE", upperright="#574249", bottomleft="#F5EEF8", bottomright="#C85A5A", xlab='', ylab = '') 
-        col.matrix <- col.matrix[-1, ][, -1]
-        colnames(col.matrix) = glue::glue('{0:mx_lvl}')
-        rownames(col.matrix) = glue::glue('{0:mx_lvl}')
-        
-        
-        col.matrix <- col.matrix %>% as.table() %>% as.data.frame() %>% 
-          dplyr::mutate(var = glue::glue('{Var1}-{Var2}')) %>% 
-          dplyr::rename(col = 'Freq')
-        
-        tst <- dplyr::inner_join(tst, dplyr::select(col.matrix, var, col) )
-        tbl <- dplyr::left_join(x = tbl, y = tst, by = 'var')
-        
-        dat <- ggplot2::ggplot() +
-          ggplot2::geom_tile(data = tbl, aes(x = x, y = y), fill = tbl$col, alpha = 0.8) +
-          geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
-          geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
-          geom_sf(data = ctn, fill = NA, color = gray(.5)) +
-          # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
-          geom_sf(data = zone, fill = NA, color = 'black') +      
-          ggplot2::scale_fill_brewer(palette = 'PuRd') +
-          coord_sf(xlim = xlims, ylim = ylims) +
-          ggplot2::theme_bw() +
-          ggplot2::xlab('') +
-          ggplot2::ylab('') +
-          ggplot2::facet_wrap(~time1, labeller = as_labeller( c('1' = "Historic", '2' = "2021-2040", '3' = '2041-2060')) ) +
-          ggplot2::labs(fill = 'Count') +
-          ggplot2::theme(legend.position = 'bottom',
-                         axis.text        = element_blank(),
-                         text = element_text(size=35),
-                         strip.text.x     = element_text(size = 35),
-                         strip.background = element_rect(colour = "black", fill = "white"))
-        
-        
-        # =--- 
-        oth_tst <- dplyr::select(col.matrix, var) %>% dplyr::pull()
-        col.matrix$x <- as.factor(substr(x = oth_tst, start=1, stop=1))
-        col.matrix$y <- as.factor(substr(x = oth_tst, start=3, stop=3))
-        
-        
-        leg <-  col.matrix %>% ggplot2::ggplot(aes(x = x, y = y)) +
-          ggplot2::geom_tile(fill = col.matrix$col) +
-          ggplot2::coord_equal() +
-          ggplot2::theme_minimal() +
-          # scale_x_discrete() + scale_y_discrete() +
-          ggplot2::theme(axis.text       = element_text(size = 35),
-                         axis.title      = element_text(size = 20),
-                         legend.text     = element_text(size = 17),
-                         legend.title    = element_blank(),
-                         plot.title      = element_text(size = 25),
-                         plot.subtitle   = element_text(size = 17),
-                         strip.text.x    = element_text(size = 17),
-                         plot.caption    = element_text(size = 15, hjust = 0),
-                         legend.position = "bottom") 
-        
-        
-        if(lab_t == 'Dr_Ha'){
-          leg <- leg + ggplot2::xlab(expression('Drought' %->% '')) +
-            ggplot2::ylab(expression('Heat stress' %->% ''))
-        }
-        if(lab_t == 'Dr_Wa'){
-          leg <- leg + ggplot2::xlab(expression('Drought' %->% '')) +
-            ggplot2::ylab(expression('Waterlogging / flooding' %->% ''))
-        }
-        if(lab_t == 'Ha_Wa'){
-          leg <- leg + ggplot2::xlab(expression('Heat stress' %->% '')) +
-            ggplot2::ylab(expression('Waterlogging / flooding' %->% ''))
-        }
-        
-        png(filename = glue::glue('{path}/Bi_{lab_t}.png'), width=28,height=10,units="in", res = 300)
-        print(gridExtra::grid.arrange(leg, dat, nrow = 2, layout_matrix = rbind(c(NA,2, 2, 2, 2, 2),
-                                                                                c(1,2, 2, 2, 2, 2))) )
-        dev.off()
-      }
+      for(i in 1:101){
+        col.temp<-col.matrix[i-1,]
+        points(my.data,rep((i-1)/100,101),pch=15,col=col.temp, cex=1)}
       
-      # tictoc::tic()
-      final_map(lab_t = 'Dr_Ha', all_Hz = all_Hz)
-      final_map(lab_t = 'Dr_Wa', all_Hz = all_Hz)
-      final_map(lab_t = 'Ha_Wa', all_Hz = all_Hz)
-      # tictoc::toc()
+      seqs<-seq(0,100,(100/nquantiles))
+      seqs[1]<-1
+      col.matrix<-col.matrix[c(seqs), c(seqs)]}
+    
+    # =-------------------------------
+    
+    # =----------------
+    # Bivariate maps. 
+    final_map <- function(lab_t, all_Hz){
+      
+      st_hz <- dplyr::select(all_Hz, lab_t) %>% dplyr::pull(.)
+      tbl <- all_Hz %>% dplyr::select(id, x, y, time1, lab_t) %>% 
+        setNames(c('id', 'x', 'y', 'time1', 'var'))
+      
+      # This built a bivariate legend and colours (please don't modify!!!!!!!!!). 
+      tst <- data.frame(var = sort(unique(st_hz) ))
+      mx_lvl <- base::strsplit(tst$var, '-') %>% unlist %>% as.numeric() %>% max()
+      
+      col.matrix<- colmat(nquantiles = mx_lvl +1 , upperleft="#64ACBE", upperright="#574249", bottomleft="#F5EEF8", bottomright="#C85A5A", xlab='', ylab = '') 
+      col.matrix <- col.matrix[-1, ][, -1]
+      colnames(col.matrix) = glue::glue('{0:mx_lvl}')
+      rownames(col.matrix) = glue::glue('{0:mx_lvl}')
       
       
-      # =---------------------------------
-      # Location 
-      # Limits 
-      xlims <<- sf::st_bbox(shp_sf)[c(1, 3)]
-      ylims <<- sf::st_bbox(shp_sf)[c(2, 4)]
+      col.matrix <- col.matrix %>% as.table() %>% as.data.frame() %>% 
+        dplyr::mutate(var = glue::glue('{Var1}-{Var2}')) %>% 
+        dplyr::rename(col = 'Freq')
       
-      b <- ggplot() +
-        geom_sf(data = ctn,  fill = '#AEB6BF', color = gray(.1)) +
-        geom_sf(data = shp_sf,  fill = '#D5DBDB', color = gray(.1)) +
-        geom_sf(data = zone, aes(fill = Short_Name), color = gray(.1)) +
+      tst <- dplyr::inner_join(tst, dplyr::select(col.matrix, var, col) )
+      tbl <- dplyr::left_join(x = tbl, y = tst, by = 'var')
+      
+      dat <- ggplot2::ggplot() +
+        ggplot2::geom_tile(data = tbl, aes(x = x, y = y), fill = tbl$col, alpha = 0.8) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
+        geom_sf(data = ctn, fill = NA, color = gray(.5)) +
+        # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
+        geom_sf(data = zone, fill = NA, color = 'black') +      
+        ggplot2::scale_fill_brewer(palette = 'PuRd') +
         coord_sf(xlim = xlims, ylim = ylims) +
-        scale_fill_brewer(palette = "Set3") +
-        labs(x = NULL, y = NULL, fill = NULL) +
-        theme_bw() +
-        theme(legend.position = 'bottom', 
-              text = element_text(size=18), 
-              axis.text        = element_blank(),
-              legend.text = element_text(size=18),
-              legend.title=element_text(size=18))  +  
-        guides(fill = guide_legend(ncol = 1))
+        ggplot2::theme_bw() +
+        ggplot2::xlab('') +
+        ggplot2::ylab('') +
+        ggplot2::facet_wrap(~time1, labeller = as_labeller( c('1' = "Historic", '2' = "2021-2040", '3' = '2041-2060')) ) +
+        ggplot2::labs(fill = 'Count') +
+        ggplot2::theme(legend.position = 'bottom',
+                       axis.text        = element_blank(),
+                       text = element_text(size=35),
+                       strip.text.x     = element_text(size = 35),
+                       strip.background = element_rect(colour = "black", fill = "white"))
       
-      ggsave(glue::glue('{path}/Location.png') , width = 8, height = 5.5, dpi = 300)
       
+      # =--- 
+      oth_tst <- dplyr::select(col.matrix, var) %>% dplyr::pull()
+      col.matrix$x <- as.factor(substr(x = oth_tst, start=1, stop=1))
+      col.matrix$y <- as.factor(substr(x = oth_tst, start=3, stop=3))
       
+      leg <-  col.matrix %>% ggplot2::ggplot(aes(x = x, y = y)) +
+        ggplot2::geom_tile(fill = col.matrix$col) +
+        ggplot2::coord_equal() +
+        ggplot2::theme_minimal() +
+        # scale_x_discrete() + scale_y_discrete() +
+        ggplot2::theme(axis.text       = element_text(size = 35),
+                       axis.title      = element_text(size = 20),
+                       legend.text     = element_text(size = 17),
+                       legend.title    = element_blank(),
+                       plot.title      = element_text(size = 25),
+                       plot.subtitle   = element_text(size = 17),
+                       strip.text.x    = element_text(size = 17),
+                       plot.caption    = element_text(size = 15, hjust = 0),
+                       legend.position = "bottom") 
+      
+      if(lab_t == 'Dr_Ha'){
+        leg <- leg + ggplot2::xlab(expression('Drought' %->% '')) +
+          ggplot2::ylab(expression('Heat stress' %->% ''))
+      }
+      if(lab_t == 'Dr_Wa'){
+        leg <- leg + ggplot2::xlab(expression('Drought' %->% '')) +
+          ggplot2::ylab(expression('Waterlogging / flooding' %->% ''))
+      }
+      if(lab_t == 'Ha_Wa'){
+        leg <- leg + ggplot2::xlab(expression('Heat stress' %->% '')) +
+          ggplot2::ylab(expression('Waterlogging / flooding' %->% ''))
+      }
+      
+      png(filename = glue::glue('{path}/Bi_{lab_t}.png'), width=28,height=10,units="in", res = 300)
+      print(gridExtra::grid.arrange(leg, dat, nrow = 2, layout_matrix = rbind(c(NA,2, 2, 2, 2, 2),
+                                                                              c(1,2, 2, 2, 2, 2))) )
+      dev.off()
     }
     
+    # tictoc::tic()
+    final_map(lab_t = 'Dr_Ha', all_Hz = all_Hz)
+    final_map(lab_t = 'Dr_Wa', all_Hz = all_Hz)
+    final_map(lab_t = 'Ha_Wa', all_Hz = all_Hz)
+    # tictoc::toc()
     
-    for(i in 1:length(seasons)){
-      mapping_g(R_zone = Zone, iso3 =  iso3, country = country, Period = seasons[i], data_cons = data_cons, coord = coord)
-    }
+    # =---------------------------------
+    # Location 
+    # Limits 
+    xlims <<- sf::st_bbox(shp_sf)[c(1, 3)]
+    ylims <<- sf::st_bbox(shp_sf)[c(2, 4)]
+    
+    b <- ggplot() +
+      geom_sf(data = ctn,  fill = '#AEB6BF', color = gray(.1)) +
+      geom_sf(data = shp_sf,  fill = '#AEB6BF', color = gray(.1)) +
+      geom_sf(data = zone, aes(fill = Short_Name), color = gray(.1)) +
+      geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
+      geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
+      coord_sf(xlim = xlims, ylim = ylims) +
+      scale_fill_brewer(palette = "Set3") +
+      labs(x = NULL, y = NULL, fill = NULL) +
+      theme_bw() +
+      theme(legend.position = 'bottom', 
+            text = element_text(size=18), 
+            axis.text        = element_blank(),
+            legend.text = element_text(size=18),
+            legend.title=element_text(size=18))  +  
+      guides(fill = guide_legend(ncol = 1))
+    
+    ggplot2::ggsave(filename = glue::glue('{path}/Location.png'), plot = b, width = 8, height = 5.5, dpi = 300, device = 'jpeg', units = 'in')
     
   }
   
+  for(i in 1:length(seasons)){
+    mapping_g(R_zone = Zone, iso3 =  iso3, country = country, Period = seasons[i], data_cons = data_cons, coord = coord)
+  }
+  
+}

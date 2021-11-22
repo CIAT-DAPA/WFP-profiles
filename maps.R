@@ -314,7 +314,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X', 'NWLD_max','NWLD50_max', 'NWLD90_max')){
         my_limits <- c(0, 31)
         my_breaks <- c(0, 10, 20, 31)
-      } 
+      }
       
       # Pattern. 
       if(var_toG[i] == 'AMT'){ pattern <- 'AMT\n(\u00B0C)' }
@@ -328,8 +328,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
       if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
       if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
-      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' } 
-      
+      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' }
       
       if(var_toG[i] == 'ATR'){
         
@@ -356,8 +355,16 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                                             label.theme = element_text(angle = 25, size = 35))) 
       }    
       
-      ggplot() +
-        geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
+      to_graph$cellID <- raster::cellFromXY(object = tmp, xy = base::as.data.frame(to_graph[,c('x','y')]))
+      to_graph$x <- to_graph$y <- NULL
+      to_graph <- cbind(to_graph, base::as.data.frame(raster::xyFromCell(object = tmp, cell = to_graph$cellID)))
+      
+      if('NDWS' %in% names(to_graph)){
+        to_graph$NDWS[to_graph$NDWS > 31] <- 31
+      }
+      
+      gg <- ggplot() +
+        geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i])), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i]))) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
@@ -373,16 +380,16 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               axis.text.x=element_blank(), axis.text.y=element_blank(),
               legend.title=element_text(size=35), 
               legend.spacing = unit(5, units = 'cm'),
-              legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
+              legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
       
-      ggsave(glue::glue('{path}/C_{var_toG[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/C_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
       
     }
     
     # =-------------------------------------
     # Anomaly Maps 
     if(length(unique(to_graph$time)) > 1){
-      to_process <- unique(to_graph$time)[unique(to_graph$time) !=  "Historic" ]
+      to_process <- unique(to_graph$time)[unique(to_graph$time) !=  "Historic"]
       
       # This function organize 
       anom_table <- function(data_to, pro_time){
@@ -470,7 +477,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
             guide = guide_colourbar(barwidth = 20, label.theme = element_text(angle = 25, size = 35))) 
         }
         
-        ggplot() +
+        gg <- ggplot() +
           geom_tile(data = tidyr::drop_na(anomalies, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
           geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
           geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -492,8 +499,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                 legend.spacing = unit(5, units = 'cm'),
                 legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
         
-        ggsave(glue::glue('{path}/Anom_{var_toG[i]}.png') , width = 15, height = 10, dpi = 300)
-      }    
+        ggplot2::ggsave(filename = glue::glue('{path}/Anom_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
+      }
     }
     # =-------------------------------------
     
@@ -517,7 +524,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     class_1 <- to_graph %>%
       dplyr::mutate_at(.vars = vars(var_toG), .funs = transform_q) 
     
-    # =---------------
     # =--------------- Cambios de Julian. 
     ATR_class <- function(x){
       Q_clas <- quantile(special_base$ATR, c(0.25, 0.5, 0.75), na.rm =TRUE)
@@ -541,8 +547,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       dplyr::select(id,x,y,time,time1, everything(.))
     # =---------------
     
-    
-    
     # =--------------------------------------------------
     if(sum(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI', 'HSI_23', 'THI_23') ) > 0 ){
       var_Q <- var_toG[-which(var_toG %in% c(glue::glue('THI_{0:3}'), glue::glue('HSI_{0:3}'), 'SHI', 'HSI_23', 'THI_23'))]
@@ -552,8 +556,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # Quantile maps. 
     for(i in 1:length(var_Q)){
       
-      Q_q <- round(labels(dplyr::pull(to_graph[, var_Q[i]])), 0)
-      
+      Q_q <- round(quantile(to_graph[, var_Q[i]], c(0.25, 0.5, 0.75), na.rm = T), 0)
+      # Q_q <- round(labels(dplyr::pull(to_graph[, var_Q[i]])), 0)
       
       if(var_Q[i] == 'ATR'){
         Q_q <-  round(quantile(special_base$ATR, c(0.25, 0.5, 0.75), na.rm =TRUE), 0)
@@ -579,34 +583,33 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
       if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
       if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
-      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' } 
+      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP_CV\n(%)' }
       
-      ggplot() +
+      gg <- ggplot() +
         geom_tile(data =  tidyr::drop_na(class_1, !!rlang::sym(var_Q[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_Q[i]) %>% as.factor(.) )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = ctn, fill = NA, color = gray(.5)) +
         # geom_sf(data = shp_sf, fill = NA, color = gray(.1)) +
         geom_sf(data = zone, fill = NA, color = 'black') +
-                          scale_fill_manual(values = c( '1' = "#A7D96A", '2' = "#FFFFC1", '3' = "#FDAE61", '4' = '#D7191B', '5' = "#533104"),
-                                            breaks = c('1', '2', '3', '4'), labels = labs_qq) +
-                            labs(fill = pattern, x = NULL, y = NULL, title = title) +
-                            scale_y_continuous(breaks = round(ylims, 2), n.breaks = 3) +
-                            scale_x_continuous(breaks = round(xlims, 2), n.breaks = 3) +
-                            coord_sf(xlim = xlims, ylim = ylims) +
-                            facet_grid(~time1, labeller = as_labeller( c('1' = "Historic", '2' = "2021-2040", '3' = '2041-2060'))) +
-                            theme_bw() + 
-                            guides(fill=guide_legend(nrow=2,byrow=TRUE)) +
-                            theme(legend.position = 'bottom', text = element_text(size=35),
-                                  axis.text.x=element_blank(), axis.text.y=element_blank(),
-                                  strip.background = element_rect(colour = "black", fill = "white"),
-                                  legend.title=element_text(size=35),
-                                  legend.spacing = unit(5, units = 'cm'),
-                                  legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
-                          
-                          ggsave(glue::glue('{path}/Q_{var_Q[i]}.png') , width = 15, height = 10, dpi = 300)
+        scale_fill_manual(values = c( '1' = "#A7D96A", '2' = "#FFFFC1", '3' = "#FDAE61", '4' = '#D7191B', '5' = "#533104"),
+                          breaks = c('1', '2', '3', '4'), labels = labs_qq) +
+        labs(fill = pattern, x = NULL, y = NULL, title = title) +
+        scale_y_continuous(breaks = round(ylims, 2), n.breaks = 3) +
+        scale_x_continuous(breaks = round(xlims, 2), n.breaks = 3) +
+        coord_sf(xlim = xlims, ylim = ylims) +
+        facet_grid(~time1, labeller = as_labeller( c('1' = "Historic", '2' = "2021-2040", '3' = '2041-2060'))) +
+        theme_bw() + 
+        guides(fill=guide_legend(nrow=2,byrow=TRUE)) +
+        theme(legend.position = 'bottom', text = element_text(size=35),
+              axis.text.x=element_blank(), axis.text.y=element_blank(),
+              strip.background = element_rect(colour = "black", fill = "white"),
+              legend.title=element_text(size=35),
+              legend.spacing = unit(5, units = 'cm'),
+              legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5))
+      
+      ggplot2::ggsave(filename = glue::glue('{path}/Q_{var_Q[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
     }
-    
     
     # =------------------------------------------
     # Only graphs with special cat.

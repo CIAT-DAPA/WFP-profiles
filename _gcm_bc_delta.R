@@ -33,7 +33,9 @@ BC_Delta <- function(his_obs = his_obs,
 }
 
 his_gcm <- terra::rast(paste0(root,'/TZA_rotated_tasmax_day_EC-Earth3-Veg_historical_r1i1p1f1-1995-01-01_2014-12-31.tif'))
+his_gcm <- his_gcm - 273.15
 fut_gcm <- terra::rast(paste0(root,'/TZA_rotated_tasmax_day_EC-Earth3-Veg_ssp585_r1i1p1f1-2021-01-01_2040-12-31.tif'))
+fut_gcm <- fut_gcm - 273.15
 
 # grep(pattern = 'tasmax', x = ...)
 var <- 'tmax'
@@ -108,6 +110,8 @@ get_anomaly <- function(m){
 
 monthly_anomalies <- 1:12 %>%
   purrr::map(.f = get_anomaly)
+monthly_anomalies <- terra::rast(monthly_anomalies)
+names(monthly_anomalies) <- paste0('m_',1:12)
 
 if(OSys == 'Windows'){
   future::plan(cluster, workers = 12, gc = TRUE)
@@ -125,21 +129,29 @@ if(OSys == 'Windows'){
   }
 }
 
-
-
-
-
-
-
-
-
-
-
+jans_gcm <- his_gcm[[lubridate::month(as.Date(names(his_gcm))) == 1]] + monthly_anomalies[[1]]
+febs_gcm <- his_gcm[[lubridate::month(as.Date(names(his_gcm))) == 2]] + monthly_anomalies[[2]]
 
 his_obs <- '//catalogue/Workspace14/WFP_ClimateRiskPr/1.Data/observed_data/TZA/TZA.fst' %>%
   tidyfst::parse_fst(path = .) %>%
   base::as.data.frame() %>%
   dplyr::filter(year >= 2000)
+
+his_obs2 <- his_obs %>%
+  dplyr::select(x,y,date,tmax) %>%
+  tidyr::pivot_wider(names_from = 'date', values_from = 'tmax')
+
+his_rst <- terra::rast(x = base::as.matrix(his_obs2), type = 'xyz')
+his_rst <- terra::crop(x = his_rst, y = terra::ext(monthly_anomalies))
+crs(his_rst) <- crs(monthly_anomalies)
+
+jans_obs <- his_rst[[lubridate::month(as.Date(names(his_rst))) == 1]] + monthly_anomalies[[1]]
+febs_obs <- his_rst[[lubridate::month(as.Date(names(his_rst))) == 2]] + monthly_anomalies[[2]]
+
+plot(jans_obs[[1]])
+
+
+
 
 his_obs$month <- lubridate::month(his_obs$date)
 

@@ -255,11 +255,34 @@ BC_Delta <- function(iso     = iso,
   
   prec_fut_tbl$id <- raster::cellFromXY(object = tmpl, xy = as.matrix(prec_fut_tbl[,c('x','y')]))
   
-  if(identical(tmax_fut_tbl$id, tmin_fut_tbl$id)){
-    corrected <- dplyr::bind_cols(tmax_fut_tbl,
-                                  tmin_fut_tbl %>% dplyr::select(tmin),
-                                  prec_fut_tbl %>% dplyr::select(prec))
-  }
+  tmax_ids <- unique(tmax_fut_tbl$id)
+  tmin_ids <- unique(tmin_fut_tbl$id)
+  prec_ids <- unique(prec_fut_tbl$id)
+  
+  ids <- base::intersect(tmax_ids, tmin_ids)
+  ids <- base::intersect(ids, prec_ids)
+  
+  tmax_fut_tbl <- tmax_fut_tbl[tmax_fut_tbl$id %in% ids,]
+  tmin_fut_tbl <- tmin_fut_tbl[tmin_fut_tbl$id %in% ids,]
+  prec_fut_tbl <- prec_fut_tbl[prec_fut_tbl$id %in% ids,]
+  
+  corrected <- dplyr::bind_cols(tmax_fut_tbl,
+                                tmin_fut_tbl %>% dplyr::select(tmin),
+                                prec_fut_tbl %>% dplyr::select(prec))
+  # Fix precipitation values
+  corrected$prec[corrected$prec < 0] <- 0
+  corrected$prec[corrected$prec > 30] <- median(corrected$prec, na.rm = T)
+  
+  # Fix temperature values
+  tmp_pos <- which(corrected$tmax < corrected$tmin)
+  maxs <- corrected$tmax[tmp_pos]
+  mins <- corrected$tmin[tmp_pos]
+  corrected$tmax[tmp_pos] <- mins
+  corrected$tmin[tmp_pos] <- maxs
+  
+  cat('# ----------------------------- #\n')
+  cat('  Merging datasets.\n')
+  cat('# ----------------------------- #\n')
   
   fut_gcm_bc <- his_obs
   fut_gcm_bc$tmax <- fut_gcm_bc$tmin <- fut_gcm_bc$tmean <- fut_gcm_bc$prec <- NULL
@@ -268,14 +291,17 @@ BC_Delta <- function(iso     = iso,
   fut_gcm_bc <- fut_gcm_bc %>%
     dplyr::mutate(tmean = (tmax + tmin)/2)
   
+  fut_gcm_bc <- fut_gcm_bc[complete.cases(fut_gcm_bc$tmax),]
+  
   hyears <- 1995:2014
   fyears <- as.numeric(strsplit(x = period, split = '-')[[1]][1]):as.numeric(strsplit(x = period, split = '-')[[1]][2])
   
   fut_gcm_bc$year[fut_gcm_bc$year %in% hyears] <- fyears[match(fut_gcm_bc$year, hyears, nomatch = 0)]
-  fut_gcm_bc$date <-  as.Date(paste0(fut_gcm_bc$year,'-',substring(text = fut_gcm_bc$date, first = 5, last = nchar(fut_gcm_bc$date))))
+  fut_gcm_bc <- fut_gcm_bc %>%
+    dplyr::mutate(date = paste0(year,substring(as.character(date),5,nchar(as.character(date)))))
   
   dir.create(dirname(fut_bc),FALSE,TRUE)
-  tidyft::export_fst(fut_gcm_bc,fut_bc)
+  tidyfst::export_fst(x = fut_gcm_bc, path = fut_bc)
   
 }
 

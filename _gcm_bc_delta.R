@@ -307,8 +307,8 @@ BC_Delta <- function(iso     = iso,
 }
 
 iso <- 'TZA'
-gcm <- 'EC-Earth3-Veg'
-period <- '2021-2040'
+gcm <- 'MRI-ESM2-0'
+period <- '2041-2060'
 fut_bc <- paste0(root,'/1.Data/future_data/',gcm,'/',iso,'/bias_corrected/',period,'/',iso,'.fst')
 BC_Delta(iso     = iso,
          gcm     = gcm,

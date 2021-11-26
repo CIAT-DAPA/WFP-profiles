@@ -297,8 +297,9 @@ BC_Delta <- function(iso     = iso,
   fyears <- as.numeric(strsplit(x = period, split = '-')[[1]][1]):as.numeric(strsplit(x = period, split = '-')[[1]][2])
   
   fut_gcm_bc$year[fut_gcm_bc$year %in% hyears] <- fyears[match(fut_gcm_bc$year, hyears, nomatch = 0)]
-  fut_gcm_bc <- fut_gcm_bc %>%
-    dplyr::mutate(date = paste0(year,substring(as.character(date),5,nchar(as.character(date)))))
+  # fut_gcm_bc$date <- as.character(fut_gcm_bc$date)
+  # fut_gcm_bc <- fut_gcm_bc %>%
+  #   dplyr::mutate(date = paste0(year,substr(date,5,nchar(date))))
   
   dir.create(dirname(fut_bc),FALSE,TRUE)
   tidyfst::export_fst(x = fut_gcm_bc, path = fut_bc)

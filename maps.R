@@ -79,10 +79,16 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
   future:::ClusterRegistry("stop")
   gc(reset = T)
   
+  if('CSDI' %in% names(future)) {
+    indices <- c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP', 'CSDI') 
+  } else {
+    indices <- c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP')
+  }
+  
   future  <- future %>% dplyr::select(-gcm) %>% 
     dplyr::group_by(time,id,x,y,season,year) %>%
     dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
-    dplyr::mutate_at(.vars = c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'gSeason', 'SLGP', 'LGP'), 
+    dplyr::mutate_at(.vars = indices, 
                      .funs = ~round(. , 0))
   
   data_cons <- dplyr::bind_rows(past, future)  %>% 
@@ -149,19 +155,31 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     dir.create(path,recursive = TRUE)  
     # =--------------
     
-    if(R_zone == 'all'){
-      zone <- regions_all # %>% sf::as_Spatial() 
-      var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
-        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
-        dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
-        dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
-      
+    if(R_zone == 'all'){ 
+      if('CSDI' %in% names(future)){
+        zone <- regions_all # %>% sf::as_Spatial() 
+        var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
+          dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+          dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
+          dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
+      } else {
+        zone <- regions_all # %>% sf::as_Spatial() 
+        var_s <- to_do %>% dplyr::mutate( Regions = 'all', Livehood_z = 'all', Short_Name = 'all') %>% 
+          dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) %>% 
+          dplyr::group_by(ISO3, Country, Regions, Livehood_z, Short_Name ) %>% 
+          dplyr::summarise_all(. , sum, na.rm = TRUE) %>% dplyr::ungroup()
+      }
       title = 'Country'
     }else{
-      zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
-      var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
-        dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
-      
+      if('CSDI' %in% names(future)){
+        zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
+        var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
+          dplyr::mutate_at(.vars = vars(ATR:CSDI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()}) 
+      } else{
+        zone <- dplyr::filter(regions_all, region == R_zone) # %>% sf::as_Spatial() 
+        var_s <- to_do %>% dplyr::filter(Regions == R_zone) %>%
+          dplyr::mutate_at(.vars = vars(ATR:SHI) , .funs = function(x){x <- ifelse(x == '-', 0, x) %>% as.integer()})
+      }
       title = dplyr::filter(to_do, Regions  == R_zone)$Short_Name   
     }
     
@@ -208,21 +226,28 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     
     # =----------------------------------------------------
     # Basic vars. 
+    
+    if('CSDI' %in% names(future)){
+      indices <- c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI', 'CSDI')
+    } else {
+      indices <- c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')
+    }
+    
     to_graph <- data_cons %>% dplyr::filter(id %in% id_f) %>%
       dplyr::mutate(THI_23 = THI_2 + THI_3, HSI_23 = HSI_2 + HSI_3) %>%
       dplyr::select(time, time1, id, basic_vars) %>%
       dplyr::group_by(time, time1, id) %>% 
       dplyr::summarise_all(~mean(. , na.rm =  TRUE)) %>%
-      dplyr::mutate_at(.vars = basic_vars[basic_vars %in% c('NDD', 'NT_X', 'NDWS', 'NWLD', 'NWLD50', 'NWLD90','SHI')], 
+      dplyr::mutate_at(.vars = basic_vars[basic_vars %in% indices], 
                        .funs = ~round(. , 0)) %>%
       dplyr::ungroup() %>%  base::unique() %>% 
       dplyr::full_join(coord_zone, . )
     
     
+    #=-----------------------------------------------------------------------------------
     # Lenght_season
     to_graph <- dplyr::mutate_at(to_graph, .vars = basic_vars[basic_vars %in% c('NDD','NDWS', 'NWLD','NWLD50', 'NWLD90', 'NDD', 'NT_X')],
                                  .funs = ~(./length_season) %>% round(. ,0) )
-    
     
     # Transform variables. 
     if(sum(basic_vars == 'SHI') == 1){
@@ -274,7 +299,6 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       
       to_graph <- to_graph %>% dplyr::full_join(. , max_add)
     }
-    
     # =----------------------------------------------------
     # Tabla completa... explicar esta parte. 
     special_base <- dplyr::select(pet, id, time, time1, season, ATR, AMT) %>%
@@ -328,8 +352,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
       if(var_toG[i] == 'P95'){ pattern <- 'P95\n(mm/day)' } 
       if(var_toG[i] == 'IRR'){ pattern <- 'IRR' } 
       if(var_toG[i] == 'SPI'){ pattern <- 'SPI\n(% area)' } 
-      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' } 
-      
+      if(var_toG[i] == 'SLGP_CV'){ pattern <- 'SLGP\n(%)' }
+      if(var_toG[i] == 'CSDI'){ pattern <- 'CSDI\n(days)' }
       
       if(var_toG[i] == 'ATR'){
         
@@ -356,7 +380,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                                                             label.theme = element_text(angle = 25, size = 35))) 
       }    
       
-      ggplot() +
+      gg <- ggplot() +
         geom_tile(data = tidyr::drop_na(to_graph, !!rlang::sym(var_toG[i]) ), aes(x = x, y = y, fill = !!rlang::sym(var_toG[i])  )) +
         geom_sf(data = glwd1, fill = 'lightblue', color = 'lightblue') +
         geom_sf(data = glwd2, fill = 'lightblue', color = 'lightblue') +
@@ -375,14 +399,14 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
               legend.spacing = unit(5, units = 'cm'),
               legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
       
-      ggsave(glue::glue('{path}/C_{var_toG[i]}.png') , width = 15, height = 10, dpi = 300)
+      ggplot2::ggsave(filename = glue::glue('{path}/C_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
       
     }
     
     # =-------------------------------------
     # Anomaly Maps 
     if(length(unique(to_graph$time)) > 1){
-      to_process <- unique(to_graph$time)[unique(to_graph$time) !=  "Historic"]
+      to_process <- unique(to_graph$time)[unique(to_graph$time) !=  "Historic" ]
       
       # This function organize 
       anom_table <- function(data_to, pro_time){
@@ -494,7 +518,7 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
                 legend.spacing.x = unit(1.0, 'cm'), plot.title = element_text(hjust = 0.5)) 
         
         ggplot2::ggsave(filename = glue::glue('{path}/Anom_{var_toG[i]}.png'), plot = gg, width = 15, height = 10, dpi = 300, device = 'jpeg', units = 'in')
-      }
+      }    
     }
     # =-------------------------------------
     
@@ -550,8 +574,8 @@ map_graphs <- function(iso3, country, seasons, Zone = 'all'){
     # Quantile maps. 
     for(i in 1:length(var_Q)){
       
-      Q_q <- round(quantile(to_graph[, var_Q[i]], c(0.25, 0.5, 0.75), na.rm = T), 0)
-      # Q_q <- round(labels(dplyr::pull(to_graph[, var_Q[i]])), 0)
+      Q_q <- round(labels(dplyr::pull(to_graph[, var_Q[i]])), 0)
+      
       
       if(var_Q[i] == 'ATR'){
         Q_q <-  round(quantile(special_base$ATR, c(0.25, 0.5, 0.75), na.rm =TRUE), 0)
